@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://dar4rg8x7fywr"]
+
+[node name="Root" type="Node2D" unique_id=1014848448]
+
+[node name="BackgroundPolygon" type="Polygon2D" parent="." unique_id=1518173177]
+color = Color(0.2438586, 0.5169206, 0.20807582, 1)
+polygon = PackedVector2Array(-2000, 2000, -2000, -2000, 2000, -2000, 2000, 2000)
+
+[node name="Camera" type="Camera2D" parent="." unique_id=1590782277]
+
+[node name="FirstBase" type="Marker2D" parent="." unique_id=705891703]
+position = Vector2(0, 220)
