@@ -1,0 +1,84 @@
+[gd_resource type="Resource" script_class="BaseballTeamData" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://data/team_data.gd" id="team"]
+[ext_resource type="Script" path="res://data/player_data.gd" id="player"]
+
+[sub_resource type="Resource" id="p0"]
+script = ExtResource("player")
+anticipation = 0.8
+idle_behavior = 0
+player_name = "1B"
+speed = 125.0
+throwing_speed = 440.0
+
+[sub_resource type="Resource" id="p1"]
+script = ExtResource("player")
+anticipation = 0.6
+idle_behavior = 0
+player_name = "P"
+speed = 130.0
+throwing_speed = 440.0
+
+[sub_resource type="Resource" id="p2"]
+script = ExtResource("player")
+anticipation = 0.85
+idle_behavior = 0
+player_name = "C"
+speed = 115.0
+throwing_speed = 440.0
+
+[sub_resource type="Resource" id="p3"]
+script = ExtResource("player")
+anticipation = 0.7
+idle_behavior = 1
+player_name = "2B"
+speed = 140.0
+throwing_speed = 440.0
+
+[sub_resource type="Resource" id="p4"]
+script = ExtResource("player")
+anticipation = 0.65
+idle_behavior = 0
+player_name = "3B"
+speed = 130.0
+throwing_speed = 440.0
+
+[sub_resource type="Resource" id="p5"]
+script = ExtResource("player")
+anticipation = 0.8
+idle_behavior = 0
+player_name = "SS"
+speed = 150.0
+throwing_speed = 440.0
+
+[sub_resource type="Resource" id="p6"]
+script = ExtResource("player")
+anticipation = 0.75
+idle_behavior = 1
+player_name = "LF"
+speed = 165.0
+throwing_speed = 440.0
+
+[sub_resource type="Resource" id="p7"]
+script = ExtResource("player")
+anticipation = 0.9
+idle_behavior = 0
+player_name = "CF"
+speed = 175.0
+throwing_speed = 440.0
+
+[sub_resource type="Resource" id="p8"]
+script = ExtResource("player")
+anticipation = 0.6
+idle_behavior = 1
+player_name = "RF"
+speed = 160.0
+throwing_speed = 440.0
+
+[resource]
+script = ExtResource("team")
+team_name = "Home"
+color = Color(0.3, 0.55, 0.95, 1)
+players = Array[ExtResource("player")]([SubResource("p0"), SubResource("p1"), SubResource("p2"), SubResource("p3"), SubResource("p4"), SubResource("p5"), SubResource("p6"), SubResource("p7"), SubResource("p8")])
+field_positions = PackedVector2Array(200, -25, 0, 0, 0, 265, 125, -190, -205, -25, -125, -190, -440, -485, 0, -610, 440, -485)
+field_roles = PackedStringArray("1B", "P", "C", "2B", "3B", "SS", "LF", "CF", "RF")

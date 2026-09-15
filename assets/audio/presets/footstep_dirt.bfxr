@@ -1,0 +1,14 @@
+{
+  "synth_type": "Footsteppr",
+  "version": "1.0.0",
+  "file_name": "footstep_dirt",
+  "seed": 52,
+  "params": {
+    "masterVolume": 0.5,
+    "terrain": 2,
+    "heel": 0.63,
+    "roll": 0.5,
+    "ball": 0.69,
+    "swiftness": 0.82
+  }
+}

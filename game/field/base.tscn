@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[node name="Base" type="Marker2D"]
+
+[node name="Visuals" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, -9, 9, 0, 0, 9, -9, 0)
