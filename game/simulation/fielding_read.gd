@@ -8,10 +8,14 @@ var error_direction: Vector2
 var elapsed: float = 0.0
 var was_bounced: bool = false
 
+
 func _init(rng: RandomNumberGenerator) -> void:
 	error_direction = Vector2(rng.randfn(0.0, 1.0), rng.randfn(0.0, 1.0)).limit_length(2.0)
 
-func update(player: BaseballPlayer, game: BaseballMatch, delta: float, trajectory: Array[Dictionary]) -> void:
+
+func update(
+	player: BaseballPlayer, game: BaseballMatch, delta: float, trajectory: Array[Dictionary]
+) -> void:
 	elapsed += delta
 	refresh_remaining -= delta
 	var ball: BaseballBall = game.ball
@@ -28,6 +32,8 @@ func update(player: BaseballPlayer, game: BaseballMatch, delta: float, trajector
 		var time: float = prediction.time
 		target = game.outfield.clamp_inside(prediction.point + error_direction * uncertainty)
 		playable_in = time
-		var arrival := player.position.distance_to(target) / player.data.speed + player.reaction_remaining
+		var arrival := (
+			player.position.distance_to(target) / player.data.speed + player.reaction_remaining
+		)
 		if prediction.home_run or (prediction.height <= 25.0 and arrival <= time):
 			break

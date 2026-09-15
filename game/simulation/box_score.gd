@@ -4,20 +4,44 @@ extends RefCounted
 var teams: Array[Dictionary] = []
 var plays: Array[Dictionary] = []
 
+
 func _init(rosters: Array[BaseballTeamData]) -> void:
 	for roster in rosters:
 		var players: Array[Dictionary] = []
 		for player in roster.players:
-			players.append({"name": player.player_name, "PA": 0, "AB": 0, "R": 0,
-				"H": 0, "2B": 0, "3B": 0, "HR": 0, "RBI": 0, "K": 0,
-				"PO": 0, "bobbles": 0})
-		teams.append({"name": roster.team_name, "R": 0, "H": 0, "LOB": 0,
-			"innings": [], "players": players,
-			"pitching": {"P": 0, "BF": 0, "outs": 0, "H": 0, "R": 0, "K": 0}})
+			players.append(
+				{
+					"name": player.player_name,
+					"PA": 0,
+					"AB": 0,
+					"R": 0,
+					"H": 0,
+					"2B": 0,
+					"3B": 0,
+					"HR": 0,
+					"RBI": 0,
+					"K": 0,
+					"PO": 0,
+					"bobbles": 0
+				}
+			)
+		teams.append(
+			{
+				"name": roster.team_name,
+				"R": 0,
+				"H": 0,
+				"LOB": 0,
+				"innings": [],
+				"players": players,
+				"pitching": {"P": 0, "BF": 0, "outs": 0, "H": 0, "R": 0, "K": 0}
+			}
+		)
+
 
 func begin_half(side: int, inning: int) -> void:
 	while teams[side].innings.size() < inning:
 		teams[side].innings.append(0)
+
 
 func record_play(game: BaseballMatch) -> void:
 	var play := game.play
@@ -50,9 +74,19 @@ func record_play(game: BaseballMatch) -> void:
 	offense.R += play.pending_runs
 	pitching.R += play.pending_runs
 	offense.innings[game.inning - 1] += play.pending_runs
-	plays.append({"inning": game.inning, "side": game.batting_side,
-		"batter": game.batter.roster_index, "result": play.result,
-		"outs": play.outs_made, "runs": play.pending_runs, "hit_bases": hit, "RBI": rbi})
+	plays.append(
+		{
+			"inning": game.inning,
+			"side": game.batting_side,
+			"batter": game.batter.roster_index,
+			"result": play.result,
+			"outs": play.outs_made,
+			"runs": play.pending_runs,
+			"hit_bases": hit,
+			"RBI": rbi
+		}
+	)
+
 
 func to_dict() -> Dictionary:
 	return {"teams": teams.duplicate(true), "plays": plays.duplicate(true)}

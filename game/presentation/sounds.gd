@@ -31,6 +31,7 @@ var walked: Dictionary = {}
 @onready var calls: AudioStreamPlayer = $Calls
 @onready var airborne: AudioStreamPlayer2D = $Flight
 
+
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		enabled = false
@@ -44,9 +45,14 @@ func _ready() -> void:
 	game.ball_caught.connect(func(player): _at(catch_ball, player.position))
 	game.out_recorded.connect(_on_out)
 	game.strike_called.connect(func(is_strikeout): _call(strikeout if is_strikeout else strike))
-	game.foul_called.connect(func(): _at(hit, game.home.position); _call(foul))
+	game.foul_called.connect(
+		func():
+			_at(hit, game.home.position)
+			_call(foul)
+	)
 	game.sides_changed.connect(func(): _call(change_sides))
 	game.home_run.connect(func(): _call(home_run))
+
 
 func _at(clip: AudioStream, point: Vector2, volume: float = actions_db, pitch: float = 1.0) -> void:
 	if not enabled or clip == null or game.paused:
@@ -60,6 +66,7 @@ func _at(clip: AudioStream, point: Vector2, volume: float = actions_db, pitch: f
 	voice.pitch_scale = pitch
 	voice.play()
 
+
 func _call(clip: AudioStream) -> void:
 	if not enabled or clip == null or game.paused:
 		return
@@ -67,12 +74,19 @@ func _call(clip: AudioStream) -> void:
 	calls.volume_db = calls_db
 	calls.play()
 
+
 func _on_out(_player: BaseballPlayer) -> void:
 	if game.phase != game.Phase.PITCH:
 		_call(out)
 
+
 func _process(delta: float) -> void:
-	if not enabled or game.paused or game.phase == game.Phase.READY or not game.error_message.is_empty():
+	if (
+		not enabled
+		or game.paused
+		or game.phase == game.Phase.READY
+		or not game.error_message.is_empty()
+	):
 		airborne.stop()
 		calls.stop()
 		for voice in voices:
@@ -83,18 +97,26 @@ func _process(delta: float) -> void:
 	_update_flight(delta)
 	_step_sounds(delta)
 
+
 func _update_flight(delta: float) -> void:
 	var ball := game.ball
-	var audible := game.phase in [game.Phase.PITCH, game.Phase.FIELDING, game.Phase.THROW, game.Phase.FOUL]
+	var audible := (
+		game.phase in [game.Phase.PITCH, game.Phase.FIELDING, game.Phase.THROW, game.Phase.FOUL]
+	)
 	if not audible or ball.held or ball.height <= 1.0 or flight == null:
 		airborne.stop()
 		return
 	airborne.global_position = ball.position
 	airborne.volume_db = flight_db
-	airborne.pitch_scale = lerpf(airborne.pitch_scale, lerpf(0.7, 1.8, clampf(ball.height / 200.0, 0, 1)), 1.0 - exp(-8.0 * delta))
+	airborne.pitch_scale = lerpf(
+		airborne.pitch_scale,
+		lerpf(0.7, 1.8, clampf(ball.height / 200.0, 0, 1)),
+		1.0 - exp(-8.0 * delta)
+	)
 	if not airborne.playing:
 		airborne.stream = flight
 		airborne.play()
+
 
 func _step_sounds(delta: float) -> void:
 	step_cooldown = maxf(0.0, step_cooldown - delta)

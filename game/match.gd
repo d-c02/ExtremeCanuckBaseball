@@ -24,7 +24,9 @@ signal out_recorded(player: BaseballPlayer)
 signal half_inning_finished(inning: int, batting_side: int)
 signal game_finished(scores: Array[int])
 
-enum Phase { READY, PREPARING, PITCH, FIELDING, THROW, TAG, HOME_RUN, SETTLING, RETURNING, FINISHED, FOUL }
+enum Phase {
+	READY, PREPARING, PITCH, FIELDING, THROW, TAG, HOME_RUN, SETTLING, RETURNING, FINISHED, FOUL
+}
 const PLAYER_SCENE = preload("res://game/actors/player.tscn")
 
 @export var visiting_team: BaseballTeamData
@@ -66,13 +68,26 @@ var error_message: String = ""
 @onready var outfield: BaseballOutfield = $Field/Outfield
 @onready var dugouts: Array[Node2D] = [$Dugouts/Visitors, $Dugouts/Home]
 
+
 func _ready() -> void:
 	teams = [visiting_team, home_team]
 	for team in teams:
-		if team == null or team.players.size() != 9 or team.field_positions.size() != 9 or team.field_roles.size() != 9:
+		if (
+			team == null
+			or team.players.size() != 9
+			or team.field_positions.size() != 9
+			or team.field_roles.size() != 9
+		):
 			simulation_error("Each team needs nine players, field positions, and field roles")
 			return
-	base_positions = PackedVector2Array([$Field/FirstBase.position, $Field/SecondBase.position, $Field/ThirdBase.position, home.position])
+	base_positions = PackedVector2Array(
+		[
+			$Field/FirstBase.position,
+			$Field/SecondBase.position,
+			$Field/ThirdBase.position,
+			home.position
+		]
+	)
 	for side in 2:
 		var squad: Array[BaseballPlayer] = []
 		for index in 9:
@@ -84,6 +99,7 @@ func _ready() -> void:
 			squad.append(player)
 		squads.append(squad)
 	reset_game()
+
 
 func reset_game() -> void:
 	rng.seed = random_seed
@@ -114,13 +130,16 @@ func reset_game() -> void:
 	_update_dugouts()
 	_refresh_status()
 
+
 func start_game() -> void:
 	if phase != Phase.READY:
 		return
 	_prepare_pitch()
 
+
 func _physics_process(delta: float) -> void:
 	step(delta)
+
 
 func step(delta: float) -> void:
 	if not error_message.is_empty() or paused:
@@ -134,8 +153,10 @@ func step(delta: float) -> void:
 	_refresh_status()
 	queue_redraw()
 
+
 func is_fast_forwarding() -> bool:
 	return phase == Phase.RETURNING or (phase == Phase.PREPARING and pitch_count > 0)
+
 
 func _step_simulation(delta: float) -> void:
 	for squad in squads:
@@ -165,6 +186,7 @@ func _step_simulation(delta: float) -> void:
 	if phase in [Phase.PREPARING, Phase.RETURNING] and phase_elapsed > 40.0:
 		simulation_error("Players failed to reach their positions")
 
+
 func _prepare_pitch() -> void:
 	phase = Phase.PREPARING
 	phase_elapsed = 0.0
@@ -190,12 +212,17 @@ func _prepare_pitch() -> void:
 			_send_to_dugout(player)
 	var origin := ball.position
 	return_ball_time = maxf(0.25, origin.distance_to(mound.position) / 400.0)
-	ball.launch(origin, (mound.position - origin) / return_ball_time,
-		12.0, BaseballBall.GRAVITY * return_ball_time / 2.0)
+	ball.launch(
+		origin,
+		(mound.position - origin) / return_ball_time,
+		12.0,
+		BaseballBall.GRAVITY * return_ball_time / 2.0
+	)
 	if pitch_count > 0:
 		ball_thrown.emit(origin)
 	last_result = "Players getting ready: %s batting" % batter.data.player_name
 	_update_dugouts()
+
 
 func _step_preparation(delta: float) -> void:
 	if return_ball_time > 0.0:
@@ -207,6 +234,7 @@ func _step_preparation(delta: float) -> void:
 		pitch_count += 1
 		play = BaseballLivePlay.new(self)
 		phase_elapsed = 0.0
+
 
 func _complete_play() -> void:
 	box_score.record_play(self)
@@ -226,11 +254,18 @@ func _complete_play() -> void:
 	play_finished.emit(last_result)
 	_update_dugouts()
 
+
 func _end_half() -> void:
 	box_score.teams[batting_side].LOB += runners.size()
 	half_inning_finished.emit(inning, batting_side)
 	runners.clear()
-	if inning >= innings and ((batting_side == 1 and scores[0] != scores[1]) or (batting_side == 0 and scores[1] > scores[0])):
+	if (
+		inning >= innings
+		and (
+			(batting_side == 1 and scores[0] != scores[1])
+			or (batting_side == 0 and scores[1] > scores[0])
+		)
+	):
 		_finish_game()
 		return
 	if batting_side == 1:
@@ -248,20 +283,27 @@ func _end_half() -> void:
 			_send_to_dugout(player)
 	_update_dugouts()
 
+
 func _finish_game() -> void:
 	box_score.teams[batting_side].LOB += runners.size()
 	phase = Phase.FINISHED
-	last_result = "Draw" if scores[0] == scores[1] else "%s wins" % teams[0 if scores[0] > scores[1] else 1].team_name
+	last_result = (
+		"Draw"
+		if scores[0] == scores[1]
+		else "%s wins" % teams[0 if scores[0] > scores[1] else 1].team_name
+	)
 	for squad in squads:
 		for player in squad:
 			_send_to_dugout(player)
 	game_finished.emit(scores.duplicate())
+
 
 func runner_for(player: BaseballPlayer) -> BaseballBaseRunning:
 	for run in runners:
 		if run.runner == player:
 			return run
 	return null
+
 
 func camera_runner() -> BaseballBaseRunning:
 	var selected: BaseballBaseRunning
@@ -274,14 +316,19 @@ func camera_runner() -> BaseballBaseRunning:
 				selected = run
 	return selected
 
+
 func _send_to_dugout(player: BaseballPlayer) -> void:
 	player.bat.visible = false
 	player.set_label(str(player.roster_index + 1))
-	player.move_to(dugouts[player.team_index].seat_position(player.roster_index), "Returning to dugout")
+	player.move_to(
+		dugouts[player.team_index].seat_position(player.roster_index), "Returning to dugout"
+	)
+
 
 func _send_on_deck(player: BaseballPlayer) -> void:
 	player.set_label("%d next" % (player.roster_index + 1))
 	player.move_to(dugouts[player.team_index].on_deck_position(), "On deck")
+
 
 func _everyone_arrived() -> bool:
 	for squad in squads:
@@ -290,15 +337,18 @@ func _everyone_arrived() -> bool:
 				return false
 	return true
 
+
 func _update_dugouts() -> void:
 	for side in 2:
 		dugouts[side].show_order(teams[side], next_batter[side], side == batting_side)
+
 
 func simulation_error(message: String) -> void:
 	error_message = message
 	phase = Phase.FINISHED
 	status.text = message
 	push_error(message)
+
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
@@ -317,11 +367,29 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_H:
 			dugout_view = not dugout_view
 
+
 func _refresh_status() -> void:
-	status.text = "%s %d / %d %s | %s %d/%d | %d out(s), %d strike(s)\n%s%s\nSpace: start game   P: pause   R: reset   B: box score   H: dugouts   D: targets   C: camera zones" % [
-		teams[0].team_name, scores[0], scores[1], teams[1].team_name,
-		"Top" if batting_side == 0 else "Bottom", inning, innings, outs, strikes,
-		last_result, " [PAUSED]" if paused else ""]
+	status.text = (
+		(
+			"%s %d / %d %s | %s %d/%d | %d out(s), %d strike(s)\n%s%s\n"
+			+ "Space: start game   P: pause   R: reset   B: box score   "
+			+ "H: dugouts   D: targets   C: camera zones"
+		)
+		% [
+			teams[0].team_name,
+			scores[0],
+			scores[1],
+			teams[1].team_name,
+			"Top" if batting_side == 0 else "Bottom",
+			inning,
+			innings,
+			outs,
+			strikes,
+			last_result,
+			" [PAUSED]" if paused else ""
+		]
+	)
+
 
 func _draw() -> void:
 	if not debug_visible:

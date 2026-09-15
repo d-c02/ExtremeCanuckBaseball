@@ -7,3 +7,7 @@
 
 .DS_Store
 /tmp/
+
+# Local development tools
+/.venv/
+__pycache__/

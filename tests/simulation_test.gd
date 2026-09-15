@@ -4,17 +4,21 @@ const DELTA := 1.0 / 60.0
 var failures := 0
 var game: BaseballMatch
 
+
 func _initialize() -> void:
 	call_deferred("run")
+
 
 func check(condition: bool, message: String) -> void:
 	if not condition:
 		failures += 1
 		push_error(message)
 
+
 func tick() -> void:
 	await physics_frame
 	game.step(DELTA)
+
 
 func finish_play() -> void:
 	for frame in 4000:
@@ -22,6 +26,7 @@ func finish_play() -> void:
 		if game.play.done or not game.error_message.is_empty():
 			break
 	check(game.play.done and game.error_message.is_empty(), "Play stalled")
+
 
 func run() -> void:
 	game = load("res://main.tscn").instantiate()
@@ -47,13 +52,22 @@ func run() -> void:
 			if game.phase == game.Phase.FINISHED:
 				break
 		game.play_finished.disconnect(record)
-		check(game.error_message.is_empty() and game.phase == game.Phase.FINISHED, "Game failed to finish")
-		check(game.inning >= game.innings and game.get_node("Players").get_child_count() == 18, "Game lost innings or roster players")
+		check(
+			game.error_message.is_empty() and game.phase == game.Phase.FINISHED,
+			"Game failed to finish"
+		)
+		check(
+			game.inning >= game.innings and game.get_node("Players").get_child_count() == 18,
+			"Game lost innings or roster players"
+		)
 		if first_trace.is_empty():
 			first_trace = trace
 			first_box = game.box_score.to_dict()
 		elif seed_value == 42:
-			check(trace == first_trace and game.box_score.to_dict() == first_box, "Seed replay changed the game or box score")
+			check(
+				trace == first_trace and game.box_score.to_dict() == first_box,
+				"Seed replay changed the game or box score"
+			)
 		check(game.scores[0] != game.scores[1], "Tied game stopped without extra innings")
 		var pitches := 0
 		for side in 2:
@@ -65,9 +79,15 @@ func run() -> void:
 				runs += player.R
 				hits += player.H
 				putouts += player.PO
-			check(runs == game.scores[side] and runs == team.R and hits == team.H, "Player totals disagree with score")
+			check(
+				runs == game.scores[side] and runs == team.R and hits == team.H,
+				"Player totals disagree with score"
+			)
 			check(putouts == team.pitching.outs, "Putouts disagree with pitching outs")
-			check(team.innings.reduce(func(a, b): return a + b, 0) == runs, "Line score disagrees with runs")
+			check(
+				team.innings.reduce(func(a, b): return a + b, 0) == runs,
+				"Line score disagrees with runs"
+			)
 			pitches += team.pitching.P
 		check(pitches == game.pitch_count, "Box score lost pitches")
 		print("Seed ", seed_value, ": ", game.scores, ", pitches: ", game.pitch_count)
@@ -85,13 +105,25 @@ func run() -> void:
 	await process_frame
 	quit(1 if failures else 0)
 
+
 func roster_stats() -> Array:
 	var stats: Array = []
 	for team in game.teams:
 		for player in team.players:
-			for property in ["speed", "acceleration", "reaction_time", "hitting", "fielding", "throwing_speed", "batting_power", "anticipation", "idle_behavior"]:
+			for property in [
+				"speed",
+				"acceleration",
+				"reaction_time",
+				"hitting",
+				"fielding",
+				"throwing_speed",
+				"batting_power",
+				"anticipation",
+				"idle_behavior"
+			]:
 				stats.append(player.get(property))
 	return stats
+
 
 func contact(base_count: int = 0) -> void:
 	game.reset_game()
@@ -112,11 +144,13 @@ func contact(base_count: int = 0) -> void:
 	game.play._resolve_swing()
 	game.pitch_count = 1
 
+
 func possession(point: Vector2) -> void:
 	game.play.holder = game.fielders[0]
 	game.play.holder.position = point
 	game.ball.hold_at(point)
 	game.play._choose_throw()
+
 
 func check_outs() -> void:
 	contact(1)
@@ -125,7 +159,9 @@ func check_outs() -> void:
 	var lead := game.runners[0]
 	lead.runner.position = game.base_positions[0].lerp(game.base_positions[1], 0.5)
 	possession(game.base_positions[0])
-	check(game.play.batter_run.retired and game.outs == 1, "First baseman ignored an immediate force")
+	check(
+		game.play.batter_run.retired and game.outs == 1, "First baseman ignored an immediate force"
+	)
 	check(not game.play.is_forced(lead), "Force survived the trailing runner's out")
 	lead.runner.position = game.play.holder.position + Vector2(5, 0)
 	game.play._choose_throw()
@@ -151,11 +187,15 @@ func check_outs() -> void:
 	check(game.scores[0] == 0 and game.outs == 3, "Third force out counted a run")
 	check(game.box_score.teams[0].players[0].RBI == 0, "Cancelled run earned an RBI")
 
+
 func check_continuity() -> void:
 	game.reset_game()
 	game.start_game()
 	game.step(DELTA)
-	check(is_equal_approx(game.phase_elapsed, DELTA) and not game.is_fast_forwarding(), "Opening deployment was sped up")
+	check(
+		is_equal_approx(game.phase_elapsed, DELTA) and not game.is_fast_forwarding(),
+		"Opening deployment was sped up"
+	)
 	contact()
 	var runner := game.play.batter_run
 	runner.reached = 1
@@ -167,12 +207,21 @@ func check_continuity() -> void:
 	check(game.fielders[1].velocity.length() > 0, "Result froze the fielders")
 	check(game.squads[0][1].target != game.home.position, "Next hitter interrupted the result beat")
 	game.step(DELTA)
-	check(is_equal_approx(game.phase_elapsed, DELTA) and not game.is_fast_forwarding(), "Result beat was sped up")
+	check(
+		is_equal_approx(game.phase_elapsed, DELTA) and not game.is_fast_forwarding(),
+		"Result beat was sped up"
+	)
 	game._prepare_pitch()
-	check(game.runners.has(runner) and game.batter.roster_index == 1, "Next batter cleared the runner or reset the order")
+	check(
+		game.runners.has(runner) and game.batter.roster_index == 1,
+		"Next batter cleared the runner or reset the order"
+	)
 	game.phase_elapsed = 0.0
 	game.step(DELTA)
-	check(is_equal_approx(game.phase_elapsed, game.transition_speed * DELTA), "Transition speed failed")
+	check(
+		is_equal_approx(game.phase_elapsed, game.transition_speed * DELTA),
+		"Transition speed failed"
+	)
 	game.paused = true
 	var point := game.batter.position
 	game.step(DELTA)
@@ -183,12 +232,16 @@ func check_continuity() -> void:
 	game.step(DELTA)
 	check(is_equal_approx(game.phase_elapsed, DELTA), "Transition speed leaked into the pitch")
 
+
 func check_fielders() -> void:
 	contact()
 	game.ball.launch(game.fielders[7].position, Vector2.ZERO, 180, 0)
 	game.play.defense.assign()
 	for index in [6, 8]:
-		check(game.fielders[index].target.distance_to(game.teams[1].field_positions[index]) <= 8, "Routine fly pulled another outfielder off station")
+		check(
+			game.fielders[index].target.distance_to(game.teams[1].field_positions[index]) <= 8,
+			"Routine fly pulled another outfielder off station"
+		)
 	game.ball.launch(Vector2(-450, -490), Vector2.ZERO, 0, 0)
 	game.ball.bounced = true
 	var left := game.fielders[6]
@@ -203,6 +256,7 @@ func check_fielders() -> void:
 	game.rng.seed = 42
 	game.play._step_fielding(DELTA)
 	check(game.play.holder == left, "One player's bobble blocked their teammate")
+
 
 func check_wall_and_home_run() -> void:
 	game.reset_game()
@@ -223,15 +277,28 @@ func check_wall_and_home_run() -> void:
 	game.ball.bounced = true
 	var prediction := wall.forecast(game.ball, 0.5)
 	game.ball.step(0.2)
-	check(wall.check_crossing(game.ball) == "wall" and game.ball.velocity.y > 0, "Low ball did not rebound")
-	check(not prediction.home_run and prediction.point.y > top, "AI predicted a rebound outside the wall")
+	check(
+		wall.check_crossing(game.ball) == "wall" and game.ball.velocity.y > 0,
+		"Low ball did not rebound"
+	)
+	check(
+		not prediction.home_run and prediction.point.y > top,
+		"AI predicted a rebound outside the wall"
+	)
 	contact(3)
 	game.ball.launch(game.home.position, Vector2(0, -600), 10, 410)
 	game.play.defense.assign()
 	await finish_play()
-	check(game.play.is_home_run and game.scores[0] == 4 and game.runners.is_empty(), "Fence clearance failed to score a grand slam")
+	check(
+		game.play.is_home_run and game.scores[0] == 4 and game.runners.is_empty(),
+		"Fence clearance failed to score a grand slam"
+	)
 	var stats: Dictionary = game.box_score.teams[0].players[0]
-	check(stats.HR == 1 and stats.H == 1 and stats.AB == 1 and stats.R == 1 and stats.RBI == 4, "Grand slam box score is wrong")
+	check(
+		stats.HR == 1 and stats.H == 1 and stats.AB == 1 and stats.R == 1 and stats.RBI == 4,
+		"Grand slam box score is wrong"
+	)
+
 
 func check_contact_and_retreat() -> void:
 	contact(3)
@@ -254,9 +321,16 @@ func check_contact_and_retreat() -> void:
 		fielder.reaction_remaining = 0
 	game.rng.seed = 42
 	game.play._step_fielding(DELTA)
-	check(runner.returning and runner.runner.position == before, "Caught fly failed to send runner back without teleporting")
+	check(
+		runner.returning and runner.runner.position == before,
+		"Caught fly failed to send runner back without teleporting"
+	)
 	await finish_play()
-	check(game.scores[0] == 0 and (runner.retired or runner.reached == runner.start_base), "Caught-fly retreat or scoring failed")
+	check(
+		game.scores[0] == 0 and (runner.retired or runner.reached == runner.start_base),
+		"Caught-fly retreat or scoring failed"
+	)
+
 
 func check_scoring() -> void:
 	contact(1)
@@ -265,7 +339,10 @@ func check_scoring() -> void:
 	game.play.batter_run.reached = 1
 	game.play._end("Fielder's choice")
 	game._complete_play()
-	check(game.box_score.teams[0].H == 0 and game.box_score.teams[0].players[0].AB == 1, "Fielder's choice counted as a hit")
+	check(
+		game.box_score.teams[0].H == 0 and game.box_score.teams[0].players[0].AB == 1,
+		"Fielder's choice counted as a hit"
+	)
 	game.reset_game()
 	game.strikes = 2
 	game.play = BaseballLivePlay.new(game)
@@ -273,12 +350,27 @@ func check_scoring() -> void:
 	game.play._resolve_swing()
 	game._complete_play()
 	var pitcher: Dictionary = game.box_score.teams[1].pitching
-	check(pitcher.K == 1 and pitcher.outs == 1 and pitcher.BF == 1 and game.box_score.teams[0].players[0].K == 1, "Strikeout accounting failed")
+	check(
+		(
+			pitcher.K == 1
+			and pitcher.outs == 1
+			and pitcher.BF == 1
+			and game.box_score.teams[0].players[0].K == 1
+		),
+		"Strikeout accounting failed"
+	)
 	game.inning = game.innings
 	game.batting_side = 1
 	game.outs = 3
 	game._end_half()
-	check(game.phase == game.Phase.RETURNING and game.inning == game.innings + 1 and game.batting_side == 0, "Tie did not start an extra inning")
+	check(
+		(
+			game.phase == game.Phase.RETURNING
+			and game.inning == game.innings + 1
+			and game.batting_side == 0
+		),
+		"Tie did not start an extra inning"
+	)
 	contact(2)
 	game.batting_side = 1
 	game.inning = game.innings
@@ -292,7 +384,10 @@ func check_scoring() -> void:
 	check(not game.play.done, "Walk-off ignored an outstanding force")
 	game.runners[0].reached = 2
 	game.play._check_walk_off()
-	check(game.play.done and game.play.pending_runs == 1, "Winning run did not stop a non-HR walk-off")
+	check(
+		game.play.done and game.play.pending_runs == 1, "Winning run did not stop a non-HR walk-off"
+	)
+
 
 func check_foul() -> void:
 	game.reset_game()
@@ -305,7 +400,11 @@ func check_foul() -> void:
 	game.play.step(0.25)
 	check(game.ball.position != origin and not game.play.done, "Foul had no visible flight")
 	game.play.step(1.3)
-	check(game.play.done and not game.play.batter_done and game.strikes == 2, "Two-strike foul retired the batter")
+	check(
+		game.play.done and not game.play.batter_done and game.strikes == 2,
+		"Two-strike foul retired the batter"
+	)
+
 
 func check_camera() -> void:
 	game.reset_game()
@@ -322,4 +421,10 @@ func check_camera() -> void:
 		camera._process(DELTA)
 		var half: Vector2 = camera.get_viewport_rect().size / camera.zoom / 2
 		var view := Rect2(camera.position - half, half * 2)
-		check(view.grow(0.1).encloses(camera.zones.protected_bases()) and view.end.y <= camera.zones.bottom_limit() + 0.1, "Camera lost bases or crossed its bottom limit")
+		check(
+			(
+				view.grow(0.1).encloses(camera.zones.protected_bases())
+				and view.end.y <= camera.zones.bottom_limit() + 0.1
+			),
+			"Camera lost bases or crossed its bottom limit"
+		)

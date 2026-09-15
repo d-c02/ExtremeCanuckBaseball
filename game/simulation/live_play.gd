@@ -28,6 +28,7 @@ var force_outs: int = 0
 var hit_limit: int = 4
 var scoring_order: Array[BaseballPlayer] = []
 
+
 func _init(match_scene: BaseballMatch) -> void:
 	game = match_scene
 	defense = BaseballDefense.new(game)
@@ -39,11 +40,14 @@ func _init(match_scene: BaseballMatch) -> void:
 	var spread := lerpf(0.18, 0.025, game.batter.data.hitting)
 	swing_time = PITCH_DURATION + game.rng.randfn(0.0, spread)
 	aim_error = game.rng.randfn(0.0, lerpf(1.0, 0.18, game.batter.data.hitting))
-	game.ball.launch(game.mound.position, (game.home.position - game.mound.position) / PITCH_DURATION, 12.0, 0.0)
+	game.ball.launch(
+		game.mound.position, (game.home.position - game.mound.position) / PITCH_DURATION, 12.0, 0.0
+	)
 	game.batter.show_swing(0.0)
 	game.phase = game.Phase.PITCH
 	game.ball_thrown.emit(game.mound.position)
 	game.last_result = "Pitch to %s" % game.batter.data.player_name
+
 
 func step(delta: float) -> void:
 	if done:
@@ -99,6 +103,7 @@ func step(delta: float) -> void:
 	if elapsed > 45.0 and not done:
 		game.simulation_error("Live play stalled")
 
+
 func _resolve_swing() -> void:
 	var timing_error := (swing_time - PITCH_DURATION) / 0.16
 	var quality := clampf(1.0 - absf(timing_error) * 0.55 - absf(aim_error) * 0.35, 0, 1)
@@ -109,7 +114,9 @@ func _resolve_swing() -> void:
 		if batter_done:
 			strikeout = true
 			outs_made = 1
-			game.box_score.teams[1 - game.batting_side].players[game.teams[1 - game.batting_side].field_roles.find("C")].PO += 1
+			var fielding_side := 1 - game.batting_side
+			var catcher_index := game.teams[fielding_side].field_roles.find("C")
+			game.box_score.teams[fielding_side].players[catcher_index].PO += 1
 			game.outs += 1
 			game.batter.set_label("%d OUT" % (game.batter.roster_index + 1))
 			game.out_recorded.emit(game.batter)
@@ -144,25 +151,46 @@ func _resolve_swing() -> void:
 	game.ball_hit.emit(quality)
 	game.last_result = "Fair hit: %s fielding" % defense.chaser.role
 
+
 func _advance_on_contact() -> void:
 	var ball: BaseballBall = game.ball
-	var flight := (ball.vertical_velocity + sqrt(ball.vertical_velocity * ball.vertical_velocity + 2.0 * BaseballBall.GRAVITY * ball.height)) / BaseballBall.GRAVITY
+	var flight := (
+		(
+			ball.vertical_velocity
+			+ sqrt(
+				(
+					ball.vertical_velocity * ball.vertical_velocity
+					+ 2.0 * BaseballBall.GRAVITY * ball.height
+				)
+			)
+		)
+		/ BaseballBall.GRAVITY
+	)
 	var prediction: Dictionary = game.outfield.forecast(ball, flight)
 	var landing: Vector2 = prediction.point
 	var fielder := defense.nearest(landing, [])
-	var arrival := fielder.position.distance_to(landing) / fielder.data.speed + fielder.data.reaction_time
+	var arrival := (
+		fielder.position.distance_to(landing) / fielder.data.speed + fielder.data.reaction_time
+	)
 	var ordered: Array = game.runners.duplicate()
 	ordered.sort_custom(func(a, b): return a.reached > b.reached)
 	for run in ordered:
 		if run == batter_run or run.active or run.retired or run.scored:
 			continue
-		var expects_drop: bool = prediction.home_run or flight < 0.55 or arrival + run.contact_judgement > flight + 0.2
+		var expects_drop: bool = (
+			prediction.home_run or flight < 0.55 or arrival + run.contact_judgement > flight + 0.2
+		)
 		if _base_available(run.reached + 1, run) and (game.outs == 2 or expects_drop):
 			run.advance(run.runner.data.reaction_time)
 		elif arrival + run.contact_judgement > flight - 0.5:
 			var base: Vector2 = game.base_positions[run.reached - 1] + Vector2(10, 9)
 			var next: Vector2 = game.base_positions[run.reached] + Vector2(10, 9)
-			run.runner.move_to(base.move_toward(next, 55.0), "Reading fly: short lead", run.runner.data.reaction_time)
+			run.runner.move_to(
+				base.move_toward(next, 55.0),
+				"Reading fly: short lead",
+				run.runner.data.reaction_time
+			)
+
 
 func _advance_runners() -> void:
 	var ordered: Array = game.runners.duplicate()
@@ -173,15 +201,20 @@ func _advance_runners() -> void:
 		if _base_available(run.reached + 1, run) and (is_forced(run) or _worth_advancing(run)):
 			run.advance()
 
+
 func _base_available(index: int, runner: BaseballBaseRunning) -> bool:
 	if index == 4:
 		return true
 	for other in game.runners:
 		if other == runner or other.retired or other.scored:
 			continue
-		if (other.active and other.target_base == index) or (not other.active and other.reached == index):
+		if (
+			(other.active and other.target_base == index)
+			or (not other.active and other.reached == index)
+		):
 			return false
 	return true
+
 
 func is_forced(run: BaseballBaseRunning) -> bool:
 	if run.retired or run.scored or run.reached > run.start_base:
@@ -195,6 +228,7 @@ func is_forced(run: BaseballBaseRunning) -> bool:
 			return false
 	return true
 
+
 func _worth_advancing(run: BaseballBaseRunning) -> bool:
 	var next_base: Vector2 = game.base_positions[run.reached]
 	var fielder := defense.nearest(game.ball.position, [])
@@ -203,6 +237,7 @@ func _worth_advancing(run: BaseballBaseRunning) -> bool:
 	var throw_time: float = game.ball.position.distance_to(next_base) / fielder.data.throwing_speed
 	return run_time < pickup_time + throw_time + fielder.data.reaction_time + 0.5
 
+
 func _step_fielding(delta: float) -> void:
 	defense.step(delta)
 	if game.last_result.begins_with("Fair hit"):
@@ -210,9 +245,19 @@ func _step_fielding(delta: float) -> void:
 	for player in catch_retries:
 		catch_retries[player] = maxf(0.0, catch_retries[player] - delta)
 	var candidates: Array[BaseballPlayer] = game.fielders.duplicate()
-	candidates.sort_custom(func(a, b): return a.position.distance_squared_to(game.ball.position) < b.position.distance_squared_to(game.ball.position))
+	candidates.sort_custom(
+		func(a, b):
+			return (
+				a.position.distance_squared_to(game.ball.position)
+				< b.position.distance_squared_to(game.ball.position)
+			)
+	)
 	for player in candidates:
-		if player.reaction_remaining > 0 or catch_retries.get(player, 0.0) > 0.0 or not within_reach(player):
+		if (
+			player.reaction_remaining > 0
+			or catch_retries.get(player, 0.0) > 0.0
+			or not within_reach(player)
+		):
 			continue
 		if game.rng.randf() > lerpf(0.45, 0.98, player.data.fielding):
 			catch_retries[player] = 0.65
@@ -237,22 +282,33 @@ func _step_fielding(delta: float) -> void:
 			_choose_throw()
 		return
 
+
 func _out_base(run: BaseballBaseRunning) -> int:
 	return run.start_base if run.returning else run.target_base
+
 
 func _base_out_available(run: BaseballBaseRunning) -> bool:
 	return is_forced(run) or run.returning
 
+
 func _safe_on_base(run: BaseballBaseRunning) -> bool:
 	if run.reached == 0 or _base_out_available(run):
 		return false
-	return run.runner.position.distance_to(game.base_positions[run.reached - 1] + Vector2(10, 9)) <= 5.0
+	return (
+		run.runner.position.distance_to(game.base_positions[run.reached - 1] + Vector2(10, 9))
+		<= 5.0
+	)
+
 
 func _try_immediate_out(candidates: Array[BaseballBaseRunning]) -> bool:
 	for run in candidates:
 		var destination: Vector2 = game.base_positions[_out_base(run) - 1]
-		var base_out := _base_out_available(run) and holder.position.distance_to(destination) <= 16.0
-		var tag_out := not _safe_on_base(run) and holder.position.distance_to(run.runner.position) <= 21.0
+		var base_out := (
+			_base_out_available(run) and holder.position.distance_to(destination) <= 16.0
+		)
+		var tag_out := (
+			not _safe_on_base(run) and holder.position.distance_to(run.runner.position) <= 21.0
+		)
 		if not base_out and not tag_out:
 			continue
 		target_runner = run
@@ -262,6 +318,7 @@ func _try_immediate_out(candidates: Array[BaseballBaseRunning]) -> bool:
 		retire_runner(run, is_forced(run))
 		return true
 	return false
+
 
 func _choose_throw() -> void:
 	var candidates := _active_runners()
@@ -281,13 +338,26 @@ func _choose_throw() -> void:
 		var destination: Vector2 = game.base_positions[_out_base(run) - 1]
 		var run_time: float = run.runner.position.distance_to(destination) / run.runner.data.speed
 		var receiver := defense.nearest(destination, [holder])
-		var receiver_time := receiver.position.distance_to(destination) / receiver.data.speed + receiver.reaction_remaining
+		var receiver_time := (
+			receiver.position.distance_to(destination) / receiver.data.speed
+			+ receiver.reaction_remaining
+		)
 		var flight_time := holder.position.distance_to(destination) / holder.data.throwing_speed
 		var throw_time := maxf(holder.data.reaction_time + 0.2 + flight_time, receiver_time)
-		var carry_distance := holder.position.distance_to(destination) if _base_out_available(run) else holder.position.distance_to(run.runner.position)
-		var carry_time := maxf(0.0, carry_distance - (16.0 if _base_out_available(run) else 21.0)) / holder.data.speed
+		var carry_distance := (
+			holder.position.distance_to(destination)
+			if _base_out_available(run)
+			else holder.position.distance_to(run.runner.position)
+		)
+		var carry_time := (
+			maxf(0.0, carry_distance - (16.0 if _base_out_available(run) else 21.0))
+			/ holder.data.speed
+		)
 		if not _base_out_available(run):
-			carry_time = maxf(0.0, carry_distance - 21.0) / maxf(20.0, holder.data.speed - run.runner.data.speed * 0.7)
+			carry_time = (
+				maxf(0.0, carry_distance - 21.0)
+				/ maxf(20.0, holder.data.speed - run.runner.data.speed * 0.7)
+			)
 		var use_carry := carry_time <= throw_time
 		var out_time := minf(carry_time, throw_time)
 		var margin := run_time - out_time
@@ -304,11 +374,18 @@ func _choose_throw() -> void:
 	timer = 0.0
 	if carry:
 		game.phase = game.Phase.TAG
-		game.last_result = "Taking %s out at %s" % [target_runner.runner.data.player_name, BaseballBaseRunning.base_name(throw_base)]
+		game.last_result = (
+			"Taking %s out at %s"
+			% [target_runner.runner.data.player_name, BaseballBaseRunning.base_name(throw_base)]
+		)
 		_step_tag()
 	else:
-		defense.receiver.move_to(game.base_positions[throw_base - 1] + Vector2(-10, -7), "Covering %s" % BaseballBaseRunning.base_name(throw_base))
+		defense.receiver.move_to(
+			game.base_positions[throw_base - 1] + Vector2(-10, -7),
+			"Covering %s" % BaseballBaseRunning.base_name(throw_base)
+		)
 		game.phase = game.Phase.THROW
+
 
 func _step_throw() -> void:
 	if not throw_started:
@@ -321,8 +398,12 @@ func _step_throw() -> void:
 			return
 		var destination: Vector2 = game.base_positions[throw_base - 1]
 		var travel_time := holder.position.distance_to(destination) / holder.data.throwing_speed
-		game.ball.launch(holder.position, holder.position.direction_to(destination) * holder.data.throwing_speed,
-			12.0, BaseballBall.GRAVITY * travel_time / 2.0)
+		game.ball.launch(
+			holder.position,
+			holder.position.direction_to(destination) * holder.data.throwing_speed,
+			12.0,
+			BaseballBall.GRAVITY * travel_time / 2.0
+		)
 		game.ball_thrown.emit(holder.position)
 		game.last_result = "Throw to %s" % BaseballBaseRunning.base_name(throw_base)
 		throw_started = true
@@ -331,7 +412,11 @@ func _step_throw() -> void:
 		holder = defense.receiver
 		game.ball.hold_at(holder.position)
 		game.ball_caught.emit(holder)
-		if target_runner.retired or target_runner.scored or (not target_runner.returning and target_runner.reached >= throw_base):
+		if (
+			target_runner.retired
+			or target_runner.scored
+			or (not target_runner.returning and target_runner.reached >= throw_base)
+		):
 			_choose_throw()
 		else:
 			game.phase = game.Phase.TAG
@@ -341,9 +426,14 @@ func _step_throw() -> void:
 		game.phase = game.Phase.FIELDING
 		defense.step(BaseballDefense.REASSESS_INTERVAL)
 
+
 func _step_tag() -> void:
 	game.ball.hold_at(holder.position)
-	if target_runner.retired or target_runner.scored or (not target_runner.returning and target_runner.reached >= throw_base):
+	if (
+		target_runner.retired
+		or target_runner.scored
+		or (not target_runner.returning and target_runner.reached >= throw_base)
+	):
 		_choose_throw()
 		return
 	if _try_immediate_out(_active_runners()):
@@ -354,6 +444,7 @@ func _step_tag() -> void:
 	var destination: Vector2 = game.base_positions[throw_base - 1]
 	holder.target = destination if forced else target_runner.runner.position
 	holder.moving = true
+
 
 func retire_runner(run: BaseballBaseRunning, force_out: bool) -> void:
 	if run == null or run.retired:
@@ -375,6 +466,7 @@ func retire_runner(run: BaseballBaseRunning, force_out: bool) -> void:
 			pending_runs = 0
 		_end("Three outs: change sides")
 
+
 func _on_base(run: BaseballBaseRunning) -> void:
 	game.runner_reached_base.emit(run.runner)
 	if run.reached == 4:
@@ -385,8 +477,15 @@ func _on_base(run: BaseballBaseRunning) -> void:
 		game.run_scored.emit()
 	_check_walk_off()
 
+
 func _check_walk_off() -> void:
-	if is_home_run or not ground_released or fly_caught or game.batting_side != 1 or game.inning < game.innings:
+	if (
+		is_home_run
+		or not ground_released
+		or fly_caught
+		or game.batting_side != 1
+		or game.inning < game.innings
+	):
 		return
 	# A third force out can still cancel a run that crossed home first.
 	if game.runners.any(func(run): return is_forced(run)):
@@ -396,9 +495,11 @@ func _check_walk_off() -> void:
 		pending_runs = needed
 		_end("Walk-off! %d run(s)" % pending_runs)
 
+
 func _limit_hit_on_choice(run: BaseballBaseRunning) -> void:
 	if run != batter_run and not fly_caught:
 		hit_limit = mini(hit_limit, batter_run.reached)
+
 
 func hit_bases() -> int:
 	if is_home_run:
@@ -406,6 +507,7 @@ func hit_bases() -> int:
 	if batter_run == null or fly_caught:
 		return 0
 	return mini(batter_run.reached, hit_limit)
+
 
 func award_home_run() -> void:
 	is_home_run = true
@@ -420,6 +522,7 @@ func award_home_run() -> void:
 	game.last_result = "Home run! Everyone rounds the bases"
 	game.home_run.emit()
 
+
 func _active_runners() -> Array[BaseballBaseRunning]:
 	var active: Array[BaseballBaseRunning] = []
 	for run in game.runners:
@@ -427,13 +530,17 @@ func _active_runners() -> Array[BaseballBaseRunning]:
 			active.append(run)
 	return active
 
+
 func within_reach(player: BaseballPlayer) -> bool:
 	var ball: BaseballBall = game.ball
-	var closest := Geometry2D.get_closest_point_to_segment(player.position, ball.previous_position, ball.position)
+	var closest := Geometry2D.get_closest_point_to_segment(
+		player.position, ball.previous_position, ball.position
+	)
 	var length := ball.previous_position.distance_to(ball.position)
 	var fraction := ball.previous_position.distance_to(closest) / maxf(length, 0.001)
 	var contact_height := lerpf(ball.previous_height, ball.height, fraction)
 	return player.position.distance_to(closest) <= 20 and contact_height <= 25
+
 
 func _end(message: String) -> void:
 	done = true

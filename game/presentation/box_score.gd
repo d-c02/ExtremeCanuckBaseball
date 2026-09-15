@@ -3,16 +3,21 @@ extends PanelContainer
 @onready var game: BaseballMatch = get_parent().get_parent()
 @onready var text: RichTextLabel = $Text
 
+
 func _ready() -> void:
 	hide()
 	game.play_finished.connect(func(_result): refresh())
-	game.game_finished.connect(func(_scores):
-		refresh()
-		show())
+	game.game_finished.connect(
+		func(_scores):
+			refresh()
+			show()
+	)
+
 
 func _process(_delta: float) -> void:
 	if game.phase == game.Phase.READY:
 		hide()
+
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_B:
@@ -20,8 +25,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if visible:
 			refresh()
 
+
 func refresh() -> void:
-	var lines: Array[String] = ["FINAL BOX SCORE" if game.phase == game.Phase.FINISHED else "BOX SCORE", "B: close | Scroll for both teams", ""]
+	var lines: Array[String] = [
+		"FINAL BOX SCORE" if game.phase == game.Phase.FINISHED else "BOX SCORE",
+		"B: close | Scroll for both teams",
+		""
+	]
 	var heading := "Team             "
 	for inning in game.inning:
 		heading += "%3d" % (inning + 1)
@@ -41,8 +51,12 @@ func refresh() -> void:
 			lines.append(row)
 		var p: Dictionary = team.pitching
 		var pitching_outs: int = p.outs
-		lines.append("Pitching: IP %d.%d | P %d | BF %d | H %d | R %d | K %d" % [
-			int(pitching_outs / 3.0), pitching_outs % 3, p.P, p.BF, p.H, p.R, p.K])
+		lines.append(
+			(
+				"Pitching: IP %d.%d | P %d | BF %d | H %d | R %d | K %d"
+				% [int(pitching_outs / 3.0), pitching_outs % 3, p.P, p.BF, p.H, p.R, p.K]
+			)
+		)
 	lines.append("\nPA: plate appearances | AB: at-bats | R: runs | H: hits")
 	lines.append("RBI: runs batted in | K: strikeouts | PO: putouts | Bob: bobbles")
 	lines.append("LOB: team runners left on base | IP: innings.outs | BF: batters faced")

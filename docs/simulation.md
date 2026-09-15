@@ -188,6 +188,7 @@ headless runs are silent. Details and regeneration steps are in
 ## Checks
 
 ```sh
+godot --headless --path . --editor --quit
 godot --headless --path . --fixed-fps 60 --script tests/simulation_test.gd
 ```
 
