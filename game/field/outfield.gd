@@ -42,22 +42,6 @@ func _ready() -> void:
 		var shape := CollisionPolygon2D.new()
 		shape.polygon = points
 		wall.add_child(shape)
-		var strip := Polygon2D.new()
-		strip.polygon = points
-		strip.color = $Fence.color
-		$Fence.add_child(strip)
-	for side in [-1, 1]:
-		var end := home_position + Vector2(side, -1) * 1500.0
-		var hit := boundary_hit(home_position, end)
-		if not hit.is_empty():
-			end = hit.point
-		var line := Polygon2D.new()
-		var offset := Vector2(1.2, 1.2 * side)
-		line.polygon = PackedVector2Array(
-			[home_position - offset, end - offset, end + offset, home_position + offset]
-		)
-		line.color = Color(0.8, 0.8, 0.7, 0.55)
-		add_child(line)
 
 
 func inward_normal(index: int) -> Vector2:
@@ -107,7 +91,6 @@ func check_crossing(ball: BaseballBall) -> String:
 	ball.position = hit.point + hit.normal * 2.0
 	ball.velocity = ball.velocity.bounce(hit.normal) * 0.45
 	ball.bounced = true
-	ball.update_visuals()
 	return "wall"
 
 

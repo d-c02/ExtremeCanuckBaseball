@@ -4,6 +4,3 @@
 
 [node name="Outfield" type="Node2D"]
 script = ExtResource("outfield")
-
-[node name="Fence" type="Polygon2D" parent="."]
-color = Color(0.8, 0.8, 0.7, 1)

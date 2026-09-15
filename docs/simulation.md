@@ -10,7 +10,10 @@ Run `main.tscn` with F6, or the project with F5.
 | R | Reset the game and random seed. Press Space to restart. |
 | H | Inspect both dugouts. |
 | D | Show defensive movement targets. |
-| C | Show camera guides. |
+| C | Show the infield reference guide. |
+| Q / E | Orbit the 3D camera. |
+| Right-drag | Orbit and tilt the camera. |
+| Mouse wheel | Zoom; framing keeps the bases and live ball visible. |
 
 ## Game loop
 
@@ -26,7 +29,7 @@ position. The on-deck hitter heads to home after the result beat. After three
 outs, runners clear the bases and both teams return to their dugouts before
 changing sides. Each team's batting order continues.
 
-The root node's `innings` defaults to 3. The home team can win on a walk-off or
+The `Simulation` node's `innings` defaults to 3. The home team can win on a walk-off or
 skip the last bottom half when ahead. Ties continue into extra innings until one
 team wins, with empty bases at the start of each half. There is no automatic runner
 or inning cap. A non-HR walk-off stops after a valid winning run, with no outstanding forced
@@ -34,12 +37,12 @@ advances; a home run lets everyone
 complete their circuit.
 `transition_speed` defaults to 3 for repositioning after the first pitch and side changes.
 Set it to 1 for normal speed throughout. Live plays always run at normal speed.
-`between_play_delay` controls the result beat. `TransitionEffect.strength` controls
-the glitch during fast-forward; 0 hides it. The effect does not cover the HUD.
+`between_play_delay` controls the result beat. Transitions use the same 3D view
+at the faster simulation speed.
 
 ## Players and decisions
 
-The root's `visiting_team` and `home_team` are Resources from `data/teams/`.
+The `Simulation` node's `visiting_team` and `home_team` are Resources from `data/teams/`.
 Each needs nine player Resources, field positions and roles with matching indices.
 Roster order is batting order. Edit the `.tres` files in the Inspector.
 Startup rejects null player entries and requires exactly one of each field role:
@@ -139,38 +142,46 @@ races that happen within the same physics step.
 
 ## Field and presentation
 
-`game/field/outfield.tscn` has a flat center wall, curved corners and side walls.
-Its script generates polygon strips and StaticBody2D collision shapes from the
-same boundary. `fence_distance` sets center depth; `flat_half_width`, `corner_radius`
-and `fence_height` set the rest. Players collide with wall layer 2 and can pass
-one another. Pursuit targets leave room for the player's collision radius.
-The ball uses swept wall crossings. AI forecasts sample at 0.05 seconds; actual
-play uses the physics timestep.
+`main.tscn` is a 3D scene. Its hidden `Simulation` child runs the original 2D
+movement and ball-height rules. `BaseballWorld.world_position()` maps simulation
+`(x, y)` and height to 3D `(x, height, y)`, at 0.04 world units per simulation unit.
+Rendering, camera movement and sound do not advance the rules or consume randomness.
 
-Player and ball art lives under `Visuals` in `game/actors/`. Bases and dugouts
-are polygon placeholders in `game/field/`. Move or rotate `Dugouts/Visitors` and
-`Dugouts/Home` to move their seats; edit each `OnDeck` marker for the waiting hitter.
-Thin polygons mark foul lines.
+`game/presentation/field_3d.gd` builds the colored ground, dirt diamond, bases,
+foul lines, benches and fence from the simulation layout. The fence uses the
+same boundary as the 2D collision wall. In `game/match.tscn`, select
+`Field/Outfield` to tune `fence_distance`, `flat_half_width`, `corner_radius` and
+`fence_height`. Move or rotate the `Dugouts` markers to move the benches and seats;
+edit their `OnDeck` markers for waiting hitters. Layout is built when the scene starts.
 
-The field camera keeps the bases visible and follows action outside its dead
-zone. An inset shows the active runner farthest from the ball when offscreen.
-H bypasses field constraints to inspect the dugouts. In the editor, drag the
-markers under `Field/CameraZones`:
+Player art is a replaceable `Sprite3D` in `game/presentation/player_3d.tscn`, using
+`assets/sprites/player.svg`. Players stay upright and face the camera around the
+vertical axis. They use team colors, short labels, a simple movement bob and a
+box-shaped bat. The ball is a small sphere with a separate ground shadow; its
+vertical position follows the simulation's height. Ground shadows are placeholders.
 
-- `DeadZone/TopLeft, BottomRight` (cyan): no pan or zoom inside this rectangle.
-- `KeepBasesVisible/TopLeft, BottomRight` (yellow): keep this area on screen.
-- `BottomLimit` (red): the camera's lower edge. If constraints conflict, keeping
-  the yellow rectangle visible takes precedence.
+The perspective camera automatically frames the bases and the live ball, including
+its height. Q/E orbit, right-drag changes orbit and elevation, and the wheel adjusts
+the requested distance. Framing can pull the camera back farther to preserve the
+action. H switches to the dugouts. Camera movement remains available while paused.
+Select `Camera` in `main.tscn` to tune elevation, azimuth, viewing distance and follow
+speed. C draws an infield reference rectangle; D draws defensive movement targets.
+A single 3D view handles play and between-play transitions.
 
-Guides appear in the editor and toggle with C during play. They have no collision.
+This is 3D presentation with planar player movement, not a rigid-body simulation.
+Players still use CharacterBody2D wall collisions and can pass through each other.
+The ball uses swept fence crossings and its existing trajectory rules. AI forecasts
+sample at 0.05 seconds; actual play uses the physics timestep. There is no terrain
+height, player jumping, or 3D rigid-body collision response.
 
 ## Code layout
 
-- `game/match.gd`: rosters, batting order, score, innings, deployment and controls.
+- `main.tscn`: 3D field, player views, ball, camera, light and sound.
+- `game/match.gd` / `game/match.tscn`: hidden planar simulation, rosters, innings and HUD.
 - `game/simulation/`: pitch/play rules, runners, defensive assignments, reads and box-score records.
-- `game/actors/`: player and ball scenes with their movement scripts.
-- `game/field/`: bases, dugouts and the outfield boundary.
-- `game/presentation/`: camera, guides, box-score panel, transition shader and sound scene.
+- `game/actors/`: player and ball simulation nodes and movement scripts.
+- `game/field/`: simulation markers, dugout seats and outfield collision boundary.
+- `game/presentation/`: 3D field/player views, camera, box-score panel and sound scene.
 - `assets/audio/`: placeholder WAVs and editable Bfxr presets.
 - `data/`: Resource types and sample teams.
 
@@ -201,5 +212,5 @@ roster validation, pre-game box-score toggling/reset, roster/inning continuity,
 extra innings, box-score totals and base occupancy, then exercises force/tag decisions,
 consecutive outs, grand-slam RBIs, cancelled runs, fielder's choices, walk-offs, safe runners, pause/pacing, defensive handoffs and
 bobble recovery, wall collisions, a live grand slam, contact starts, caught-fly
-retreats, visible fouls and camera constraints. Repeatability assumes the same
+retreats, fouls, 3D ball/actor mapping and camera framing through different orbit angles. Repeatability assumes the same
 resources, engine version and fixed timestep.
