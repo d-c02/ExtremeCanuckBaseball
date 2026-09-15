@@ -154,18 +154,10 @@ func _resolve_swing() -> void:
 
 func _advance_on_contact() -> void:
 	var ball: BaseballBall = game.ball
-	var flight := (
-		(
-			ball.vertical_velocity
-			+ sqrt(
-				(
-					ball.vertical_velocity * ball.vertical_velocity
-					+ 2.0 * BaseballBall.GRAVITY * ball.height
-				)
-			)
-		)
-		/ BaseballBall.GRAVITY
+	var landing_speed := sqrt(
+		ball.vertical_velocity * ball.vertical_velocity + 2.0 * BaseballBall.GRAVITY * ball.height
 	)
+	var flight := (ball.vertical_velocity + landing_speed) / BaseballBall.GRAVITY
 	var prediction: Dictionary = game.outfield.forecast(ball, flight)
 	var landing: Vector2 = prediction.point
 	var fielder := defense.nearest(landing, [])
@@ -273,13 +265,12 @@ func _step_fielding(delta: float) -> void:
 			pending_runs = 0
 			scoring_order.clear()
 			retire_runner(batter_run, true)
-			if not done:
-				for run in game.runners:
-					if run != batter_run and not run.retired:
-						run.return_to_start()
-				_choose_throw()
-		else:
-			_choose_throw()
+			if done:
+				return
+			for run in game.runners:
+				if run != batter_run and not run.retired:
+					run.return_to_start()
+		_choose_throw()
 		return
 
 
@@ -344,18 +335,15 @@ func _choose_throw() -> void:
 		)
 		var flight_time := holder.position.distance_to(destination) / holder.data.throwing_speed
 		var throw_time := maxf(holder.data.reaction_time + 0.2 + flight_time, receiver_time)
-		var carry_distance := (
-			holder.position.distance_to(destination)
-			if _base_out_available(run)
-			else holder.position.distance_to(run.runner.position)
-		)
-		var carry_time := (
-			maxf(0.0, carry_distance - (16.0 if _base_out_available(run) else 21.0))
-			/ holder.data.speed
-		)
-		if not _base_out_available(run):
+		var carry_time: float
+		if _base_out_available(run):
 			carry_time = (
-				maxf(0.0, carry_distance - 21.0)
+				maxf(0.0, holder.position.distance_to(destination) - 16.0) / holder.data.speed
+			)
+		else:
+			# Approximate closing speed because the runner keeps moving during a tag chase.
+			carry_time = (
+				maxf(0.0, holder.position.distance_to(run.runner.position) - 21.0)
 				/ maxf(20.0, holder.data.speed - run.runner.data.speed * 0.7)
 			)
 		var use_carry := carry_time <= throw_time
