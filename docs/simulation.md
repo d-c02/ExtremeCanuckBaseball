@@ -42,6 +42,9 @@ the glitch during fast-forward; 0 hides it. The effect does not cover the HUD.
 The root's `visiting_team` and `home_team` are Resources from `data/teams/`.
 Each needs nine player Resources, field positions and roles with matching indices.
 Roster order is batting order. Edit the `.tres` files in the Inspector.
+Startup rejects null player entries and requires exactly one of each field role:
+P, C, 1B, 2B, 3B, SS, LF, CF and RF. Invalid rosters show an error before players
+spawn; correct the Resources and restart the scene.
 Resources hold stats; live objects hold movement and play state.
 
 Each fielder predicts where they can reach the ball during flight or after it
@@ -91,7 +94,8 @@ Decisions and close races resolve at physics-tick precision.
 `BaseballMatch.box_score` holds the current game's record, separate from roster
 Resources. B opens the box score; it opens automatically at the final result.
 The final score remains visible until reset. Records are kept in memory; reset
-clears them. `box_score.to_dict()` returns a deep copy of plain data suitable for
+clears them and closes the panel. B can reopen it before starting a game.
+`box_score.to_dict()` returns a deep copy of plain data suitable for
 JSON serialization, including a pitch-by-pitch result log. Disk saving is not wired up.
 
 - Team line score: runs by inning, total runs (R), hits (H), and runners left on
@@ -193,7 +197,8 @@ godot --headless --path . --fixed-fps 60 --script tests/simulation_test.gd
 ```
 
 The suite runs three complete games, including a same-seed replay. It checks
-roster/inning continuity, extra innings, box-score totals and base occupancy, then exercises force/tag decisions,
+roster validation, pre-game box-score toggling/reset, roster/inning continuity,
+extra innings, box-score totals and base occupancy, then exercises force/tag decisions,
 consecutive outs, grand-slam RBIs, cancelled runs, fielder's choices, walk-offs, safe runners, pause/pacing, defensive handoffs and
 bobble recovery, wall collisions, a live grand slam, contact starts, caught-fly
 retreats, visible fouls and camera constraints. Repeatability assumes the same

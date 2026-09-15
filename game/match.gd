@@ -23,6 +23,7 @@ signal run_scored
 signal out_recorded(player: BaseballPlayer)
 signal half_inning_finished(inning: int, batting_side: int)
 signal game_finished(scores: Array[int])
+signal game_reset
 
 enum Phase {
 	READY, PREPARING, PITCH, FIELDING, THROW, TAG, HOME_RUN, SETTLING, RETURNING, FINISHED, FOUL
@@ -72,13 +73,12 @@ var error_message: String = ""
 func _ready() -> void:
 	teams = [visiting_team, home_team]
 	for team in teams:
-		if (
-			team == null
-			or team.players.size() != 9
-			or team.field_positions.size() != 9
-			or team.field_roles.size() != 9
-		):
-			simulation_error("Each team needs nine players, field positions, and field roles")
+		if team == null:
+			simulation_error("Both teams need a team Resource")
+			return
+		var roster_error := team.validation_error()
+		if not roster_error.is_empty():
+			simulation_error("%s: %s" % [team.team_name, roster_error])
 			return
 	base_positions = PackedVector2Array(
 		[
@@ -102,6 +102,8 @@ func _ready() -> void:
 
 
 func reset_game() -> void:
+	if squads.size() != 2:
+		return
 	rng.seed = random_seed
 	scores = [0, 0]
 	box_score = BaseballBoxScore.new(teams)
@@ -129,6 +131,7 @@ func reset_game() -> void:
 	ball.hold_at(mound.position)
 	_update_dugouts()
 	_refresh_status()
+	game_reset.emit()
 
 
 func start_game() -> void:
@@ -351,6 +354,8 @@ func simulation_error(message: String) -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if box_score == null:
+		return
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
 	match event.keycode:

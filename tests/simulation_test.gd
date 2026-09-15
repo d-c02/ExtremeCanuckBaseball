@@ -32,6 +32,8 @@ func run() -> void:
 	game = load("res://main.tscn").instantiate()
 	root.add_child(game)
 	game.set_physics_process(false)
+	check_rosters()
+	await check_box_score_toggle()
 	var original_stats := roster_stats()
 	var first_trace: Array = []
 	var first_box: Dictionary = {}
@@ -428,3 +430,37 @@ func check_camera() -> void:
 			),
 			"Camera lost bases or crossed its bottom limit"
 		)
+
+
+func check_rosters() -> void:
+	for team in game.teams:
+		check(team.validation_error().is_empty(), "Sample roster was rejected")
+	var roster: BaseballTeamData = game.home_team.duplicate(true)
+	var catcher := roster.field_roles.find("C")
+	roster.field_roles[catcher] = "RF"
+	check(not roster.validation_error().is_empty(), "Roster without a catcher was accepted")
+	roster.field_roles[catcher] = "C"
+	roster.players[0] = null
+	check(not roster.validation_error().is_empty(), "Null player Resource was accepted")
+
+
+func check_box_score_toggle() -> void:
+	var panel := game.get_node("HUD/BoxScore")
+	var event := InputEventKey.new()
+	event.keycode = KEY_B
+	event.pressed = true
+	game.reset_game()
+	panel._unhandled_key_input(event)
+	await process_frame
+	await process_frame
+	check(panel.visible, "Pre-game box score did not stay open")
+	panel._unhandled_key_input(event)
+	check(not panel.visible, "B did not close the box score")
+	panel._unhandled_key_input(event)
+	game.reset_game()
+	check(not panel.visible, "Reset left the old box score open")
+	panel._unhandled_key_input(event)
+	await process_frame
+	await process_frame
+	check(panel.visible, "Box score could not reopen after reset")
+	game.reset_game()

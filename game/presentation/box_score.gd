@@ -6,6 +6,7 @@ extends PanelContainer
 
 func _ready() -> void:
 	hide()
+	game.game_reset.connect(hide)
 	game.play_finished.connect(func(_result): refresh())
 	game.game_finished.connect(
 		func(_scores):
@@ -14,12 +15,9 @@ func _ready() -> void:
 	)
 
 
-func _process(_delta: float) -> void:
-	if game.phase == game.Phase.READY:
-		hide()
-
-
 func _unhandled_key_input(event: InputEvent) -> void:
+	if game.box_score == null:
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_B:
 		visible = not visible
 		if visible:
