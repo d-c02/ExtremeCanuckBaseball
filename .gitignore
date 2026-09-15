@@ -4,3 +4,6 @@
 
 # Codex
 /.codex/
+
+.DS_Store
+/tmp/
