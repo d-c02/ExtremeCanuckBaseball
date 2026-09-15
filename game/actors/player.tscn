@@ -12,28 +12,3 @@ script = ExtResource("1")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("body")
-
-[node name="Visuals" type="Node2D" parent="."]
-
-[node name="Outline" type="Polygon2D" parent="Visuals"]
-color = Color(0.08, 0.1, 0.12, 1)
-polygon = PackedVector2Array(-14, -30, 14, -30, 14, -3, -14, -3)
-
-[node name="Body" type="Polygon2D" parent="Visuals"]
-polygon = PackedVector2Array(-11, -27, 11, -27, 11, -6, -11, -6)
-
-[node name="Name" type="Label" parent="Visuals"]
-offset_left = -55.0
-offset_top = -54.0
-offset_right = 55.0
-offset_bottom = -30.0
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 5
-theme_override_font_sizes/font_size = 20
-horizontal_alignment = 1
-mouse_filter = 2
-
-[node name="Bat" type="Polygon2D" parent="Visuals"]
-visible = false
-color = Color(0.7, 0.55, 0.35, 1)
-polygon = PackedVector2Array(0, -2, 26, -2, 26, 2, 0, 2)

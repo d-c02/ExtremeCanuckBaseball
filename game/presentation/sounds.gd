@@ -20,24 +20,25 @@ extends Node
 @export_range(-50, 0) var calls_db: float = -14.0
 @export_range(-50, 0) var flight_db: float = -32.0
 
-var voices: Array[AudioStreamPlayer2D] = []
+var voices: Array[AudioStreamPlayer3D] = []
 var voice_index: int = 0
 var step_cursor: int = 0
 var step_cooldown: float = 0.0
 var last_positions: Dictionary = {}
 var walked: Dictionary = {}
 
-@onready var game: BaseballMatch = get_parent()
+@onready var game: BaseballMatch = $"../Simulation"
 @onready var calls: AudioStreamPlayer = $Calls
-@onready var airborne: AudioStreamPlayer2D = $Flight
+@onready var airborne: AudioStreamPlayer3D = $Flight
 
 
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		enabled = false
 	for index in 8:
-		var voice := AudioStreamPlayer2D.new()
-		voice.max_distance = 1800.0
+		var voice := AudioStreamPlayer3D.new()
+		voice.max_distance = 120.0
+		voice.unit_size = 45.0
 		add_child(voice)
 		voices.append(voice)
 	game.ball_thrown.connect(func(point): _at(throw_ball, point))
@@ -61,7 +62,7 @@ func _at(clip: AudioStream, point: Vector2, volume: float = actions_db, pitch: f
 	voice_index = (voice_index + 1) % voices.size()
 	voice.stop()
 	voice.stream = clip
-	voice.global_position = point
+	voice.global_position = BaseballWorld.world_position(point)
 	voice.volume_db = volume
 	voice.pitch_scale = pitch
 	voice.play()
@@ -106,7 +107,7 @@ func _update_flight(delta: float) -> void:
 	if not audible or ball.held or ball.height <= 1.0 or flight == null:
 		airborne.stop()
 		return
-	airborne.global_position = ball.position
+	airborne.global_position = BaseballWorld.world_position(ball.position, ball.height)
 	airborne.volume_db = flight_db
 	airborne.pitch_scale = lerpf(
 		airborne.pitch_scale,

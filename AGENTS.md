@@ -7,7 +7,7 @@ The [docs/](docs/) directory describes the implemented game, its controls and kn
   controls, scene layout and tuning notes when their behavior changes.
 - Describe what runs today. Label approximations and missing rules explicitly;
   do not document planned behavior as implemented.
-- Keep art as simple Polygon2D placeholders for the user to replace.
+- Keep art as simple colored meshes and billboard sprite placeholders for the user to replace.
 - Prefer Godot Resources for roster data, nodes for actors and presentation,
   and plain RefCounted objects for simulation rules. Do not mutate roster stats
   during a match or use presentation signals as the source of scoring truth.

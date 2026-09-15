@@ -56,7 +56,6 @@ func step(delta: float) -> void:
 	elapsed += delta
 	if game.phase == game.Phase.PITCH:
 		game.ball.position = game.mound.position.lerp(game.home.position, timer / PITCH_DURATION)
-		game.ball.update_visuals()
 		game.batter.show_swing((timer - swing_time + 0.12) / 0.24)
 		if timer >= swing_time:
 			_resolve_swing()
@@ -127,7 +126,7 @@ func _resolve_swing() -> void:
 		game.strikes = mini(2, game.strikes + 1)
 		batter_done = false
 		game.ball.launch(game.home.position, Vector2.UP.rotated(angle) * 320.0, 10.0, 130.0)
-		game.batter.bat.visible = false
+		game.batter.swing_visible = false
 		game.phase = game.Phase.FOUL
 		game.last_result = "Foul ball!"
 		game.foul_called.emit()
@@ -139,7 +138,7 @@ func _resolve_swing() -> void:
 	if game.rng.randf() < 0.3:
 		lift = game.rng.randf_range(20.0, 80.0)
 	game.ball.launch(game.home.position, Vector2.UP.rotated(angle) * power, 10.0, lift)
-	game.batter.bat.visible = false
+	game.batter.swing_visible = false
 	batter_run = BaseballBaseRunning.new()
 	batter_run.reset(game.batter, game.base_positions)
 	game.runners.append(batter_run)

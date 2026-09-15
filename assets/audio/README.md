@@ -22,7 +22,7 @@ Seeds live in each preset. They make local rendering repeatable; the website
 may use a different random noise seed when you open a preset.
 
 Select `Sounds` in `main.tscn` to replace clips, adjust the four mix levels or
-mute effects with `enabled`. Footsteps and ball actions use positional players;
+mute effects with `enabled`. Footsteps and ball actions use AudioStreamPlayer3D at mapped field positions;
 calls use a regular AudioStreamPlayer. Ball-flight pitch follows height.
 `flight.wav.import` loops a steady section of the tone. Configure looping on any
 replacement flight clip in Godot's Import panel. Audio is disabled in headless runs.

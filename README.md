@@ -1,7 +1,7 @@
 # Extreme Canuck Baseball
 
-A baseball auto-battler built with Godot 4.7. Open the project in Godot, press
-F5, then Space to start a game. See [simulation.md](docs/simulation.md) for
+A 3D baseball auto-battler with billboard players, built with Godot 4.7.
+Open the project in Godot, press F5, then Space to start a game. See [simulation.md](docs/simulation.md) for
 controls, rules and simulation checks.
 
 ## Optional development tools

@@ -95,7 +95,7 @@ func _ready() -> void:
 			$Players.add_child(player)
 			player.team_index = side
 			player.roster_index = index
-			player.configure(teams[side].players[index], teams[side].color)
+			player.configure(teams[side].players[index])
 			squad.append(player)
 		squads.append(squad)
 	reset_game()
@@ -124,12 +124,11 @@ func reset_game() -> void:
 		for player in squad:
 			player.position = dugouts[player.team_index].seat_position(player.roster_index)
 			player.stop("In dugout")
-			player.bat.visible = false
+			player.swing_visible = false
 			player.set_label(str(player.roster_index + 1))
 	fielders = squads[1]
 	batter = squads[0][0]
 	ball.hold_at(mound.position)
-	_update_dugouts()
 	_refresh_status()
 	game_reset.emit()
 
@@ -154,7 +153,6 @@ func step(delta: float) -> void:
 			break
 		_step_simulation(delta)
 	_refresh_status()
-	queue_redraw()
 
 
 func is_fast_forwarding() -> bool:
@@ -202,7 +200,7 @@ func _prepare_pitch() -> void:
 		player.set_label(player.role)
 		player.move_to(teams[1 - batting_side].field_positions[index], "Taking field position")
 	for player in squads[batting_side]:
-		player.bat.visible = false
+		player.swing_visible = false
 		player.set_label("%d %s" % [player.roster_index + 1, player.data.player_name])
 		var run := runner_for(player)
 		if run != null:
@@ -224,7 +222,6 @@ func _prepare_pitch() -> void:
 	if pitch_count > 0:
 		ball_thrown.emit(origin)
 	last_result = "Players getting ready: %s batting" % batter.data.player_name
-	_update_dugouts()
 
 
 func _step_preparation(delta: float) -> void:
@@ -251,11 +248,10 @@ func _complete_play() -> void:
 	last_result = play.result
 	for squad in squads:
 		for player in squad:
-			player.bat.visible = false
+			player.swing_visible = false
 			if player.moving or player.velocity.length() > 0.0:
 				player.brake("Play ended")
 	play_finished.emit(last_result)
-	_update_dugouts()
 
 
 func _end_half() -> void:
@@ -284,7 +280,6 @@ func _end_half() -> void:
 	for squad in squads:
 		for player in squad:
 			_send_to_dugout(player)
-	_update_dugouts()
 
 
 func _finish_game() -> void:
@@ -308,20 +303,8 @@ func runner_for(player: BaseballPlayer) -> BaseballBaseRunning:
 	return null
 
 
-func camera_runner() -> BaseballBaseRunning:
-	var selected: BaseballBaseRunning
-	var distance := -1.0
-	for run in runners:
-		if run.active and not run.retired and not run.scored:
-			var candidate := run.runner.position.distance_squared_to(ball.position)
-			if candidate > distance:
-				distance = candidate
-				selected = run
-	return selected
-
-
 func _send_to_dugout(player: BaseballPlayer) -> void:
-	player.bat.visible = false
+	player.swing_visible = false
 	player.set_label(str(player.roster_index + 1))
 	player.move_to(
 		dugouts[player.team_index].seat_position(player.roster_index), "Returning to dugout"
@@ -339,11 +322,6 @@ func _everyone_arrived() -> bool:
 			if player.moving:
 				return false
 	return true
-
-
-func _update_dugouts() -> void:
-	for side in 2:
-		dugouts[side].show_order(teams[side], next_batter[side], side == batting_side)
 
 
 func simulation_error(message: String) -> void:
@@ -368,7 +346,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_refresh_status()
 		KEY_D:
 			debug_visible = not debug_visible
-			queue_redraw()
 		KEY_H:
 			dugout_view = not dugout_view
 
@@ -378,7 +355,7 @@ func _refresh_status() -> void:
 		(
 			"%s %d / %d %s | %s %d/%d | %d out(s), %d strike(s)\n%s%s\n"
 			+ "Space: start game   P: pause   R: reset   B: box score   "
-			+ "H: dugouts   D: targets   C: camera zones"
+			+ "H: dugouts   D: targets   Q/E: orbit   Right-drag: camera   Wheel: zoom   C: guides"
 		)
 		% [
 			teams[0].team_name,
@@ -394,12 +371,3 @@ func _refresh_status() -> void:
 			" [PAUSED]" if paused else ""
 		]
 	)
-
-
-func _draw() -> void:
-	if not debug_visible:
-		return
-	for player in fielders:
-		if player.moving:
-			draw_line(player.position, player.target, Color(1, 1, 1, 0.4), 1.0)
-			draw_circle(player.target, 3.0, Color.WHITE)

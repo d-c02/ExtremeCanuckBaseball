@@ -1,167 +1,72 @@
-[gd_scene load_steps=16 format=3 uid="uid://dar4rg8x7fywr"]
+[gd_scene load_steps=12 format=3 uid="uid://dar4rg8x7fywr"]
 
-[ext_resource type="Script" path="res://game/match.gd" id="match"]
-[ext_resource type="Resource" path="res://data/teams/visitors.tres" id="batters"]
-[ext_resource type="Resource" path="res://data/teams/home.tres" id="fielders"]
-[ext_resource type="PackedScene" path="res://game/actors/ball.tscn" id="ball"]
-[ext_resource type="PackedScene" path="res://game/field/base.tscn" id="base"]
-
+[ext_resource type="Script" path="res://game/presentation/world_3d.gd" id="world"]
+[ext_resource type="PackedScene" path="res://game/match.tscn" id="simulation"]
+[ext_resource type="Script" path="res://game/presentation/field_3d.gd" id="field"]
 [ext_resource type="Script" path="res://game/presentation/action_camera.gd" id="camera"]
-[ext_resource type="PackedScene" path="res://game/field/outfield.tscn" id="outfield"]
-
-[ext_resource type="Script" path="res://game/presentation/camera_zones.gd" id="zones"]
-
-[ext_resource type="PackedScene" path="res://game/field/dugout.tscn" id="dugout"]
-
-[ext_resource type="Script" path="res://game/presentation/transition_effect.gd" id="transition"]
-[ext_resource type="Shader" path="res://game/presentation/transition.gdshader" id="glitch"]
-
 [ext_resource type="PackedScene" path="res://game/presentation/sounds.tscn" id="sounds"]
+[sub_resource type="Environment" id="environment"]
+background_mode = 1
+background_color = Color(0.53, 0.68, 0.74, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.82, 0.87, 0.94, 1)
+ambient_light_energy = 0.7
+tonemap_mode = 0
+[sub_resource type="StandardMaterial3D" id="ball_material"]
+shading_mode = 0
+albedo_color = Color(1, 0.96, 0.76, 1)
+[sub_resource type="SphereMesh" id="ball_mesh"]
+material = SubResource("ball_material")
+radius = 0.22
+height = 0.44
+radial_segments = 16
+rings = 8
+[sub_resource type="StandardMaterial3D" id="shadow_material"]
+shading_mode = 0
+albedo_color = Color(0.12, 0.17, 0.12, 1)
+[sub_resource type="CylinderMesh" id="shadow_mesh"]
+material = SubResource("shadow_material")
+top_radius = 0.26
+bottom_radius = 0.26
+height = 0.025
+radial_segments = 16
+[sub_resource type="StyleBoxFlat" id="hud_background"]
+bg_color = Color(0.055, 0.075, 0.085, 0.9)
 
-[ext_resource type="PackedScene" path="res://game/presentation/box_score.tscn" id="box_score"]
-
-[sub_resource type="ShaderMaterial" id="transition_material"]
-shader = ExtResource("glitch")
-
-[sub_resource type="StyleBoxFlat" id="inset_border"]
-bg_color = Color(0, 0, 0, 0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.85, 0.85, 0.85, 1)
-
-[node name="Root" type="Node2D" unique_id=1014848448]
-
-script = ExtResource("match")
-visiting_team = ExtResource("batters")
-home_team = ExtResource("fielders")
-
-[node name="BackgroundPolygon" type="Polygon2D" parent="." unique_id=1518173177]
-color = Color(0.2438586, 0.5169206, 0.20807582, 1)
-polygon = PackedVector2Array(-2000, 2000, -2000, -2000, 2000, -2000, 2000, 2000)
-
-[node name="Camera" type="Camera2D" parent="." unique_id=1590782277]
-position = Vector2(0, -260)
-zoom = Vector2(0.55, 0.55)
+[node name="Baseball" type="Node3D"]
+script = ExtResource("world")
+[node name="Simulation" parent="." instance=ExtResource("simulation")]
+[node name="Field" type="Node3D" parent="."]
+script = ExtResource("field")
+[node name="Players" type="Node3D" parent="."]
+[node name="Ball" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("ball_mesh")
+[node name="BallShadow" type="MeshInstance3D" parent="."]
+mesh = SubResource("shadow_mesh")
+cast_shadow = 0
+[node name="Guides" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+[node name="Camera" type="Camera3D" parent="."]
+position = Vector3(-10, 45, 40)
+current = true
+fov = 45.0
+far = 300.0
 script = ExtResource("camera")
-
-[node name="Field" type="Node2D" parent="."]
-
-[node name="Home" type="Marker2D" parent="Field"]
-position = Vector2(0, 220)
-[node name="Visuals" type="Polygon2D" parent="Field/Home"]
-polygon = PackedVector2Array(-8, -8, 8, -8, 8, 3, 0, 9, -8, 3)
-
-[node name="Mound" type="Marker2D" parent="Field"]
-[node name="Visuals" type="Polygon2D" parent="Field/Mound"]
-color = Color(0.6, 0.5, 0.35, 1)
-polygon = PackedVector2Array(-10, -4, 10, -4, 10, 4, -10, 4)
-
-[node name="FirstBase" parent="Field" instance=ExtResource("base")]
-position = Vector2(220, 0)
-[node name="SecondBase" parent="Field" instance=ExtResource("base")]
-position = Vector2(0, -220)
-[node name="ThirdBase" parent="Field" instance=ExtResource("base")]
-position = Vector2(-220, 0)
-
-[node name="Players" type="Node2D" parent="."]
-z_index = 2
-[node name="Ball" parent="." instance=ExtResource("ball")]
-z_index = 3
-
-[node name="HUD" type="CanvasLayer" parent="."]
-layer = 3
-[node name="Status" type="Label" parent="HUD"]
-offset_left = 16.0
-offset_top = 16.0
-mouse_filter = 2
-
-[node name="Outfield" parent="Field" instance=ExtResource("outfield")]
-
-[node name="RunnerHUD" type="CanvasLayer" parent="Camera"]
-layer = 2
-[node name="RunnerView" type="SubViewportContainer" parent="Camera/RunnerHUD"]
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -324.0
-offset_top = -224.0
-offset_right = -24.0
-offset_bottom = -24.0
-grow_horizontal = 0
-grow_vertical = 0
-mouse_filter = 2
-stretch = true
-[node name="World" type="SubViewport" parent="Camera/RunnerHUD/RunnerView"]
-size = Vector2i(300, 200)
-handle_input_locally = false
-render_target_update_mode = 0
-[node name="TitleBackground" type="ColorRect" parent="Camera/RunnerHUD/RunnerView"]
-offset_right = 300.0
-offset_bottom = 30.0
-color = Color(0.08, 0.1, 0.1, 1)
-mouse_filter = 2
-[node name="Title" type="Label" parent="Camera/RunnerHUD/RunnerView"]
-offset_left = 8.0
-offset_top = 6.0
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 6
-text = "Runner"
-mouse_filter = 2
-
-[node name="Border" type="Panel" parent="Camera/RunnerHUD/RunnerView"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("inset_border")
-
-[node name="CameraZones" type="Node2D" parent="Field"]
-z_index = 5
-script = ExtResource("zones")
-[node name="DeadZone" type="Node2D" parent="Field/CameraZones"]
-[node name="TopLeft" type="Marker2D" parent="Field/CameraZones/DeadZone"]
-position = Vector2(-480, -600)
-[node name="BottomRight" type="Marker2D" parent="Field/CameraZones/DeadZone"]
-position = Vector2(480, 290)
-[node name="KeepBasesVisible" type="Node2D" parent="Field/CameraZones"]
-[node name="TopLeft" type="Marker2D" parent="Field/CameraZones/KeepBasesVisible"]
-position = Vector2(-280, -280)
-[node name="BottomRight" type="Marker2D" parent="Field/CameraZones/KeepBasesVisible"]
-position = Vector2(280, 290)
-[node name="BottomLimit" type="Marker2D" parent="Field/CameraZones"]
-position = Vector2(0, 360)
-
-[node name="Dugouts" type="Node2D" parent="."]
-[node name="Visitors" parent="Dugouts" instance=ExtResource("dugout")]
-position = Vector2(-270, 180)
-rotation = 0.785398
-[node name="OnDeck" parent="Dugouts/Visitors" index="1"]
-position = Vector2(195, 0)
-[node name="Home" parent="Dugouts" instance=ExtResource("dugout")]
-position = Vector2(270, 180)
-rotation = -0.785398
-
-[node name="TransitionEffect" type="CanvasLayer" parent="."]
-layer = 1
-script = ExtResource("transition")
-[node name="Glitch" type="ColorRect" parent="TransitionEffect"]
-visible = false
-material = SubResource("transition_material")
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -35, 0)
+light_color = Color(1, 0.94, 0.82, 1)
+light_energy = 1.1
+shadow_enabled = true
+[node name="Environment" type="WorldEnvironment" parent="."]
+environment = SubResource("environment")
 [node name="Sounds" parent="." instance=ExtResource("sounds")]
-
-[node name="BoxScore" parent="HUD" instance=ExtResource("box_score")]
-
-[editable path="Dugouts/Visitors"]
+[node name="HUDBackground" type="CanvasLayer" parent="."]
+layer = 1
+[node name="Panel" type="Panel" parent="HUDBackground"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 94.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("hud_background")

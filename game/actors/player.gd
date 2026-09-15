@@ -10,14 +10,14 @@ var role: String = ""
 var team_index: int = 0
 var roster_index: int = 0
 
-@onready var body: Polygon2D = $Visuals/Body
-@onready var bat: Polygon2D = $Visuals/Bat
+var display_label: String = ""
+var swing_visible: bool = false
+var swing_progress: float = 0.0
 
 
-func configure(player_data: BaseballPlayerData, team_color: Color) -> void:
+func configure(player_data: BaseballPlayerData) -> void:
 	data = player_data
-	body.color = team_color
-	$Visuals/Name.text = role if not role.is_empty() else data.player_name
+	display_label = data.player_name
 	target = position
 
 
@@ -41,7 +41,7 @@ func brake(action: String = "Settling") -> void:
 
 
 func set_label(label: String) -> void:
-	$Visuals/Name.text = label
+	display_label = label
 
 
 func step(delta: float) -> void:
@@ -61,5 +61,5 @@ func step(delta: float) -> void:
 
 
 func show_swing(progress: float) -> void:
-	bat.visible = true
-	bat.rotation = lerpf(-1.8, 1.8, clampf(progress, 0.0, 1.0))
+	swing_visible = true
+	swing_progress = clampf(progress, 0.0, 1.0)

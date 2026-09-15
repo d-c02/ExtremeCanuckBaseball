@@ -1,0 +1,46 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://game/presentation/player_3d.gd" id="script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player.svg" id="sprite"]
+[sub_resource type="StandardMaterial3D" id="shadow_material"]
+albedo_color = Color(0.16, 0.22, 0.16, 1)
+shading_mode = 0
+[sub_resource type="CylinderMesh" id="shadow_mesh"]
+material = SubResource("shadow_material")
+top_radius = 0.45
+bottom_radius = 0.45
+height = 0.015
+radial_segments = 16
+[sub_resource type="StandardMaterial3D" id="bat_material"]
+albedo_color = Color(0.8, 0.62, 0.35, 1)
+[sub_resource type="BoxMesh" id="bat_mesh"]
+material = SubResource("bat_material")
+size = Vector3(1.0, 0.12, 0.12)
+
+[node name="PlayerView" type="Node3D"]
+script = ExtResource("script")
+[node name="Sprite" type="Sprite3D" parent="."]
+position = Vector3(0, 1.15, 0)
+cast_shadow = 0
+texture = ExtResource("sprite")
+pixel_size = 0.024
+billboard = 2
+alpha_cut = 1
+texture_filter = 0
+shaded = false
+[node name="Shadow" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.025, 0)
+mesh = SubResource("shadow_mesh")
+cast_shadow = 0
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0, 2.8, 0)
+pixel_size = 0.013
+font_size = 48
+outline_size = 10
+billboard = 1
+modulate = Color(1, 1, 1, 1)
+[node name="Bat" type="Node3D" parent="."]
+position = Vector3(0, 1, 0)
+[node name="Mesh" type="MeshInstance3D" parent="Bat"]
+position = Vector3(0.6, 0, 0)
+mesh = SubResource("bat_mesh")

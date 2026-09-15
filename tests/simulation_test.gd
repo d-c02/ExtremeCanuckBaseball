@@ -3,6 +3,7 @@ extends SceneTree
 const DELTA := 1.0 / 60.0
 var failures := 0
 var game: BaseballMatch
+var world: BaseballWorld
 
 
 func _initialize() -> void:
@@ -29,8 +30,9 @@ func finish_play() -> void:
 
 
 func run() -> void:
-	game = load("res://main.tscn").instantiate()
-	root.add_child(game)
+	world = load("res://main.tscn").instantiate()
+	root.add_child(world)
+	game = world.game
 	game.set_physics_process(false)
 	check_rosters()
 	await check_box_score_toggle()
@@ -103,7 +105,7 @@ func run() -> void:
 	check_foul()
 	check_camera()
 	print("Failures: ", failures)
-	game.queue_free()
+	world.queue_free()
 	await process_frame
 	quit(1 if failures else 0)
 
@@ -410,26 +412,34 @@ func check_foul() -> void:
 
 func check_camera() -> void:
 	game.reset_game()
-	var camera = game.get_node("Camera")
-	for frame in 240:
-		camera._process(DELTA)
-	var baseline: Vector2 = camera.position
-	game.phase = game.Phase.FIELDING
-	game.ball.hold_at(Vector2(0, -400))
-	camera._process(DELTA)
-	check(camera.position.distance_to(baseline) < 0.1, "Camera chased action inside its dead zone")
+	var camera: Camera3D = world.get_node("Camera")
+	check(world.player_views.size() == 18, "3D presentation lost roster actors")
 	game.ball.launch(Vector2(850, -900), Vector2.ZERO, 150, 0)
-	for frame in 240:
-		camera._process(DELTA)
-		var half: Vector2 = camera.get_viewport_rect().size / camera.zoom / 2
-		var view := Rect2(camera.position - half, half * 2)
+	game.phase = game.Phase.FIELDING
+	world.sync(0.0)
+	for view in world.player_views:
 		check(
-			(
-				view.grow(0.1).encloses(camera.zones.protected_bases())
-				and view.end.y <= camera.zones.bottom_limit() + 0.1
-			),
-			"Camera lost bases or crossed its bottom limit"
+			view.position.is_equal_approx(BaseballWorld.world_position(view.player.position)),
+			"3D actor diverged from the simulation"
 		)
+	check(
+		world.ball.position.is_equal_approx(Vector3(34, 6, -36)),
+		"Ball height was not mapped into 3D"
+	)
+	check(is_equal_approx(world.shadow.position.y, 0.04), "Ball shadow left the ground")
+	for angle in [-120.0, 0.0, 90.0]:
+		camera.azimuth = angle
+		for frame in 30:
+			camera._process(DELTA)
+			for point in camera.framing_points():
+				check(camera.is_position_in_frustum(point), "3D camera lost bases or airborne ball")
+	game.dugout_view = true
+	for frame in 30:
+		camera._process(DELTA)
+	for point in camera.framing_points():
+		check(camera.is_position_in_frustum(point), "Dugout camera lost a bench")
+	game.dugout_view = false
+	camera.azimuth = -15.0
 
 
 func check_rosters() -> void:
