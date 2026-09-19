@@ -182,6 +182,7 @@ height, player jumping, or 3D rigid-body collision response.
 - `game/actors/`: player and ball simulation nodes and movement scripts.
 - `game/field/`: simulation markers, dugout seats and outfield collision boundary.
 - `game/presentation/`: 3D field/player views, camera, box-score panel and sound scene.
+- `game/shop/`: buy-screen buyables, drop targets and drag handling. See [buy_screen.md](buy_screen.md).
 - `assets/audio/`: placeholder WAVs and editable Bfxr presets.
 - `data/`: Resource types and sample teams.
 

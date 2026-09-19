@@ -1,0 +1,173 @@
+[gd_scene format=3 uid="uid://b6ou6cfu8g8c"]
+
+[ext_resource type="Script" uid="uid://bbitykktl6wj5" path="res://data/player_data.gd" id="player"]
+[ext_resource type="PackedScene" path="res://game/shop/player_slot.tscn" id="player_slot"]
+[ext_resource type="Resource" path="res://data/teams/shop_roster.tres" id="roster"]
+[ext_resource type="Script" uid="uid://dwchvn0sa0sw0" path="res://game/shop/shop.gd" id="shop"]
+[ext_resource type="PackedScene" path="res://game/shop/team_slot.tscn" id="team_slot"]
+[ext_resource type="PackedScene" path="res://game/shop/sell_spot.tscn" id="sell_spot"]
+
+[sub_resource type="StandardMaterial3D" id="floor_material"]
+albedo_color = Color(0.29, 0.35, 0.31, 1)
+
+[sub_resource type="BoxMesh" id="floor_mesh"]
+material = SubResource("floor_material")
+size = Vector3(26, 0.4, 26)
+
+[sub_resource type="Environment" id="environment"]
+background_mode = 1
+background_color = Color(0.13, 0.16, 0.19, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.82, 0.87, 0.94, 1)
+ambient_light_energy = 0.8
+
+[sub_resource type="StandardMaterial3D" id="podium_material"]
+albedo_color = Color(0.55, 0.42, 0.28, 1)
+
+[sub_resource type="CylinderMesh" id="podium_mesh"]
+material = SubResource("podium_material")
+bottom_radius = 0.6
+height = 1.0
+radial_segments = 20
+
+[sub_resource type="Resource" id="prospect_slugger"]
+script = ExtResource("player")
+player_name = "Slugger"
+speed = 115.0
+hitting = 0.82
+batting_power = 360.0
+
+[sub_resource type="Resource" id="prospect_wheels"]
+script = ExtResource("player")
+player_name = "Wheels"
+speed = 165.0
+acceleration = 420.0
+fielding = 0.74
+
+[sub_resource type="Resource" id="prospect_gloves"]
+script = ExtResource("player")
+player_name = "Gloves"
+fielding = 0.88
+anticipation = 0.85
+throwing_speed = 470.0
+
+[node name="BuyScreen" type="Node3D" unique_id=210719091]
+script = ExtResource("shop")
+team = ExtResource("roster")
+
+[node name="Floor" type="MeshInstance3D" parent="." unique_id=474261647]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("floor_mesh")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1436432099]
+transform = Transform3D(1, 0, 0, 0, 0.788, 0.6157, 0, -0.6157, 0.788, 0, 10, 13)
+current = true
+fov = 44.0
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=2096380115]
+transform = Transform3D(0.81915206, 0.46984634, -0.32898995, 0, 0.57357645, 0.81915206, 0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
+light_color = Color(1, 0.94, 0.82, 1)
+light_energy = 1.1
+
+[node name="Environment" type="WorldEnvironment" parent="." unique_id=915359263]
+environment = SubResource("environment")
+
+[node name="Podiums" type="Node3D" parent="." unique_id=1889257683]
+
+[node name="Podium1" type="MeshInstance3D" parent="Podiums" unique_id=1147879622]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4, 0.5, 4.6)
+mesh = SubResource("podium_mesh")
+
+[node name="Podium2" type="MeshInstance3D" parent="Podiums" unique_id=1908198509]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 4.6)
+mesh = SubResource("podium_mesh")
+
+[node name="Podium3" type="MeshInstance3D" parent="Podiums" unique_id=218770582]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 0.5, 4.6)
+mesh = SubResource("podium_mesh")
+
+[node name="ForSale" type="Node3D" parent="." unique_id=1391930418]
+
+[node name="Slugger" parent="ForSale" unique_id=557195092 instance=ExtResource("player_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4, 1, 4.6)
+player = SubResource("prospect_slugger")
+cost = 5
+sell_value = 3
+
+[node name="Wheels" parent="ForSale" unique_id=482064666 instance=ExtResource("player_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4.6)
+player = SubResource("prospect_wheels")
+cost = 4
+sell_value = 2
+
+[node name="Gloves" parent="ForSale" unique_id=224455534 instance=ExtResource("player_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 1, 4.6)
+player = SubResource("prospect_gloves")
+cost = 4
+sell_value = 2
+
+[node name="SellSpot" parent="." instance=ExtResource("sell_spot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.6, 0, 1.2)
+
+[node name="Roster" type="Node3D" parent="." unique_id=1344476507]
+
+[node name="Slot1" parent="Roster" unique_id=856946867 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 0, -1.2)
+
+[node name="Slot2" parent="Roster" unique_id=213009738 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.2)
+role = "C"
+slot_index = 1
+
+[node name="Slot3" parent="Roster" unique_id=193711619 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 0, -1.2)
+role = "1B"
+slot_index = 2
+
+[node name="Slot4" parent="Roster" unique_id=2060790738 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 0, -2.8)
+role = "2B"
+slot_index = 3
+
+[node name="Slot5" parent="Roster" unique_id=1783913111 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.8)
+role = "3B"
+slot_index = 4
+
+[node name="Slot6" parent="Roster" unique_id=742794653 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 0, -2.8)
+role = "SS"
+slot_index = 5
+
+[node name="Slot7" parent="Roster" unique_id=996082610 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8, 0, -4.4)
+role = "LF"
+slot_index = 6
+
+[node name="Slot8" parent="Roster" unique_id=1954897621 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.4)
+role = "CF"
+slot_index = 7
+
+[node name="Slot9" parent="Roster" unique_id=1637906469 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, 0, -4.4)
+role = "RF"
+slot_index = 8
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=118285803]
+
+[node name="Funds" type="Label" parent="HUD" unique_id=897568676]
+offset_left = 24.0
+offset_top = 18.0
+offset_right = 260.0
+offset_bottom = 48.0
+theme_override_font_sizes/font_size = 26
+text = "Funds  $12"
+
+[node name="Hint" type="Label" parent="HUD" unique_id=57869419]
+offset_left = 24.0
+offset_top = 52.0
+offset_right = 560.0
+offset_bottom = 78.0
+theme_override_colors/font_color = Color(0.76, 0.8, 0.84, 1)
+text = "Drag a player onto an open roster slot to sign them, or onto Sell to cash them in."

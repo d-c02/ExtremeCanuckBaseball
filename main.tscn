@@ -1,69 +1,85 @@
-[gd_scene load_steps=12 format=3 uid="uid://dar4rg8x7fywr"]
+[gd_scene format=3 uid="uid://dar4rg8x7fywr"]
 
-[ext_resource type="Script" path="res://game/presentation/world_3d.gd" id="world"]
+[ext_resource type="Script" uid="uid://c3puxhsgvfs8h" path="res://game/presentation/action_camera.gd" id="camera"]
+[ext_resource type="Script" uid="uid://3rc34niadm5i" path="res://game/presentation/field_3d.gd" id="field"]
 [ext_resource type="PackedScene" path="res://game/match.tscn" id="simulation"]
-[ext_resource type="Script" path="res://game/presentation/field_3d.gd" id="field"]
-[ext_resource type="Script" path="res://game/presentation/action_camera.gd" id="camera"]
 [ext_resource type="PackedScene" path="res://game/presentation/sounds.tscn" id="sounds"]
-[sub_resource type="Environment" id="environment"]
-background_mode = 1
-background_color = Color(0.53, 0.68, 0.74, 1)
-ambient_light_source = 3
-ambient_light_color = Color(0.82, 0.87, 0.94, 1)
-ambient_light_energy = 0.7
-tonemap_mode = 0
+[ext_resource type="Script" uid="uid://batk70mghirrf" path="res://game/presentation/world_3d.gd" id="world"]
+
 [sub_resource type="StandardMaterial3D" id="ball_material"]
 shading_mode = 0
 albedo_color = Color(1, 0.96, 0.76, 1)
+
 [sub_resource type="SphereMesh" id="ball_mesh"]
 material = SubResource("ball_material")
 radius = 0.22
 height = 0.44
 radial_segments = 16
 rings = 8
+
 [sub_resource type="StandardMaterial3D" id="shadow_material"]
 shading_mode = 0
 albedo_color = Color(0.12, 0.17, 0.12, 1)
+
 [sub_resource type="CylinderMesh" id="shadow_mesh"]
 material = SubResource("shadow_material")
 top_radius = 0.26
 bottom_radius = 0.26
 height = 0.025
 radial_segments = 16
+
+[sub_resource type="Environment" id="environment"]
+background_mode = 1
+background_color = Color(0.53, 0.68, 0.74, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.82, 0.87, 0.94, 1)
+ambient_light_energy = 0.7
+
 [sub_resource type="StyleBoxFlat" id="hud_background"]
 bg_color = Color(0.055, 0.075, 0.085, 0.9)
 
-[node name="Baseball" type="Node3D"]
+[node name="Baseball" type="Node3D" unique_id=1246676602]
 script = ExtResource("world")
-[node name="Simulation" parent="." instance=ExtResource("simulation")]
-[node name="Field" type="Node3D" parent="."]
+
+[node name="Simulation" parent="." unique_id=1688947139 instance=ExtResource("simulation")]
+
+[node name="Field" type="Node3D" parent="." unique_id=627440236]
 script = ExtResource("field")
-[node name="Players" type="Node3D" parent="."]
-[node name="Ball" type="MeshInstance3D" parent="."]
+
+[node name="Players" type="Node3D" parent="." unique_id=771509375]
+
+[node name="Ball" type="MeshInstance3D" parent="." unique_id=735626798]
 cast_shadow = 0
 mesh = SubResource("ball_mesh")
-[node name="BallShadow" type="MeshInstance3D" parent="."]
+
+[node name="BallShadow" type="MeshInstance3D" parent="." unique_id=771385070]
+cast_shadow = 0
 mesh = SubResource("shadow_mesh")
+
+[node name="Guides" type="MeshInstance3D" parent="." unique_id=1557288781]
 cast_shadow = 0
-[node name="Guides" type="MeshInstance3D" parent="."]
-cast_shadow = 0
-[node name="Camera" type="Camera3D" parent="."]
-position = Vector3(-10, 45, 40)
+
+[node name="Camera" type="Camera3D" parent="." unique_id=523138797]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 45, 40)
 current = true
 fov = 45.0
 far = 300.0
 script = ExtResource("camera")
-[node name="Sun" type="DirectionalLight3D" parent="."]
-rotation_degrees = Vector3(-55, -35, 0)
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=105593664]
+transform = Transform3D(0.81915206, 0.46984634, -0.32898995, 0, 0.57357645, 0.81915206, 0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
 light_color = Color(1, 0.94, 0.82, 1)
 light_energy = 1.1
 shadow_enabled = true
-[node name="Environment" type="WorldEnvironment" parent="."]
+
+[node name="Environment" type="WorldEnvironment" parent="." unique_id=1370206218]
 environment = SubResource("environment")
-[node name="Sounds" parent="." instance=ExtResource("sounds")]
-[node name="HUDBackground" type="CanvasLayer" parent="."]
-layer = 1
-[node name="Panel" type="Panel" parent="HUDBackground"]
+
+[node name="Sounds" parent="." unique_id=883067572 instance=ExtResource("sounds")]
+
+[node name="HUDBackground" type="CanvasLayer" parent="." unique_id=1831063685]
+
+[node name="Panel" type="Panel" parent="HUDBackground" unique_id=1650925446]
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 94.0

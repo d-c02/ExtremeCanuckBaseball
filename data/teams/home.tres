@@ -1,78 +1,70 @@
-[gd_resource type="Resource" script_class="BaseballTeamData" load_steps=12 format=3]
+[gd_resource type="Resource" script_class="BaseballTeamData" format=3 uid="uid://c5xkmbert05m4"]
 
-[ext_resource type="Script" path="res://data/team_data.gd" id="team"]
-[ext_resource type="Script" path="res://data/player_data.gd" id="player"]
+[ext_resource type="Script" uid="uid://bbitykktl6wj5" path="res://data/player_data.gd" id="player"]
+[ext_resource type="Script" uid="uid://issayqreaox3" path="res://data/team_data.gd" id="team"]
 
 [sub_resource type="Resource" id="p0"]
 script = ExtResource("player")
-anticipation = 0.8
-idle_behavior = 0
 player_name = "1B"
-speed = 125.0
+anticipation = 0.8
 throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p1"]
 script = ExtResource("player")
-anticipation = 0.6
-idle_behavior = 0
 player_name = "P"
 speed = 130.0
+anticipation = 0.6
 throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p2"]
 script = ExtResource("player")
-anticipation = 0.85
-idle_behavior = 0
 player_name = "C"
 speed = 115.0
+anticipation = 0.85
 throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p3"]
 script = ExtResource("player")
-anticipation = 0.7
-idle_behavior = 1
 player_name = "2B"
 speed = 140.0
+idle_behavior = 1
 throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p4"]
 script = ExtResource("player")
-anticipation = 0.65
-idle_behavior = 0
 player_name = "3B"
 speed = 130.0
+anticipation = 0.65
 throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p5"]
 script = ExtResource("player")
-anticipation = 0.8
-idle_behavior = 0
 player_name = "SS"
 speed = 150.0
+anticipation = 0.8
 throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p6"]
 script = ExtResource("player")
-anticipation = 0.75
-idle_behavior = 1
 player_name = "LF"
 speed = 165.0
+anticipation = 0.75
+idle_behavior = 1
 throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p7"]
 script = ExtResource("player")
-anticipation = 0.9
-idle_behavior = 0
 player_name = "CF"
 speed = 175.0
+anticipation = 0.9
 throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p8"]
 script = ExtResource("player")
-anticipation = 0.6
-idle_behavior = 1
 player_name = "RF"
 speed = 160.0
+anticipation = 0.6
+idle_behavior = 1
 throwing_speed = 440.0
 
 [resource]

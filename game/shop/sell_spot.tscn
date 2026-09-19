@@ -1,0 +1,49 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://game/shop/sell_spot.gd" id="script"]
+
+[sub_resource type="BoxShape3D" id="drop_shape"]
+size = Vector3(1.8, 1.6, 1.8)
+
+[sub_resource type="StandardMaterial3D" id="plate_material"]
+albedo_color = Color(0.3, 0.17, 0.18, 1)
+roughness = 1.0
+
+[sub_resource type="CylinderMesh" id="plate_mesh"]
+material = SubResource("plate_material")
+top_radius = 0.85
+bottom_radius = 0.85
+height = 0.08
+radial_segments = 24
+
+[sub_resource type="CylinderMesh" id="highlight_mesh"]
+top_radius = 1.0
+bottom_radius = 1.0
+height = 0.03
+radial_segments = 24
+
+[node name="SellSpot" type="Area3D"]
+script = ExtResource("script")
+accept_color = Color(0.53, 0.83, 0.5, 1)
+
+[node name="Drop" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("drop_shape")
+
+[node name="Plate" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+cast_shadow = 0
+mesh = SubResource("plate_mesh")
+
+[node name="Highlight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+cast_shadow = 0
+mesh = SubResource("highlight_mesh")
+
+[node name="Label" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 1.15)
+pixel_size = 0.009
+font_size = 52
+outline_size = 10
+billboard = 1
+text = "Sell"

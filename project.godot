@@ -31,6 +31,8 @@ movie_writer/movie_file="./tmp/movie.ogv"
 
 2d_physics/layer_1="Players"
 2d_physics/layer_2="Outfield wall"
+3d_physics/layer_1="Buyables"
+3d_physics/layer_2="Buy targets"
 
 [physics]
 

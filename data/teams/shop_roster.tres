@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="BaseballTeamData" format=3]
+
+[ext_resource type="Script" path="res://data/team_data.gd" id="team"]
+
+[resource]
+script = ExtResource("team")
+team_name = "Extreme Canucks"
+color = Color(0.86, 0.29, 0.3, 1)
