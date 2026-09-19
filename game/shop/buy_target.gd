@@ -36,6 +36,11 @@ func accepts(_buyable: Buyable) -> bool:
 	return true
 
 
+## Virtual. Show or hide whatever only matters while the cursor is on this.
+func set_hovered(_on: bool) -> void:
+	pass
+
+
 ## Virtual. Show what a drop would do while [param buyable] hovers. Null clears it.
 func preview(_buyable: Buyable) -> void:
 	pass

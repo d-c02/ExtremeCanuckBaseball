@@ -21,6 +21,7 @@ var roster: BaseballTeamData
 var park: BaseballBallpark
 var held: Buyable
 var hovered: BuyTarget
+var pointed: Buyable
 
 var _grab_height: float = 0.0
 var _hover_allowed: bool = false
@@ -40,8 +41,7 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	var motion := event as InputEventMouseMotion
 	if motion != null:
-		if held != null:
-			_drag(motion.position)
+		_point(motion.position)
 		return
 	var button := event as InputEventMouseButton
 	if button == null:
@@ -82,12 +82,19 @@ func _grab(screen: Vector2) -> void:
 	held = buyable
 	_grab_height = buyable.global_position.y
 	held.grab()
-	_drag(screen)
+	_point(screen)
 
 
-func _drag(screen: Vector2) -> void:
-	held.drag_to(_plane_point(screen))
+## Follow the cursor: name whatever it is over, carry the held buyable, and while
+## one is held, judge the drop onto the target underneath it.
+func _point(screen: Vector2) -> void:
+	if held != null:
+		held.drag_to(_plane_point(screen))
 	_set_hovered(_pick(screen, BuyTarget.LAYER) as BuyTarget)
+	var under := held
+	if under == null:
+		under = _pick(screen, Buyable.LAYER) as Buyable
+	_set_pointed(under)
 
 
 func _release(screen: Vector2) -> void:
@@ -96,29 +103,44 @@ func _release(screen: Vector2) -> void:
 	var buyable := held
 	var target := hovered
 	var allowed := _hover_allowed
-	_set_hovered(null)
 	held = null
-	if allowed and trade(buyable, target):
-		return
-	buyable.return_home()
+	if not (allowed and trade(buyable, target)):
+		buyable.return_home()
+	_point(screen)
 
 
 func _cancel() -> void:
 	var buyable := held
 	held = null
 	_set_hovered(null)
+	_set_pointed(null)
 	buyable.return_home()
 
 
 func _set_hovered(target: BuyTarget) -> void:
-	if hovered != null and hovered != target:
+	if hovered != null:
+		if hovered != target:
+			hovered.set_hovered(false)
 		hovered.set_highlighted(false)
 		hovered.preview(null)
 	hovered = target
 	_hover_allowed = can_trade(held, target)
-	if hovered != null:
+	if hovered == null:
+		return
+	hovered.set_hovered(true)
+	if held != null:
 		hovered.set_highlighted(true, _hover_allowed)
 		hovered.preview(held)
+
+
+func _set_pointed(buyable: Buyable) -> void:
+	if pointed == buyable:
+		return
+	if is_instance_valid(pointed):
+		pointed.set_hovered(false)
+	pointed = buyable
+	if pointed != null:
+		pointed.set_hovered(true)
 
 
 func _pick(screen: Vector2, layer: int) -> Node:

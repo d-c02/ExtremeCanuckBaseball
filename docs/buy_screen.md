@@ -10,16 +10,17 @@ the dugouts; a shop has no use for them. Nothing links the screen to a match yet
 | Left-drag | Pick a player up and drop them on a roster slot or the sell spot. |
 | Right-click while dragging | Cancel and send the player back where they started. |
 
-Three players stand on podiums behind home plate with a name and an asking price.
-Nine roster slots stand out on the field, each one where that fielder plays: the
-shop reads the positions out of its roster Resource, so the slots sit where the
-match would put the players. The park and the slots are both drawn pulled in toward
-home by the shop's `park_scale`, so the whole field reads at a glance; the roster
-itself keeps the real match positions. Nothing labels the positions; where a slot
-sits is what it is. Dropping a player on an open slot signs them: the shop charges
-the asking price, the player stands in the slot, and the podium empties. A slot that
-already has a player, or a price above the current funds, lights up red and refuses
-the drop.
+Three players stand on podiums behind home plate, each podium showing what the
+player on it costs. Nine roster slots stand out on the field, each one where that
+fielder plays: the shop reads the positions out of its roster Resource, so the
+slots sit where the match would put the players. The park and the slots are both
+drawn pulled in toward home by the shop's `park_scale`, so the whole field reads at
+a glance; the roster itself keeps the real match positions. Nothing labels the
+positions, and no name shows until the cursor is on something: hover a listing or a
+slot to read who is there. Dropping a player on an open slot signs them: the shop
+charges the asking price, the player stands in the slot, and the podium reads sold.
+A slot that already has a player, or a price above the current funds, lights up red
+and refuses the drop.
 
 Signed players can be dragged back off the field and onto the sell spot, which
 lights up green and shows what the sale pays. Selling empties the slot and adds the
@@ -29,10 +30,14 @@ Listings on podiums cannot be sold; only signed players can.
 ## Classes
 
 - `Buyable` (`game/shop/buyable.gd`): an `Area3D` that can be dragged and slid back
-  home. It declares `fits()`, `apply_to()` and `price()`, so each kind of buyable
-  decides which targets it works on, what the drop changes, and what it costs. A
-  negative price pays the player instead of charging them, which is how selling
-  works. `restocks` keeps the buyable in place after a trade.
+  home, and names itself while the cursor is on it. It declares `fits()`,
+  `apply_to()` and `price()`, so each kind of buyable decides which targets it
+  works on, what the drop changes, and what it costs. A negative price pays the
+  player instead of charging them, which is how selling works. `restocks` keeps the
+  buyable in place after a trade.
+- `ShopPodium` (`game/shop/podium.gd`): the stand a listing is sold from. It shows
+  what the player on it costs and reads sold once they are bought, so the price
+  stays put while the player is carried off.
 - `PlayerSlot` (`game/shop/player_slot.gd`): a buyable player on a podium. It fits
   empty team slots and signs a duplicate of its `BaseballPlayerData`, so later
   changes to a signed player never reach the shop listing. Its `sell_value` travels
@@ -41,8 +46,8 @@ Listings on podiums cannot be sold; only signed players can.
   slot. It fits only a sell spot, prices itself at minus its sell value, and empties
   its slot when sold.
 - `BuyTarget` (`game/shop/buy_target.gd`): a place a buyable can be dropped. It holds
-  the roster being built, can narrow what it takes with `accepts()`, and can show
-  what a hovering buyable would do with `preview()`.
+  the roster being built, names itself on hover, can narrow what it takes with
+  `accepts()`, and can show what a hovering buyable would do with `preview()`.
 - `TeamSlot` (`game/shop/team_slot.gd`): one roster spot. Its `slot_index` is the
   batting order and its `role` is the fielding position its place on the field
   already shows. Empty slots take player buyables and stand a `SignedPlayer` in
@@ -80,5 +85,6 @@ godot --headless --path . --fixed-fps 60 --script tests/shop_test.gd
 The suite drags a player onto an open slot and checks the signing, the charge, the
 roster entry and the emptied podium; checks that a taken slot and an unaffordable
 price refuse the drop; sells a signed player and checks the payout, the emptied slot
-and roster entry, and that the sell spot refuses an unsigned listing; then fills
-every slot and checks the roster passes `BaseballTeamData.validation_error()`.
+and roster entry, and that the sell spot refuses an unsigned listing; checks that
+names stay hidden until the cursor is on a listing or a slot; then fills every slot
+and checks the roster passes `BaseballTeamData.validation_error()`.

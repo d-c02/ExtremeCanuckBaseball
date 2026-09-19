@@ -45,6 +45,11 @@ func apply_to(_target: BuyTarget) -> bool:
 	return false
 
 
+## Virtual. Show or hide whatever only matters while the cursor is on this.
+func set_hovered(_on: bool) -> void:
+	pass
+
+
 ## Virtual. What the shop charges for this drop. A negative price pays the player.
 func price(_target: BuyTarget) -> int:
 	return cost

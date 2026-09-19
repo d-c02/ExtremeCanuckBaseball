@@ -2,7 +2,8 @@ class_name PlayerSlot
 extends Buyable
 
 ## A player standing on a podium, for sale. Dropping one on an empty [TeamSlot]
-## signs a copy of their stats into that spot in the batting order.
+## signs a copy of their stats into that spot in the batting order. The podium
+## shows the asking price; the name only shows while the cursor is on the player.
 
 @export var player: BaseballPlayerData
 ## What the shop pays to take this player back once they are signed.
@@ -10,13 +11,11 @@ extends Buyable
 
 var sprite: Sprite3D
 var name_label: Label3D
-var price_label: Label3D
 
 
 func _ready() -> void:
 	sprite = $Sprite
 	name_label = $Name
-	price_label = $Price
 	super()
 
 
@@ -33,10 +32,14 @@ func apply_to(target: BuyTarget) -> bool:
 	return true
 
 
+func set_hovered(on: bool) -> void:
+	if name_label != null:
+		name_label.visible = on
+
+
 func refresh() -> void:
 	if name_label == null:
 		return
 	if player != null:
 		display_name = player.player_name
 	name_label.text = display_name
-	price_label.text = "$%d" % cost

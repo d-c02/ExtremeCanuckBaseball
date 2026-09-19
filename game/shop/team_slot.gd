@@ -51,6 +51,11 @@ func clear() -> void:
 	cleared.emit()
 
 
+func set_hovered(on: bool) -> void:
+	if name_label != null:
+		name_label.visible = on
+
+
 func refresh() -> void:
 	if name_label == null:
 		return

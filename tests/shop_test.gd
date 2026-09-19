@@ -32,6 +32,17 @@ func screen_point(node: Node3D) -> Vector2:
 	return shop.get_viewport().get_camera_3d().unproject_position(node.global_position)
 
 
+func motion_at(screen: Vector2) -> InputEventMouseMotion:
+	var motion := InputEventMouseMotion.new()
+	motion.position = screen
+	return motion
+
+
+## Find a listing by name, wherever its podium stands.
+func listing(display_name: String) -> PlayerSlot:
+	return shop.find_child(display_name, true, false) as PlayerSlot
+
+
 func click(screen: Vector2, pressed: bool) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
@@ -43,11 +54,10 @@ func click(screen: Vector2, pressed: bool) -> void:
 ## Drag a buyable onto a target the way the mouse does, then release it there.
 func drag(buyable: Buyable, target: Node3D) -> void:
 	click(screen_point(buyable), true)
-	var motion := InputEventMouseMotion.new()
-	motion.position = screen_point(target)
-	shop._unhandled_input(motion)
+	var screen := screen_point(target)
+	shop._unhandled_input(motion_at(screen))
 	await process_frame
-	click(motion.position, false)
+	click(screen, false)
 	await settle()
 
 
@@ -60,12 +70,13 @@ func run() -> void:
 	await check_refused_drops()
 	await check_selling()
 	await check_refused_sales()
+	await check_hover_names()
 	await check_roster_ready()
 	quit(1 if failures > 0 else 0)
 
 
 func check_signing() -> void:
-	var slugger: PlayerSlot = shop.get_node("ForSale/Slugger")
+	var slugger: PlayerSlot = listing("Slugger")
 	var pitcher: TeamSlot = shop.get_node("Roster/Slot1")
 	var funds := shop.funds
 	paid = slugger.cost
@@ -82,7 +93,7 @@ func check_signing() -> void:
 
 
 func check_refused_drops() -> void:
-	var wheels: PlayerSlot = shop.get_node("ForSale/Wheels")
+	var wheels: PlayerSlot = listing("Wheels")
 	var filled: TeamSlot = shop.get_node("Roster/Slot1")
 	var open: TeamSlot = shop.get_node("Roster/Slot2")
 	var rest := wheels.global_position
@@ -113,7 +124,7 @@ func check_selling() -> void:
 
 
 func check_refused_sales() -> void:
-	var wheels: PlayerSlot = shop.get_node("ForSale/Wheels")
+	var wheels: PlayerSlot = listing("Wheels")
 	var open: TeamSlot = shop.get_node("Roster/Slot3")
 	var sell: SellSpot = shop.get_node("SellSpot")
 	var rest := wheels.global_position
@@ -145,3 +156,17 @@ func check_roster_ready() -> void:
 		shop.roster.validation_error().is_empty(),
 		"A full shop roster was rejected: " + shop.roster.validation_error()
 	)
+
+
+## Names are clutter on a full field, so they only show under the cursor.
+func check_hover_names() -> void:
+	var gloves := listing("Gloves")
+	var slot: TeamSlot = shop.get_node("Roster/Slot5")
+	check(not gloves.name_label.visible, "A listing named itself before being hovered")
+	check(not slot.name_label.visible, "A roster slot named itself before being hovered")
+	shop._unhandled_input(motion_at(screen_point(gloves)))
+	check(gloves.name_label.visible, "Hovering a listing did not show its name")
+	shop._unhandled_input(motion_at(screen_point(slot)))
+	check(not gloves.name_label.visible, "A listing kept its name after the cursor left")
+	check(slot.name_label.visible, "Hovering a roster slot did not show its name")
+	check(not slot.highlight.visible, "A roster slot lit up with nothing being dragged")

@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://3rc34niadm5i" path="res://game/presentation/field_3d.gd" id="field_view"]
 [ext_resource type="Script" uid="uid://bbitykktl6wj5" path="res://data/player_data.gd" id="player"]
 [ext_resource type="PackedScene" uid="uid://bg7exhrafepul" path="res://game/shop/player_slot.tscn" id="player_slot"]
+[ext_resource type="PackedScene" path="res://game/shop/podium.tscn" id="podium"]
 [ext_resource type="Resource" path="res://data/teams/shop_roster.tres" id="roster"]
 [ext_resource type="PackedScene" path="res://game/shop/sell_spot.tscn" id="sell_spot"]
 [ext_resource type="Script" uid="uid://dwchvn0sa0sw0" path="res://game/shop/shop.gd" id="shop"]
@@ -15,16 +16,6 @@ background_color = Color(0.53, 0.68, 0.74, 1)
 ambient_light_source = 3
 ambient_light_color = Color(0.82, 0.87, 0.94, 1)
 ambient_light_energy = 0.7
-
-[sub_resource type="StandardMaterial3D" id="podium_material"]
-albedo_color = Color(0.55, 0.42, 0.28, 1)
-
-[sub_resource type="CylinderMesh" id="podium_mesh"]
-material = SubResource("podium_material")
-top_radius = 0.85
-bottom_radius = 1.0
-height = 1.2
-radial_segments = 20
 
 [sub_resource type="Resource" id="prospect_slugger"]
 script = ExtResource("player")
@@ -71,40 +62,35 @@ shadow_enabled = true
 [node name="Environment" type="WorldEnvironment" parent="." unique_id=1696639636]
 environment = SubResource("environment")
 
-[node name="Podiums" type="Node3D" parent="." unique_id=2129332421]
+[node name="Podiums" type="Node3D" parent="." unique_id=846621964]
 
-[node name="Podium1" type="MeshInstance3D" parent="Podiums" unique_id=638998764]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0.6, 14.8)
-mesh = SubResource("podium_mesh")
+[node name="Podium1" parent="Podiums" unique_id=649220510 instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0, 14.8)
 
-[node name="Podium2" type="MeshInstance3D" parent="Podiums" unique_id=395118215]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 14.8)
-mesh = SubResource("podium_mesh")
-
-[node name="Podium3" type="MeshInstance3D" parent="Podiums" unique_id=472762558]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0.6, 14.8)
-mesh = SubResource("podium_mesh")
-
-[node name="ForSale" type="Node3D" parent="." unique_id=111069424]
-
-[node name="Slugger" parent="ForSale" unique_id=740659458 instance=ExtResource("player_slot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 1.2, 14.8)
+[node name="Slugger" parent="Podiums/Podium1" unique_id=611048777 instance=ExtResource("player_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 player = SubResource("prospect_slugger")
 sell_value = 3
 cost = 5
 
-[node name="Wheels" parent="ForSale" unique_id=588705214 instance=ExtResource("player_slot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 14.8)
+[node name="Podium2" parent="Podiums" unique_id=1375774532 instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.8)
+
+[node name="Wheels" parent="Podiums/Podium2" unique_id=1139999321 instance=ExtResource("player_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 player = SubResource("prospect_wheels")
 cost = 4
 
-[node name="Gloves" parent="ForSale" unique_id=860626535 instance=ExtResource("player_slot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 1.2, 14.8)
+[node name="Podium3" parent="Podiums" unique_id=1380415886 instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 14.8)
+
+[node name="Gloves" parent="Podiums/Podium3" unique_id=1465614845 instance=ExtResource("player_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 player = SubResource("prospect_gloves")
 cost = 4
 
 [node name="SellSpot" parent="." unique_id=2030476259 instance=ExtResource("sell_spot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0, 12.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 7)
 
 [node name="Roster" type="Node3D" parent="." unique_id=717601880]
 
