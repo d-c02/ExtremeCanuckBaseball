@@ -4,15 +4,16 @@ extends Node3D
 var dugout_labels: Array[Label3D] = []
 
 
-func build(game: BaseballMatch) -> void:
+## Draw [param park]. [param colors] tints each dugout, visitors first.
+func build(park: BaseballBallpark, colors: Array[Color]) -> void:
 	var grass := material(Color("4d7745"))
 	var dirt := material(Color("b28a61"))
 	var chalk := material(Color("eee9d8"))
 	var fence := material(Color("365963"))
 	box(Vector3(0, -0.22, -4), Vector3(110, 0.4, 100), grass)
-	var home := BaseballWorld.world_position(game.home.position)
+	var home := BaseballWorld.world_position(park.home.position)
 	var bases: Array[Vector3] = []
-	for point in game.base_positions:
+	for point in park.base_positions:
 		bases.append(BaseballWorld.world_position(point))
 	var center := (bases[0] + bases[2]) / 2
 	var edge := bases[1] - bases[0]
@@ -23,15 +24,15 @@ func build(game: BaseballMatch) -> void:
 		line(bases[index], bases[(index + 1) % 4], 0.07, chalk)
 		var base := box(bases[index] + Vector3(0, 0.07, 0), Vector3(0.7, 0.12, 0.7), chalk)
 		base.rotation.y = PI / 4
-	disk(BaseballWorld.world_position(game.mound.position), 1.2, dirt)
-	box(BaseballWorld.world_position(game.mound.position, 2), Vector3(0.6, 0.08, 0.2), chalk)
+	disk(BaseballWorld.world_position(park.mound.position), 1.2, dirt)
+	box(BaseballWorld.world_position(park.mound.position, 2), Vector3(0.6, 0.08, 0.2), chalk)
 	for side in [-1, 1]:
-		var end := game.home.position + Vector2(side, -1) * 1500
-		var hit := game.outfield.boundary_hit(game.home.position, end)
+		var end := park.home.position + Vector2(side, -1) * 1500
+		var hit := park.outfield.boundary_hit(park.home.position, end)
 		if not hit.is_empty():
 			line(home, BaseballWorld.world_position(hit.point), 0.08, chalk)
-	var boundary := game.outfield.boundary
-	var height := game.outfield.fence_height * BaseballWorld.FIELD_SCALE
+	var boundary := park.outfield.boundary
+	var height := park.outfield.fence_height * BaseballWorld.FIELD_SCALE
 	for index in boundary.size() - 1:
 		var start := BaseballWorld.world_position(boundary[index])
 		var end := BaseballWorld.world_position(boundary[index + 1])
@@ -42,11 +43,11 @@ func build(game: BaseballMatch) -> void:
 		)
 		wall.look_at_from_position(wall.position, end + Vector3.UP * height / 2)
 	for side in 2:
-		var dugout: Node2D = game.dugouts[side]
+		var dugout: Node2D = park.dugouts[side]
 		var bench := box(
 			BaseballWorld.world_position(dugout.position, 10),
 			Vector3(13.6, 0.8, 1.4),
-			material(game.teams[side].color.darkened(0.3))
+			material(colors[side].darkened(0.3))
 		)
 		bench.rotation.y = -dugout.rotation
 		var label := Label3D.new()

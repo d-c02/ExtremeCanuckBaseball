@@ -6,3 +6,5 @@
 script = ExtResource("team")
 team_name = "Extreme Canucks"
 color = Color(0.86, 0.29, 0.3, 1)
+field_positions = PackedVector2Array(0, 0, 0, 265, 200, -25, 125, -190, -205, -25, -125, -190, -440, -485, 0, -610, 440, -485)
+field_roles = PackedStringArray("P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF")

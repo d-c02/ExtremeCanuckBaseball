@@ -10,18 +10,17 @@ signal cleared
 
 const SIGNED_PLAYER := preload("res://game/shop/signed_player.tscn")
 
-## Fielding role written into the roster when the slot is filled.
+## Fielding role written into the roster. The slot's place on the field shows it,
+## so nothing labels it.
 @export var role: String = "P"
 @export var slot_index: int = 0
 
 var player: BaseballPlayerData
 var occupant: SignedPlayer
-var role_label: Label3D
 var name_label: Label3D
 
 
 func _ready() -> void:
-	role_label = $Role
 	name_label = $Name
 	super()
 
@@ -53,9 +52,8 @@ func clear() -> void:
 
 
 func refresh() -> void:
-	if role_label == null:
+	if name_label == null:
 		return
-	role_label.text = role
 	name_label.text = player.player_name if player != null else "open"
 	if occupant != null:
 		occupant.refresh()

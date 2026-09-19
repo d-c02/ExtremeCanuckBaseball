@@ -9,6 +9,8 @@ signal funds_changed(funds: int)
 signal traded(buyable: Buyable, target: BuyTarget)
 
 const RAY_LENGTH := 1000.0
+## The dugout the shop team does not use.
+const VISITOR_COLOR := Color("6b7480")
 
 ## Roster the shop starts from. It is duplicated, so trading never edits the file.
 @export var team: BaseballTeamData
@@ -24,9 +26,11 @@ var _hover_allowed: bool = false
 
 func _ready() -> void:
 	roster = team.duplicate(true) if team != null else BaseballTeamData.new()
+	_build_park()
 	for target in _targets():
 		target.roster = roster
 		target.refresh()
+	_place_slots()
 	_update_hud()
 
 
@@ -152,3 +156,24 @@ func _update_hud() -> void:
 	var label := get_node_or_null("HUD/Funds") as Label
 	if label != null:
 		label.text = "Funds  $%d" % funds
+
+
+## Draw the ballpark the shop stands on, when the scene has one.
+func _build_park() -> void:
+	var park := get_node_or_null("Field") as BaseballBallpark
+	var view := get_node_or_null("FieldView") as BaseballFieldView
+	if park == null or view == null:
+		return
+	view.build(park, [VISITOR_COLOR, roster.color])
+	if view.dugout_labels.size() == 2:
+		view.dugout_labels[1].text = roster.team_name
+
+
+## Stand each slot where that fielder plays. Slots the roster has no position for
+## keep the spot they were placed at in the scene.
+func _place_slots() -> void:
+	for target in _targets():
+		var slot := target as TeamSlot
+		if slot == null or slot.slot_index >= roster.field_positions.size():
+			continue
+		slot.position = BaseballWorld.world_position(roster.field_positions[slot.slot_index])

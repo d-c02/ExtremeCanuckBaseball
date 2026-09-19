@@ -23,7 +23,7 @@ static func world_position(point: Vector2, height: float = 0.0) -> Vector3:
 func _ready() -> void:
 	if not game.error_message.is_empty():
 		return
-	field.build(game)
+	field.build(game.field, [game.teams[0].color, game.teams[1].color])
 	for squad in game.squads:
 		for player in squad:
 			var view: BaseballPlayerView = PLAYER_VIEW.instantiate()

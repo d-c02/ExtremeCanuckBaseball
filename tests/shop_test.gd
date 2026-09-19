@@ -60,6 +60,7 @@ func run() -> void:
 	await check_refused_drops()
 	await check_selling()
 	await check_refused_sales()
+	await check_roster_ready()
 	quit(1 if failures > 0 else 0)
 
 
@@ -127,3 +128,20 @@ func check_refused_sales() -> void:
 	await drag(signed_player, shop.get_node("Roster/Slot4"))
 	check(open.player != null, "Dropping a signed player on an empty slot emptied their own")
 	check(shop.funds == slot_funds, "Moving a signed player between slots moved money")
+
+
+## The shop roster starts with every fielding position, so filling all nine slots
+## has to leave a roster a match would accept.
+func check_roster_ready() -> void:
+	for target in shop._targets():
+		var slot := target as TeamSlot
+		if slot == null or not slot.is_empty():
+			continue
+		var recruit := BaseballPlayerData.new()
+		recruit.player_name = slot.role
+		slot.fill(recruit, 1)
+	await settle()
+	check(
+		shop.roster.validation_error().is_empty(),
+		"A full shop roster was rejected: " + shop.roster.validation_error()
+	)

@@ -14,7 +14,7 @@ signal purchased(target: BuyTarget)
 ## Physics layer the shop raycasts to find buyables under the cursor.
 const LAYER := 1
 ## How far the buyable floats above the cursor plane while held.
-const LIFT := 0.2
+const LIFT := 0.4
 const RETURN_TIME := 0.18
 
 @export var display_name: String = "Buyable"

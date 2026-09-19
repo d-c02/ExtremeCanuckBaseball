@@ -4,21 +4,21 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/player.svg" id="sprite"]
 
 [sub_resource type="BoxShape3D" id="grab_shape"]
-size = Vector3(0.7, 1.5, 0.7)
+size = Vector3(1.1, 2.3, 1.1)
 
 [node name="SignedPlayer" type="Area3D"]
 script = ExtResource("script")
 display_name = "Signed player"
 
 [node name="Grab" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.78, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
 shape = SubResource("grab_shape")
 
 [node name="Sprite" type="Sprite3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
 cast_shadow = 0
 texture = ExtResource("sprite")
-pixel_size = 0.016
+pixel_size = 0.024
 billboard = 1
 alpha_cut = 1
 texture_filter = 0
