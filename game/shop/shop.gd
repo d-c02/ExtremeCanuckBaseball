@@ -80,7 +80,7 @@ func _grab(screen: Vector2) -> void:
 	if buyable == null or not buyable.can_grab():
 		return
 	held = buyable
-	_grab_height = buyable.global_position.y
+	_grab_height = buyable.global_position.y + buyable.grip_height()
 	held.grab()
 	_point(screen)
 

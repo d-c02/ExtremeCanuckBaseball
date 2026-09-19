@@ -11,7 +11,9 @@ var sprite: Sprite3D
 
 
 func _ready() -> void:
-	sprite = $Sprite
+	sprite = $Hang/Sprite
+	hang = $Hang
+	swing_body = sprite
 	super()
 
 

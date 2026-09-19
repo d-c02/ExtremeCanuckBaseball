@@ -71,41 +71,42 @@ func run() -> void:
 	await check_selling()
 	await check_refused_sales()
 	await check_hover_names()
+	await check_dangle()
 	await check_roster_ready()
 	quit(1 if failures > 0 else 0)
 
 
 func check_signing() -> void:
-	var slugger: PlayerSlot = listing("Slugger")
+	var jack: PlayerSlot = listing("Jack")
 	var pitcher: TeamSlot = shop.get_node("Roster/Slot1")
 	var funds := shop.funds
-	paid = slugger.cost
-	var stats := slugger.player
+	paid = jack.cost
+	var stats := jack.player
 	check(pitcher.is_empty(), "Roster slot started with a player")
-	await drag(slugger, pitcher)
+	await drag(jack, pitcher)
 	check(not pitcher.is_empty(), "Dragging a player onto an open slot did not sign them")
 	check(shop.funds == funds - paid, "Signing a player did not cost the asking price")
 	check(pitcher.player != stats, "The signed player shares the shop listing's stats")
 	check(pitcher.player.player_name == stats.player_name, "The signing lost the player stats")
 	check(shop.roster.players[0] == pitcher.player, "The roster missed the signing")
 	check(shop.roster.field_roles[0] == "P", "The roster missed the slot's fielding role")
-	check(not is_instance_valid(slugger), "The signed player stayed on the podium")
+	check(not is_instance_valid(jack), "The signed player stayed on the podium")
 
 
 func check_refused_drops() -> void:
-	var wheels: PlayerSlot = listing("Wheels")
+	var arthur: PlayerSlot = listing("Arthur")
 	var filled: TeamSlot = shop.get_node("Roster/Slot1")
 	var open: TeamSlot = shop.get_node("Roster/Slot2")
-	var rest := wheels.global_position
+	var rest := arthur.global_position
 	var funds := shop.funds
-	await drag(wheels, filled)
-	check(filled.player.player_name != "Wheels", "A taken slot took a second player")
+	await drag(arthur, filled)
+	check(filled.player.player_name != "Arthur", "A taken slot took a second player")
 	check(shop.funds == funds, "A refused drop still charged the shop")
-	check(wheels.global_position.is_equal_approx(rest), "A refused drop stranded a player")
-	shop.funds = wheels.cost - 1
-	await drag(wheels, open)
+	check(arthur.global_position.is_equal_approx(rest), "A refused drop stranded a player")
+	shop.funds = arthur.cost - 1
+	await drag(arthur, open)
 	check(open.is_empty(), "A player was signed without the funds to pay for them")
-	check(shop.funds == wheels.cost - 1, "An unaffordable drop still moved money")
+	check(shop.funds == arthur.cost - 1, "An unaffordable drop still moved money")
 
 
 func check_selling() -> void:
@@ -124,15 +125,15 @@ func check_selling() -> void:
 
 
 func check_refused_sales() -> void:
-	var wheels: PlayerSlot = listing("Wheels")
+	var arthur: PlayerSlot = listing("Arthur")
 	var open: TeamSlot = shop.get_node("Roster/Slot3")
 	var sell: SellSpot = shop.get_node("SellSpot")
-	var rest := wheels.global_position
+	var rest := arthur.global_position
 	var funds := shop.funds
-	await drag(wheels, sell)
+	await drag(arthur, sell)
 	check(shop.funds == funds, "The sell spot paid for a player the shop never sold")
-	check(wheels.global_position.is_equal_approx(rest), "A refused sale stranded a listing")
-	await drag(wheels, open)
+	check(arthur.global_position.is_equal_approx(rest), "A refused sale stranded a listing")
+	await drag(arthur, open)
 	var signed_player: SignedPlayer = open.occupant
 	check(signed_player != null, "A signing after a refused sale did not go through")
 	var slot_funds := shop.funds
@@ -160,13 +161,54 @@ func check_roster_ready() -> void:
 
 ## Names are clutter on a full field, so they only show under the cursor.
 func check_hover_names() -> void:
-	var gloves := listing("Gloves")
+	var harrhy := listing("Harrhy")
 	var slot: TeamSlot = shop.get_node("Roster/Slot5")
-	check(not gloves.name_label.visible, "A listing named itself before being hovered")
+	check(not harrhy.name_label.visible, "A listing named itself before being hovered")
 	check(not slot.name_label.visible, "A roster slot named itself before being hovered")
-	shop._unhandled_input(motion_at(screen_point(gloves)))
-	check(gloves.name_label.visible, "Hovering a listing did not show its name")
+	shop._unhandled_input(motion_at(screen_point(harrhy)))
+	check(harrhy.name_label.visible, "Hovering a listing did not show its name")
 	shop._unhandled_input(motion_at(screen_point(slot)))
-	check(not gloves.name_label.visible, "A listing kept its name after the cursor left")
+	check(not harrhy.name_label.visible, "A listing kept its name after the cursor left")
 	check(slot.name_label.visible, "Hovering a roster slot did not show its name")
 	check(not slot.highlight.visible, "A roster slot lit up with nothing being dragged")
+
+
+func cancel_drag() -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_RIGHT
+	event.pressed = true
+	shop._unhandled_input(event)
+
+
+## Drag the cursor in steps, a frame apart, so the carried body builds up speed.
+func sweep(from: Vector2, step: Vector2, steps: int) -> Vector2:
+	var at := from
+	for frame in steps:
+		at += step
+		shop._unhandled_input(motion_at(at))
+		await process_frame
+	return at
+
+
+## A carried player hangs from the cursor by the head and trails behind a yank.
+func check_dangle() -> void:
+	var harrhy := listing("Harrhy")
+	var grip := harrhy.grip_height()
+	check(grip > 1.0, "A carried player has no head to hang from")
+	var at := screen_point(harrhy)
+	click(at, true)
+	at = await sweep(at, Vector2(45, 0), 8)
+	var head := harrhy.global_position.y + grip
+	check(harrhy.swing < -0.05, "Sweeping right did not trail the body left")
+	at = await sweep(at, Vector2(-45, 0), 8)
+	check(harrhy.swing > 0.05, "Sweeping left did not trail the body right")
+	for frame in 60:
+		await process_frame
+	check(absf(harrhy.swing) < 0.05, "The body never settled under a still cursor")
+	check(
+		absf(harrhy.global_position.y + grip - head) < 0.01,
+		"The body stopped hanging at the cursor"
+	)
+	cancel_drag()
+	await settle()
+	check(harrhy.position.is_equal_approx(harrhy.rest_position), "A cancel stranded a player")

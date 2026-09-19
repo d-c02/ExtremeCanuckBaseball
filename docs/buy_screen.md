@@ -22,6 +22,10 @@ charges the asking price, the player stands in the slot, and the podium reads so
 A slot that already has a player, or a price above the current funds, lights up red
 and refuses the drop.
 
+A player picked up hangs from the cursor by the head, and trails behind a yanked
+mouse: sweep left and they tilt right, sweep right and they tilt left, then they
+swing back upright when the cursor settles.
+
 Signed players can be dragged back off the field and onto the sell spot, which
 lights up green and shows what the sale pays. Selling empties the slot and adds the
 player's sell value, which is set per listing and is lower than the asking price.
@@ -30,7 +34,9 @@ Listings on podiums cannot be sold; only signed players can.
 ## Classes
 
 - `Buyable` (`game/shop/buyable.gd`): an `Area3D` that can be dragged and slid back
-  home, and names itself while the cursor is on it. It declares `fits()`,
+  home, names itself while the cursor is on it, and dangles from its `hang` pivot
+  on a spring while carried. Its `swing_body` is turned to face the camera by hand,
+  because a billboard would throw the tilt away. It declares `fits()`,
   `apply_to()` and `price()`, so each kind of buyable decides which targets it
   works on, what the drop changes, and what it costs. A negative price pays the
   player instead of charging them, which is how selling works. `restocks` keeps the
@@ -86,5 +92,7 @@ The suite drags a player onto an open slot and checks the signing, the charge, t
 roster entry and the emptied podium; checks that a taken slot and an unaffordable
 price refuse the drop; sells a signed player and checks the payout, the emptied slot
 and roster entry, and that the sell spot refuses an unsigned listing; checks that
-names stay hidden until the cursor is on a listing or a slot; then fills every slot
-and checks the roster passes `BaseballTeamData.validation_error()`.
+names stay hidden until the cursor is on a listing or a slot; sweeps a carried
+player left and right and checks they hang from the cursor and tilt away from the
+yank before settling upright; then fills every slot and checks the roster passes
+`BaseballTeamData.validation_error()`.

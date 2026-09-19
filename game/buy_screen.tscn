@@ -17,23 +17,23 @@ ambient_light_source = 3
 ambient_light_color = Color(0.82, 0.87, 0.94, 1)
 ambient_light_energy = 0.7
 
-[sub_resource type="Resource" id="prospect_slugger"]
+[sub_resource type="Resource" id="prospect_jack"]
 script = ExtResource("player")
-player_name = "Slugger"
+player_name = "Jack"
 speed = 115.0
 hitting = 0.82
 batting_power = 360.0
 
-[sub_resource type="Resource" id="prospect_wheels"]
+[sub_resource type="Resource" id="prospect_arthur"]
 script = ExtResource("player")
-player_name = "Wheels"
+player_name = "Arthur"
 speed = 165.0
 acceleration = 420.0
 fielding = 0.74
 
-[sub_resource type="Resource" id="prospect_gloves"]
+[sub_resource type="Resource" id="prospect_harrhy"]
 script = ExtResource("player")
-player_name = "Gloves"
+player_name = "Harrhy"
 fielding = 0.88
 anticipation = 0.85
 throwing_speed = 470.0
@@ -67,26 +67,26 @@ environment = SubResource("environment")
 [node name="Podium1" parent="Podiums" unique_id=649220510 instance=ExtResource("podium")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0, 14.8)
 
-[node name="Slugger" parent="Podiums/Podium1" unique_id=611048777 instance=ExtResource("player_slot")]
+[node name="Jack" parent="Podiums/Podium1" unique_id=611048777 instance=ExtResource("player_slot")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-player = SubResource("prospect_slugger")
+player = SubResource("prospect_jack")
 sell_value = 3
 cost = 5
 
 [node name="Podium2" parent="Podiums" unique_id=1375774532 instance=ExtResource("podium")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.8)
 
-[node name="Wheels" parent="Podiums/Podium2" unique_id=1139999321 instance=ExtResource("player_slot")]
+[node name="Arthur" parent="Podiums/Podium2" unique_id=1139999321 instance=ExtResource("player_slot")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-player = SubResource("prospect_wheels")
+player = SubResource("prospect_arthur")
 cost = 4
 
 [node name="Podium3" parent="Podiums" unique_id=1380415886 instance=ExtResource("podium")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 14.8)
 
-[node name="Gloves" parent="Podiums/Podium3" unique_id=1465614845 instance=ExtResource("player_slot")]
+[node name="Harrhy" parent="Podiums/Podium3" unique_id=1465614845 instance=ExtResource("player_slot")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-player = SubResource("prospect_gloves")
+player = SubResource("prospect_harrhy")
 cost = 4
 
 [node name="SellSpot" parent="." unique_id=2030476259 instance=ExtResource("sell_spot")]

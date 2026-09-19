@@ -15,11 +15,13 @@ cost = 3
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 shape = SubResource("grab_shape")
 
-[node name="Sprite" type="Sprite3D" parent="." unique_id=1207152403]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
+[node name="Hang" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0)
+
+[node name="Sprite" type="Sprite3D" parent="Hang"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.15, 0)
 cast_shadow = 0
 pixel_size = 0.024
-billboard = 1
 alpha_cut = 1
 texture_filter = 0
 texture = ExtResource("sprite")

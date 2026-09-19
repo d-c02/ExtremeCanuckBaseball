@@ -14,7 +14,9 @@ var name_label: Label3D
 
 
 func _ready() -> void:
-	sprite = $Sprite
+	sprite = $Hang/Sprite
+	hang = $Hang
+	swing_body = sprite
 	name_label = $Name
 	super()
 
