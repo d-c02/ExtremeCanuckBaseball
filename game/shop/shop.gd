@@ -9,14 +9,16 @@ signal funds_changed(funds: int)
 signal traded(buyable: Buyable, target: BuyTarget)
 
 const RAY_LENGTH := 1000.0
-## The dugout the shop team does not use.
-const VISITOR_COLOR := Color("6b7480")
 
 ## Roster the shop starts from. It is duplicated, so trading never edits the file.
 @export var team: BaseballTeamData
 @export var funds: int = 12
+## How far the drawn park and the fielding spots pull in toward home plate. The
+## roster keeps its real match positions; only the buy screen is condensed.
+@export_range(0.3, 1.0) var park_scale: float = 0.6
 
 var roster: BaseballTeamData
+var park: BaseballBallpark
 var held: Buyable
 var hovered: BuyTarget
 
@@ -26,6 +28,7 @@ var _hover_allowed: bool = false
 
 func _ready() -> void:
 	roster = team.duplicate(true) if team != null else BaseballTeamData.new()
+	park = get_node_or_null("Field") as BaseballBallpark
 	_build_park()
 	for target in _targets():
 		target.roster = roster
@@ -160,20 +163,27 @@ func _update_hud() -> void:
 
 ## Draw the ballpark the shop stands on, when the scene has one.
 func _build_park() -> void:
-	var park := get_node_or_null("Field") as BaseballBallpark
 	var view := get_node_or_null("FieldView") as BaseballFieldView
 	if park == null or view == null:
 		return
-	view.build(park, [VISITOR_COLOR, roster.color])
-	if view.dugout_labels.size() == 2:
-		view.dugout_labels[1].text = roster.team_name
+	view.build(park)
+	# Shrink the drawn park around home so the whole thing reads at shop range.
+	view.scale = Vector3.ONE * park_scale
+	view.position = _home_point() * (1.0 - park_scale)
 
 
-## Stand each slot where that fielder plays. Slots the roster has no position for
-## keep the spot they were placed at in the scene.
+func _home_point() -> Vector3:
+	return BaseballWorld.world_position(park.home.position) if park != null else Vector3.ZERO
+
+
+## Stand each slot where that fielder plays, pulled in by the same [member
+## park_scale] as the park. Slots the roster has no position for keep the spot they
+## were placed at in the scene.
 func _place_slots() -> void:
+	var home := _home_point()
 	for target in _targets():
 		var slot := target as TeamSlot
 		if slot == null or slot.slot_index >= roster.field_positions.size():
 			continue
-		slot.position = BaseballWorld.world_position(roster.field_positions[slot.slot_index])
+		var spot := BaseballWorld.world_position(roster.field_positions[slot.slot_index])
+		slot.position = home + (spot - home) * park_scale

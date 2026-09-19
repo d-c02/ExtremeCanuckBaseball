@@ -1,8 +1,9 @@
 # Buy screen
 
 Run `game/buy_screen.tscn` with F6. It stands on `game/field/ballpark.tscn`, the
-same park the match plays on, drawn by the same `game/presentation/field_3d.gd`.
-Nothing links the screen to a match yet.
+same field the match plays on, drawn by the same `game/presentation/field_3d.gd`.
+The match uses `game/field/match_ballpark.tscn`, which inherits that park and adds
+the dugouts; a shop has no use for them. Nothing links the screen to a match yet.
 
 | Input | Action |
 | --- | --- |
@@ -11,10 +12,12 @@ Nothing links the screen to a match yet.
 
 Three players stand on podiums behind home plate with a name and an asking price.
 Nine roster slots stand out on the field, each one where that fielder plays: the
-shop reads the positions out of its roster Resource, so the slots sit exactly where
-the match would put the players. Nothing labels the positions; where a slot sits is
-what it is. Dropping a player on an open slot signs them: the shop charges the
-asking price, the player stands in the slot, and the podium empties. A slot that
+shop reads the positions out of its roster Resource, so the slots sit where the
+match would put the players. The park and the slots are both drawn pulled in toward
+home by the shop's `park_scale`, so the whole field reads at a glance; the roster
+itself keeps the real match positions. Nothing labels the positions; where a slot
+sits is what it is. Dropping a player on an open slot signs them: the shop charges
+the asking price, the player stands in the slot, and the podium empties. A slot that
 already has a player, or a price above the current funds, lights up red and refuses
 the drop.
 
@@ -49,8 +52,8 @@ Listings on podiums cannot be sold; only signed players can.
   its own sell price, so the spot only shows what the drop would pay.
 - `Shop` (`game/shop/shop.gd`): the scene root. It duplicates its `team` Resource so
   trading never edits the file on disk, draws the ballpark, stands each slot at its
-  `field_positions` entry, hands the roster copy to every target it owns, holds the
-  funds, and runs the drag.
+  `field_positions` entry scaled in by `park_scale`, hands the roster copy to every
+  target it owns, holds the funds, and runs the drag.
 
 Buyables sit on 3D physics layer 1 and targets on layer 2. The shop raycasts each
 layer separately, so the held buyable never hides the target under the cursor.

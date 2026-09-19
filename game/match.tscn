@@ -3,7 +3,7 @@
 [ext_resource type="Resource" path="res://data/teams/visitors.tres" id="batters"]
 [ext_resource type="Resource" path="res://data/teams/home.tres" id="fielders"]
 [ext_resource type="PackedScene" path="res://game/actors/ball.tscn" id="ball"]
-[ext_resource type="PackedScene" path="res://game/field/ballpark.tscn" id="ballpark"]
+[ext_resource type="PackedScene" path="res://game/field/match_ballpark.tscn" id="ballpark"]
 [ext_resource type="PackedScene" path="res://game/presentation/box_score.tscn" id="box_score"]
 
 [node name="Simulation" type="Node2D"]

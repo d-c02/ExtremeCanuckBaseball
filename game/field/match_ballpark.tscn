@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://game/field/ballpark.tscn" id="ballpark"]
+[ext_resource type="PackedScene" path="res://game/field/dugout.tscn" id="dugout"]
+
+[node name="Ballpark" instance=ExtResource("ballpark")]
+
+[node name="Dugouts" type="Node2D" parent="."]
+
+[node name="Visitors" parent="Dugouts" instance=ExtResource("dugout")]
+position = Vector2(-270, 180)
+rotation = 0.785398
+
+[node name="OnDeck" parent="Dugouts/Visitors" index="0"]
+position = Vector2(195, 0)
+
+[node name="Home" parent="Dugouts" instance=ExtResource("dugout")]
+position = Vector2(270, 180)
+rotation = -0.785398
+
+[editable path="Dugouts/Visitors"]

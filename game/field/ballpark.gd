@@ -1,16 +1,17 @@
 class_name BaseballBallpark
 extends Node2D
 
-## The ballpark itself: home, the mound, the bases, the outfield wall and both
-## dugouts. The match plays on it and the buy screen stands its shop on it, so the
-## two scenes always show the same park.
+## A ballpark: home, the mound, the bases and the outfield wall, plus whatever
+## dugouts the scene puts under a `Dugouts` child. `match_ballpark.tscn` inherits
+## this one and adds the two dugouts a game needs; the buy screen uses the bare
+## park, so both scenes share one definition of the field.
 
 var base_positions: PackedVector2Array
+var dugouts: Array[Node2D] = []
 
 @onready var home: Marker2D = $Home
 @onready var mound: Marker2D = $Mound
 @onready var outfield: BaseballOutfield = $Outfield
-@onready var dugouts: Array[Node2D] = [$Dugouts/Visitors, $Dugouts/Home]
 
 
 func _ready() -> void:
@@ -22,3 +23,8 @@ func _ready() -> void:
 			home.position
 		]
 	)
+	var benches := get_node_or_null("Dugouts")
+	if benches == null:
+		return
+	for bench in benches.get_children():
+		dugouts.append(bench)

@@ -3,7 +3,6 @@
 [ext_resource type="Script" path="res://game/field/ballpark.gd" id="script"]
 [ext_resource type="PackedScene" path="res://game/field/base.tscn" id="base"]
 [ext_resource type="PackedScene" path="res://game/field/outfield.tscn" id="outfield"]
-[ext_resource type="PackedScene" path="res://game/field/dugout.tscn" id="dugout"]
 
 [node name="Ballpark" type="Node2D"]
 visible = false
@@ -24,18 +23,3 @@ position = Vector2(0, -220)
 position = Vector2(-220, 0)
 
 [node name="Outfield" parent="." instance=ExtResource("outfield")]
-
-[node name="Dugouts" type="Node2D" parent="."]
-
-[node name="Visitors" parent="Dugouts" instance=ExtResource("dugout")]
-position = Vector2(-270, 180)
-rotation = 0.785398
-
-[node name="OnDeck" parent="Dugouts/Visitors" index="0"]
-position = Vector2(195, 0)
-
-[node name="Home" parent="Dugouts" instance=ExtResource("dugout")]
-position = Vector2(270, 180)
-rotation = -0.785398
-
-[editable path="Dugouts/Visitors"]

@@ -4,8 +4,9 @@ extends Node3D
 var dugout_labels: Array[Label3D] = []
 
 
-## Draw [param park]. [param colors] tints each dugout, visitors first.
-func build(park: BaseballBallpark, colors: Array[Color]) -> void:
+## Draw [param park]. [param colors] tints its dugouts, visitors first, so a park
+## with no dugouts needs none.
+func build(park: BaseballBallpark, colors: Array[Color] = []) -> void:
 	var grass := material(Color("4d7745"))
 	var dirt := material(Color("b28a61"))
 	var chalk := material(Color("eee9d8"))
@@ -42,7 +43,7 @@ func build(park: BaseballBallpark, colors: Array[Color]) -> void:
 			fence
 		)
 		wall.look_at_from_position(wall.position, end + Vector3.UP * height / 2)
-	for side in 2:
+	for side in park.dugouts.size():
 		var dugout: Node2D = park.dugouts[side]
 		var bench := box(
 			BaseballWorld.world_position(dugout.position, 10),
