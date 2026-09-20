@@ -1,6 +1,8 @@
 # Baseball simulation
 
-Run `main.tscn` with F6, or the project with F5.
+Run `main.tscn` with F6, or the project with F5. The window starts maximized; the
+1280x720 viewport scales to fill it, so a bigger window shows the same framing
+larger, not more field.
 
 | Key | Action |
 | --- | --- |
