@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BaseballFieldLayout" load_steps=2 format=3]
+[ext_resource type="Script" path="res://data/field_layout.gd" id="layout"]
+[resource]
+script = ExtResource("layout")
+bases = PackedVector2Array(220.0, -0.0, 0.0, -220.0, -220.0, -0.0, 0.0, 220.0)
+mound = Vector2(0.0, -0.0)
+dugout_positions = PackedVector2Array(-270.0, 180.0, 270.0, 180.0)
+dugout_rotations = PackedFloat32Array(0.7853981852531433, -0.7853981852531433)
+fence_distance = 950.0
+fence_height = 28.0
+flat_half_width = 300.0
+corner_radius = 500.0
+dugout_length = 340.0
+dugout_width = 90.0
+dugout_depth = 30.0
+stair_width = 50.0
+stair_run = 60.0

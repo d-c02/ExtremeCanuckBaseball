@@ -1,0 +1,161 @@
+[gd_scene format=3 uid="uid://b6ou6cfu8g8c"]
+
+[ext_resource type="PackedScene" path="res://game/field/ballpark.tscn" id="ballpark"]
+[ext_resource type="Script" path="res://game/presentation/shop_field_3d.gd" id="field_view"]
+[ext_resource type="Script" uid="uid://bbitykktl6wj5" path="res://data/player_data.gd" id="player"]
+[ext_resource type="PackedScene" uid="uid://bg7exhrafepul" path="res://game/shop/player_slot.tscn" id="player_slot"]
+[ext_resource type="PackedScene" path="res://game/shop/podium.tscn" id="podium"]
+[ext_resource type="Resource" path="res://data/teams/shop_roster.tres" id="roster"]
+[ext_resource type="PackedScene" path="res://game/shop/sell_spot.tscn" id="sell_spot"]
+[ext_resource type="Script" uid="uid://dwchvn0sa0sw0" path="res://game/shop/shop.gd" id="shop"]
+[ext_resource type="PackedScene" path="res://game/shop/team_slot.tscn" id="team_slot"]
+
+[sub_resource type="Environment" id="environment"]
+background_mode = 1
+background_color = Color(0.53, 0.68, 0.74, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.82, 0.87, 0.94, 1)
+ambient_light_energy = 0.7
+
+[sub_resource type="Resource" id="prospect_jack"]
+script = ExtResource("player")
+player_name = "Jack"
+speed = 115.0
+hitting = 0.82
+batting_power = 360.0
+
+[sub_resource type="Resource" id="prospect_arthur"]
+script = ExtResource("player")
+player_name = "Arthur"
+speed = 165.0
+acceleration = 420.0
+fielding = 0.74
+
+[sub_resource type="Resource" id="prospect_harrhy"]
+script = ExtResource("player")
+player_name = "Harrhy"
+fielding = 0.88
+anticipation = 0.85
+throwing_speed = 470.0
+
+[node name="BuyScreen" type="Node3D" unique_id=1857475372]
+script = ExtResource("shop")
+team = ExtResource("roster")
+
+[node name="Field" parent="." unique_id=721208164 instance=ExtResource("ballpark")]
+
+[node name="FieldView" type="Node3D" parent="." unique_id=631020257]
+script = ExtResource("field_view")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1339404908]
+transform = Transform3D(1, 0, 0, 0, 0.781, 0.625, 0, -0.625, 0.781, 0, 20.5, 30.5)
+current = true
+fov = 36.0
+far = 300.0
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=999248663]
+transform = Transform3D(0.81915206, 0.46984634, -0.32898995, 0, 0.57357645, 0.81915206, 0.57357645, -0.6710101, 0.46984634, 0, 0, 0)
+light_color = Color(1, 0.94, 0.82, 1)
+light_energy = 1.1
+shadow_enabled = true
+
+[node name="Environment" type="WorldEnvironment" parent="." unique_id=1696639636]
+environment = SubResource("environment")
+
+[node name="Podiums" type="Node3D" parent="." unique_id=846621964]
+
+[node name="Podium1" parent="Podiums" unique_id=649220510 instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0, 14.8)
+
+[node name="Jack" parent="Podiums/Podium1" unique_id=611048777 instance=ExtResource("player_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+player = SubResource("prospect_jack")
+sell_value = 3
+cost = 5
+
+[node name="Podium2" parent="Podiums" unique_id=1375774532 instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.8)
+
+[node name="Arthur" parent="Podiums/Podium2" unique_id=1139999321 instance=ExtResource("player_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+player = SubResource("prospect_arthur")
+cost = 4
+
+[node name="Podium3" parent="Podiums" unique_id=1380415886 instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 14.8)
+
+[node name="Harrhy" parent="Podiums/Podium3" unique_id=1465614845 instance=ExtResource("player_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+player = SubResource("prospect_harrhy")
+cost = 4
+
+[node name="SellSpot" parent="." unique_id=2030476259 instance=ExtResource("sell_spot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 7)
+
+[node name="Roster" type="Node3D" parent="." unique_id=717601880]
+
+[node name="Slot1" parent="Roster" unique_id=2078722377 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.52)
+
+[node name="Slot2" parent="Roster" unique_id=540658344 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 9.88)
+role = "C"
+slot_index = 1
+
+[node name="Slot3" parent="Roster" unique_id=436152433 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.8, 0, 2.92)
+role = "1B"
+slot_index = 2
+
+[node name="Slot4" parent="Roster" unique_id=1669938511 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -1.04)
+role = "2B"
+slot_index = 3
+
+[node name="Slot5" parent="Roster" unique_id=2084686395 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.92, 0, 2.92)
+role = "3B"
+slot_index = 4
+
+[node name="Slot6" parent="Roster" unique_id=1496100165 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, -1.04)
+role = "SS"
+slot_index = 5
+
+[node name="Slot7" parent="Roster" unique_id=291481968 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.56, 0, -8.12)
+role = "LF"
+slot_index = 6
+
+[node name="Slot8" parent="Roster" unique_id=1738987753 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -11.12)
+role = "CF"
+slot_index = 7
+
+[node name="Slot9" parent="Roster" unique_id=480825090 instance=ExtResource("team_slot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.56, 0, -8.12)
+role = "RF"
+slot_index = 8
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=726643821]
+
+[node name="Funds" type="Label" parent="HUD" unique_id=2004158747]
+offset_left = 24.0
+offset_top = 18.0
+offset_right = 260.0
+offset_bottom = 48.0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 26
+text = "Funds  $12"
+
+[node name="Hint" type="Label" parent="HUD" unique_id=1661217605]
+offset_left = 24.0
+offset_top = 52.0
+offset_right = 620.0
+offset_bottom = 78.0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+text = "Drag a player onto an open roster slot to sign them, or onto Sell to cash them in."

@@ -9,6 +9,7 @@ var previous_position: Vector2
 var previous_height: float = 0.0
 var held: bool = true
 var bounced: bool = false
+var gravity_enabled: bool = true
 
 
 func launch(
@@ -22,6 +23,7 @@ func launch(
 	vertical_velocity = upward_velocity
 	held = false
 	bounced = false
+	gravity_enabled = true
 
 
 func step(delta: float) -> void:
@@ -30,6 +32,8 @@ func step(delta: float) -> void:
 	if held:
 		return
 	position += velocity * delta
+	if not gravity_enabled:
+		return
 	if height > 0.0 or vertical_velocity > 0.0:
 		vertical_velocity -= GRAVITY * delta
 		height += vertical_velocity * delta
@@ -44,5 +48,8 @@ func step(delta: float) -> void:
 func hold_at(point: Vector2) -> void:
 	held = true
 	position = point
-	height = 12.0
+	height = 25.0
 	velocity = Vector2.ZERO
+	vertical_velocity = 0.0
+	previous_position = point
+	previous_height = height

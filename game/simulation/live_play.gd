@@ -21,6 +21,7 @@ var batter_done: bool = true
 var result: String = ""
 var is_home_run: bool = false
 var fly_caught: bool = false
+var foul: bool = false
 var outs_made: int = 0
 var strikeout: bool = false
 var ground_double_play: bool = false
@@ -37,16 +38,12 @@ func _init(match_scene: BaseballMatch) -> void:
 		run.awarded_base = 0
 		run.returning = false
 		run.contact_judgement = game.rng.randfn(0.0, lerpf(0.8, 0.05, run.runner.data.anticipation))
-	var spread := lerpf(0.18, 0.025, game.batter.data.hitting)
+	var spread := lerpf(0.27, 0.08, game.batter.data.hitting)
 	swing_time = PITCH_DURATION + game.rng.randfn(0.0, spread)
-	aim_error = game.rng.randfn(0.0, lerpf(1.0, 0.18, game.batter.data.hitting))
-	game.ball.launch(
-		game.mound.position, (game.home.position - game.mound.position) / PITCH_DURATION, 12.0, 0.0
-	)
+	aim_error = game.rng.randfn(0.0, lerpf(1.3, 0.5, game.batter.data.hitting))
 	game.batter.show_swing(0.0)
-	game.phase = game.Phase.PITCH
-	game.ball_thrown.emit(game.mound.position)
-	game.last_result = "Pitch to %s" % game.batter.data.player_name
+	game.phase = game.Phase.WINDUP
+	game.last_result = "Pitcher set: %s batting" % game.batter.data.player_name
 
 
 func step(delta: float) -> void:
@@ -54,11 +51,8 @@ func step(delta: float) -> void:
 		return
 	timer += delta
 	elapsed += delta
-	if game.phase == game.Phase.PITCH:
-		game.ball.position = game.mound.position.lerp(game.home.position, timer / PITCH_DURATION)
-		game.batter.show_swing((timer - swing_time + 0.12) / 0.24)
-		if timer >= swing_time:
-			_resolve_swing()
+	if game.phase in [game.Phase.WINDUP, game.Phase.PITCH, game.Phase.RECEIVE]:
+		_step_pitch(delta)
 		return
 	if game.phase == game.Phase.FOUL:
 		game.ball.step(delta)
@@ -66,8 +60,7 @@ func step(delta: float) -> void:
 		if timer >= 1.5:
 			_end("Foul: %d strike(s)" % game.strikes)
 		return
-	if game.phase != game.Phase.HOME_RUN:
-		game.ball.step(delta)
+	game.ball.step(delta)
 	if game.phase == game.Phase.FIELDING:
 		var crossing: String = game.outfield.check_crossing(game.ball)
 		if crossing == "home_run":
@@ -103,42 +96,72 @@ func step(delta: float) -> void:
 		game.simulation_error("Live play stalled")
 
 
+func _step_pitch(delta: float) -> void:
+	if game.phase == game.Phase.WINDUP:
+		game.ball.hold_at(game.fielder_for("P").position)
+		if timer >= game.windup_duration:
+			game.ball.launch(
+				game.ball.position,
+				(game.home.position - game.ball.position) / PITCH_DURATION,
+				game.ball.height,
+				0.0
+			)
+			game.ball.gravity_enabled = false
+			game.phase = game.Phase.PITCH
+			game.last_result = "Pitch to %s" % game.batter.data.player_name
+			timer = 0.0
+			game.ball_thrown.emit(game.ball.position)
+		return
+	if game.phase == game.Phase.PITCH:
+		game.ball.step(delta)
+		game.batter.show_swing((timer - swing_time + 0.12) / 0.24)
+		if timer >= PITCH_DURATION:
+			_resolve_swing()
+		return
+	if game.phase == game.Phase.RECEIVE:
+		game.ball.step(delta)
+		game.batter.show_swing((timer - swing_time + 0.12) / 0.24)
+		var catcher := game.fielder_for("C")
+		if within_reach(catcher):
+			holder = catcher
+			game.ball.hold_at(catcher.position)
+			game.ball_caught.emit(catcher)
+			_record_strike()
+		return
+
+
 func _resolve_swing() -> void:
 	var timing_error := (swing_time - PITCH_DURATION) / 0.16
 	var quality := clampf(1.0 - absf(timing_error) * 0.55 - absf(aim_error) * 0.35, 0, 1)
-	if absf(timing_error) > 1.0 or absf(aim_error) > 1.4:
-		game.strikes += 1
-		batter_done = game.strikes >= 3
-		game.strike_called.emit(batter_done)
-		if batter_done:
-			strikeout = true
-			outs_made = 1
-			var fielding_side := 1 - game.batting_side
-			var catcher_index := game.teams[fielding_side].field_roles.find("C")
-			game.box_score.teams[fielding_side].players[catcher_index].PO += 1
-			game.outs += 1
-			game.batter.set_label("%d OUT" % (game.batter.roster_index + 1))
-			game.out_recorded.emit(game.batter)
-		_end("Strikeout" if batter_done else "Swing and miss: strike %d" % game.strikes)
+	if absf(timing_error) > 0.75 or absf(aim_error) > 1.2:
+		game.phase = game.Phase.RECEIVE
 		return
 	var angle := timing_error * 1.15 + aim_error * 0.35
-	if absf(angle) > PI / 4.0:
+	if not game.outfield.is_fair(game.home.position + Vector2.UP.rotated(angle)):
+		foul = true
 		game.strikes = mini(2, game.strikes + 1)
 		batter_done = false
-		game.ball.launch(game.home.position, Vector2.UP.rotated(angle) * 320.0, 10.0, 130.0)
+		game.ball.launch(
+			game.ball.position, Vector2.UP.rotated(angle) * 320.0, game.ball.height, 130.0
+		)
 		game.batter.swing_visible = false
 		game.phase = game.Phase.FOUL
 		game.last_result = "Foul ball!"
 		game.foul_called.emit()
 		timer = 0.0
 		return
-	angle = clampf(angle + game.rng.randf_range(-0.5, 0.5), -0.77, 0.77)
+	var foul_margin := PI / 4.0 - 0.77
+	angle = clampf(
+		angle + game.rng.randf_range(-0.5, 0.5),
+		game.outfield.third_direction.angle() + PI / 2 + foul_margin,
+		game.outfield.first_direction.angle() + PI / 2 - foul_margin
+	)
 	var power: float = game.batter.data.batting_power * lerpf(0.65, 1.6, quality)
 	var lift: float = game.rng.randf_range(180.0, 410.0)
 	if game.rng.randf() < 0.3:
 		lift = game.rng.randf_range(20.0, 80.0)
-	game.ball.launch(game.home.position, Vector2.UP.rotated(angle) * power, 10.0, lift)
-	game.batter.swing_visible = false
+	game.ball.launch(game.ball.position, Vector2.UP.rotated(angle) * power, game.ball.height, lift)
+	game.equipment.bat_for(game.batter).follow_through = 0.2
 	batter_run = BaseballBaseRunning.new()
 	batter_run.reset(game.batter, game.base_positions)
 	game.runners.append(batter_run)
@@ -149,6 +172,20 @@ func _resolve_swing() -> void:
 	timer = 0.0
 	game.ball_hit.emit(quality)
 	game.last_result = "Fair hit: %s fielding" % defense.chaser.role
+
+
+func _record_strike() -> void:
+	game.strikes += 1
+	batter_done = game.strikes >= 3
+	game.strike_called.emit(batter_done)
+	if batter_done:
+		strikeout = true
+		outs_made = 1
+		game.box_score.teams[holder.team_index].players[holder.roster_index].PO += 1
+		game.outs += 1
+		game.batter.set_label("%d OUT" % (game.batter.roster_index + 1))
+		game.out_recorded.emit(game.batter)
+	_end("Strikeout" if batter_done else "Swing and miss: strike %d" % game.strikes)
 
 
 func _advance_on_contact() -> void:
@@ -388,7 +425,7 @@ func _step_throw() -> void:
 		game.ball.launch(
 			holder.position,
 			holder.position.direction_to(destination) * holder.data.throwing_speed,
-			12.0,
+			game.ball.height,
 			BaseballBall.GRAVITY * travel_time / 2.0
 		)
 		game.ball_thrown.emit(holder.position)
@@ -532,6 +569,3 @@ func within_reach(player: BaseballPlayer) -> bool:
 func _end(message: String) -> void:
 	done = true
 	result = message
-	if holder == null:
-		holder = defense.nearest(game.home.position, [])
-		game.ball.hold_at(holder.position)

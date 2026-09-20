@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/shop/signed_player.gd" id="script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player.svg" id="sprite"]
+
+[sub_resource type="BoxShape3D" id="grab_shape"]
+size = Vector3(1.1, 2.3, 1.1)
+
+[node name="SignedPlayer" type="Area3D"]
+script = ExtResource("script")
+display_name = "Signed player"
+
+[node name="Grab" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 0)
+shape = SubResource("grab_shape")
+
+[node name="Hang" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0)
+
+[node name="Sprite" type="Sprite3D" parent="Hang"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.15, 0)
+cast_shadow = 0
+texture = ExtResource("sprite")
+pixel_size = 0.024
+alpha_cut = 1
+texture_filter = 0
+shaded = false

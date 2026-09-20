@@ -17,20 +17,22 @@ config/icon="res://icon.svg"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
-
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
 [editor]
 
-movie_writer/movie_file="./tmp/movie.ogv"
+movie_writer/movie_file="tmp/movie.ogv"
 
 [layer_names]
 
 2d_physics/layer_1="Players"
+3d_physics/layer_1="Buyables"
 2d_physics/layer_2="Outfield wall"
+3d_physics/layer_2="Buy targets"
+3d_physics/layer_3="Walkable field"
 
 [physics]
 

@@ -1,11 +1,9 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=6 format=3]
 [ext_resource type="Script" path="res://game/match.gd" id="match"]
 [ext_resource type="Resource" path="res://data/teams/visitors.tres" id="batters"]
 [ext_resource type="Resource" path="res://data/teams/home.tres" id="fielders"]
 [ext_resource type="PackedScene" path="res://game/actors/ball.tscn" id="ball"]
-[ext_resource type="PackedScene" path="res://game/field/base.tscn" id="base"]
-[ext_resource type="PackedScene" path="res://game/field/outfield.tscn" id="outfield"]
-[ext_resource type="PackedScene" path="res://game/field/dugout.tscn" id="dugout"]
+[ext_resource type="PackedScene" path="res://game/field/match_ballpark.tscn" id="ballpark"]
 [ext_resource type="PackedScene" path="res://game/presentation/box_score.tscn" id="box_score"]
 
 [node name="Simulation" type="Node2D"]
@@ -15,17 +13,7 @@ script = ExtResource("match")
 visiting_team = ExtResource("batters")
 home_team = ExtResource("fielders")
 
-[node name="Field" type="Node2D" parent="."]
-
-[node name="Home" type="Marker2D" parent="Field"]
-position = Vector2(0, 220)
-[node name="Mound" type="Marker2D" parent="Field"]
-[node name="FirstBase" parent="Field" instance=ExtResource("base")]
-position = Vector2(220, 0)
-[node name="SecondBase" parent="Field" instance=ExtResource("base")]
-position = Vector2(0, -220)
-[node name="ThirdBase" parent="Field" instance=ExtResource("base")]
-position = Vector2(-220, 0)
+[node name="Field" parent="." instance=ExtResource("ballpark")]
 
 [node name="Players" type="Node2D" parent="."]
 [node name="Ball" parent="." instance=ExtResource("ball")]
@@ -42,19 +30,4 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 
-[node name="Outfield" parent="Field" instance=ExtResource("outfield")]
-
-[node name="Dugouts" type="Node2D" parent="."]
-[node name="Visitors" parent="Dugouts" instance=ExtResource("dugout")]
-position = Vector2(-270, 180)
-rotation = 0.785398
-[node name="OnDeck" parent="Dugouts/Visitors" index="0"]
-position = Vector2(195, 0)
-[node name="Home" parent="Dugouts" instance=ExtResource("dugout")]
-position = Vector2(270, 180)
-rotation = -0.785398
-
 [node name="BoxScore" parent="HUD" instance=ExtResource("box_score")]
-
-
-[editable path="Dugouts/Visitors"]

@@ -1,0 +1,61 @@
+{
+  "schema_version": 2,
+  "simulation_units_per_meter": 25,
+  "coordinates": "Blender Z-up; simulation (x, y) = (Blender x * 25, -Blender y * 25)",
+  "controls": {
+    "Home": [
+      0.0,
+      -8.800000190734863,
+      0.0
+    ],
+    "First": [
+      8.800000190734863,
+      0.0,
+      0.0
+    ],
+    "Second": [
+      0.0,
+      8.800000190734863,
+      0.0
+    ],
+    "Third": [
+      -8.800000190734863,
+      0.0,
+      0.0
+    ],
+    "Mound": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "Base Size": 0.699999988079071,
+    "Fence Depth": 38.0,
+    "Fence Flat Half Width": 12.0,
+    "Fence Corner Radius": 20.0,
+    "Fence Height": 1.1200000047683716,
+    "Line Radius": 0.03500000014901161,
+    "Foul Line Length": 40.79999923706055,
+    "Ground Size": [
+      110.0,
+      100.0,
+      0.4000000059604645
+    ],
+    "Visitors Dugout": [
+      -10.800000190734863,
+      -7.199999809265137,
+      0.0
+    ],
+    "Visitors Rotation": -0.7853981852531433,
+    "Home Team Dugout": [
+      10.800000190734863,
+      -7.199999809265137,
+      0.0
+    ],
+    "Home Team Rotation": 0.7853981852531433,
+    "Dugout Length": 13.600000381469727,
+    "Dugout Width": 3.5999999046325684,
+    "Dugout Depth": 1.2000000476837158,
+    "Dugout Stair Width": 2.0,
+    "Dugout Stair Run": 2.4000000953674316
+  }
+}

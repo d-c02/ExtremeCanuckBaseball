@@ -77,7 +77,7 @@ func _call(clip: AudioStream) -> void:
 
 
 func _on_out(_player: BaseballPlayer) -> void:
-	if game.phase != game.Phase.PITCH:
+	if game.phase not in [game.Phase.PITCH, game.Phase.RECEIVE]:
 		_call(out)
 
 
@@ -102,7 +102,15 @@ func _process(delta: float) -> void:
 func _update_flight(delta: float) -> void:
 	var ball := game.ball
 	var audible := (
-		game.phase in [game.Phase.PITCH, game.Phase.FIELDING, game.Phase.THROW, game.Phase.FOUL]
+		game.phase
+		in [
+			game.Phase.PITCH,
+			game.Phase.RECEIVE,
+			game.Phase.RETURN_BALL,
+			game.Phase.FIELDING,
+			game.Phase.THROW,
+			game.Phase.FOUL
+		]
 	)
 	if not audible or ball.held or ball.height <= 1.0 or flight == null:
 		airborne.stop()

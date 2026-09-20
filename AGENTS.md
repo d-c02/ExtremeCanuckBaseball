@@ -1,6 +1,9 @@
 # Working on the game
 
 Read [docs/simulation.md](docs/simulation.md) before changing the simulation.
+For Blender, read [docs/blender.md](docs/blender.md). Keep field exports and
+gameplay layout aligned when integrating them; use the installed Blender version's
+API rather than assuming older Geometry Nodes modifier examples still work.
 
 - Keep docs and scripts in sync in the same change. Update rules, scoring,
   controls, scene layout and tuning notes when their behavior changes.
@@ -16,6 +19,7 @@ Read [docs/simulation.md](docs/simulation.md) before changing the simulation.
   ```sh
   godot --headless --path . --editor --quit
   godot --headless --path . --fixed-fps 60 --script tests/simulation_test.gd
+  godot --headless --path . --fixed-fps 60 --script tests/shop_test.gd
   ```
 
   Use the installed Godot executable if `godot` is not on PATH.

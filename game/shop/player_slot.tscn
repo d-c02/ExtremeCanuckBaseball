@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://bg7exhrafepul"]
+
+[ext_resource type="Script" uid="uid://dc3mw11wuuyix" path="res://game/shop/player_slot.gd" id="script"]
+[ext_resource type="Texture2D" uid="uid://crjwx14qeq6jo" path="res://assets/sprites/player.svg" id="sprite"]
+
+[sub_resource type="BoxShape3D" id="grab_shape"]
+size = Vector3(1.2, 2.4, 1.2)
+
+[node name="PlayerSlot" type="Area3D" unique_id=1698031314]
+script = ExtResource("script")
+display_name = "Prospect"
+cost = 3
+
+[node name="Grab" type="CollisionShape3D" parent="." unique_id=1871666103]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+shape = SubResource("grab_shape")
+
+[node name="Hang" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0)
+
+[node name="Sprite" type="Sprite3D" parent="Hang"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.15, 0)
+cast_shadow = 0
+pixel_size = 0.024
+alpha_cut = 1
+texture_filter = 0
+texture = ExtResource("sprite")
+
+[node name="Name" type="Label3D" parent="." unique_id=669512955]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+visible = false
+pixel_size = 0.013
+billboard = 1
+text = "Prospect"
+font_size = 48

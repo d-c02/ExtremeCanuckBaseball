@@ -1,10 +1,16 @@
-[gd_scene load_steps=12 format=3 uid="uid://dar4rg8x7fywr"]
+[gd_scene load_steps=15 format=3 uid="uid://dar4rg8x7fywr"]
 
 [ext_resource type="Script" path="res://game/presentation/world_3d.gd" id="world"]
 [ext_resource type="PackedScene" path="res://game/match.tscn" id="simulation"]
 [ext_resource type="Script" path="res://game/presentation/field_3d.gd" id="field"]
 [ext_resource type="Script" path="res://game/presentation/action_camera.gd" id="camera"]
 [ext_resource type="PackedScene" path="res://game/presentation/sounds.tscn" id="sounds"]
+[ext_resource type="Script" path="res://game/presentation/tape_transition.gd" id="tape"]
+[ext_resource type="Shader" path="res://game/presentation/tape_transition.gdshader" id="tape_shader"]
+
+[sub_resource type="ShaderMaterial" id="tape_material"]
+shader = ExtResource("tape_shader")
+
 [sub_resource type="Environment" id="environment"]
 background_mode = 1
 background_color = Color(0.53, 0.68, 0.74, 1)
@@ -17,8 +23,8 @@ shading_mode = 0
 albedo_color = Color(1, 0.96, 0.76, 1)
 [sub_resource type="SphereMesh" id="ball_mesh"]
 material = SubResource("ball_material")
-radius = 0.22
-height = 0.44
+radius = 0.1
+height = 0.2
 radial_segments = 16
 rings = 8
 [sub_resource type="StandardMaterial3D" id="shadow_material"]
@@ -70,3 +76,28 @@ offset_bottom = 94.0
 grow_horizontal = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("hud_background")
+
+[node name="BroadcastPositions" type="Node3D" parent="."]
+[node name="HighHome" type="Marker3D" parent="BroadcastPositions"]
+position = Vector3(0, 30, 37)
+[node name="CenterField" type="Marker3D" parent="BroadcastPositions"]
+position = Vector3(-12, 7, -42)
+[node name="FirstBase" type="Marker3D" parent="BroadcastPositions"]
+position = Vector3(25, 9, 17)
+[node name="ThirdBase" type="Marker3D" parent="BroadcastPositions"]
+position = Vector3(-25, 9, 17)
+[node name="TapeTransition" type="CanvasLayer" parent="."]
+layer = 0
+script = ExtResource("tape")
+[node name="Tracking" type="ColorRect" parent="TapeTransition"]
+material = SubResource("tape_material")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+[node name="Indicator" type="Label" parent="TapeTransition"]
+offset_left = 28.0
+offset_top = 108.0
+text = ">> FF"

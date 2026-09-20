@@ -11,3 +11,6 @@
 # Local development tools
 /.venv/
 __pycache__/
+
+# Blender backup files
+*.blend[0-9]

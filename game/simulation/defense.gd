@@ -46,7 +46,7 @@ func pursuit_score(player: BaseballPlayer) -> float:
 	var arrival := (
 		player.position.distance_to(read.target) / player.data.speed + player.reaction_remaining
 	)
-	var station: Vector2 = game.teams[1 - game.batting_side].field_positions[player.roster_index]
+	var station: Vector2 = game.field_position(player)
 	var departure_cost := minf(maxf(station.distance_to(read.target) - 180.0, 0.0) / 450.0, 1.5)
 	var nearby_weight := clampf(player.position.distance_to(game.ball.position) / 120.0, 0.0, 1.0)
 	return (
@@ -92,9 +92,7 @@ func _reassign(initial: bool) -> void:
 	excluded.append(receiver)
 	var second := nearest(game.base_positions[1], excluded)
 	for player in fielders:
-		var station: Vector2 = game.teams[1 - game.batting_side].field_positions[
-			player.roster_index
-		]
+		var station: Vector2 = game.field_position(player)
 		var destination := idle_target(player, station)
 		var action := "Holding position"
 		if player == chaser:

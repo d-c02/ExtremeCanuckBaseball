@@ -9,6 +9,7 @@ signal ball_caught(player: BaseballPlayer)
 @warning_ignore("unused_signal")
 signal runner_reached_base(player: BaseballPlayer)
 signal play_finished(result: String)
+@warning_ignore("unused_signal")
 signal ball_thrown(origin: Vector2)
 @warning_ignore("unused_signal")
 signal strike_called(strikeout: bool)
@@ -26,17 +27,31 @@ signal game_finished(scores: Array[int])
 signal game_reset
 
 enum Phase {
-	READY, PREPARING, PITCH, FIELDING, THROW, TAG, HOME_RUN, SETTLING, RETURNING, FINISHED, FOUL
+	READY,
+	PREPARING,
+	RETURN_BALL,
+	WINDUP,
+	PITCH,
+	RECEIVE,
+	FIELDING,
+	THROW,
+	TAG,
+	HOME_RUN,
+	SETTLING,
+	FINISHED,
+	FOUL
 }
 const PLAYER_SCENE = preload("res://game/actors/player.tscn")
 
 @export var visiting_team: BaseballTeamData
 @export var home_team: BaseballTeamData
-@export var random_seed: int = 42
+@export var random_seed: int = 0
 @export_range(1, 9) var innings: int = 3
-@export_range(0.2, 4.0) var between_play_delay: float = 1.8
+@export_range(0.2, 4.0) var between_play_delay: float = 2.2
+@export_range(0.3, 4.0) var windup_duration: float = 1.5
 @export_range(1, 8) var transition_speed: int = 3
 
+var active_seed: int = 0
 var rng := RandomNumberGenerator.new()
 var phase: Phase = Phase.READY
 var teams: Array[BaseballTeamData] = []
@@ -59,15 +74,17 @@ var paused: bool = false
 var debug_visible: bool = false
 var dugout_view: bool = false
 var last_result: String = "Space: start game"
-var return_ball_time: float = 0.0
+var ball_return: BaseballBallReturn
+var equipment: BaseballEquipment
 var error_message: String = ""
 
 @onready var ball: BaseballBall = $Ball
-@onready var home: Marker2D = $Field/Home
-@onready var mound: Marker2D = $Field/Mound
+@onready var field: BaseballBallpark = $Field
+@onready var home: Marker2D = field.home
+@onready var mound: Marker2D = field.mound
 @onready var status: Label = $HUD/Status
-@onready var outfield: BaseballOutfield = $Field/Outfield
-@onready var dugouts: Array[Node2D] = [$Dugouts/Visitors, $Dugouts/Home]
+@onready var outfield: BaseballOutfield = field.outfield
+@onready var dugouts: Array[Node2D] = field.dugouts
 
 
 func _ready() -> void:
@@ -80,14 +97,7 @@ func _ready() -> void:
 		if not roster_error.is_empty():
 			simulation_error("%s: %s" % [team.team_name, roster_error])
 			return
-	base_positions = PackedVector2Array(
-		[
-			$Field/FirstBase.position,
-			$Field/SecondBase.position,
-			$Field/ThirdBase.position,
-			home.position
-		]
-	)
+	base_positions = field.base_positions
 	for side in 2:
 		var squad: Array[BaseballPlayer] = []
 		for index in 9:
@@ -98,13 +108,22 @@ func _ready() -> void:
 			player.configure(teams[side].players[index])
 			squad.append(player)
 		squads.append(squad)
+	equipment = BaseballEquipment.new()
+	add_child(equipment)
+	equipment.configure(self)
 	reset_game()
 
 
-func reset_game() -> void:
+func reset_game(replay: bool = false) -> void:
 	if squads.size() != 2:
 		return
-	rng.seed = random_seed
+	if not replay or active_seed == 0:
+		if random_seed == 0:
+			rng.randomize()
+			active_seed = rng.randi_range(1, 2147483647)
+		else:
+			active_seed = random_seed
+	rng.seed = active_seed
 	scores = [0, 0]
 	box_score = BaseballBoxScore.new(teams)
 	next_batter = [0, 0]
@@ -128,7 +147,8 @@ func reset_game() -> void:
 			player.set_label(str(player.roster_index + 1))
 	fielders = squads[1]
 	batter = squads[0][0]
-	ball.hold_at(mound.position)
+	ball_return = null
+	equipment.reset()
 	_refresh_status()
 	game_reset.emit()
 
@@ -156,24 +176,32 @@ func step(delta: float) -> void:
 
 
 func is_fast_forwarding() -> bool:
-	return phase == Phase.RETURNING or (phase == Phase.PREPARING and pitch_count > 0)
+	return phase == Phase.PREPARING and pitch_count > 0
 
 
 func _step_simulation(delta: float) -> void:
 	for squad in squads:
 		for player in squad:
 			player.step(delta)
+	equipment.step(delta)
 	phase_elapsed += delta
 	match phase:
-		Phase.PREPARING:
+		Phase.PREPARING, Phase.RETURN_BALL:
 			_step_preparation(delta)
-		Phase.PITCH, Phase.FIELDING, Phase.THROW, Phase.TAG, Phase.HOME_RUN, Phase.FOUL:
+		_ when play != null and not play.done and phase != Phase.FINISHED:
 			play.step(delta)
 			if play.done:
 				_complete_play()
+		Phase.FINISHED:
+			if play != null and play.holder != null:
+				ball.hold_at(play.holder.position)
+			else:
+				ball.step(delta)
 		Phase.SETTLING:
 			if play.holder != null:
 				ball.hold_at(play.holder.position)
+			else:
+				ball.step(delta)
 			if phase_elapsed >= between_play_delay:
 				if outs >= 3:
 					_end_half()
@@ -181,10 +209,7 @@ func _step_simulation(delta: float) -> void:
 					_finish_game()
 				else:
 					_prepare_pitch()
-		Phase.RETURNING:
-			if _everyone_arrived():
-				_prepare_pitch()
-	if phase in [Phase.PREPARING, Phase.RETURNING] and phase_elapsed > 40.0:
+	if phase == Phase.PREPARING and phase_elapsed > 40.0:
 		simulation_error("Players failed to reach their positions")
 
 
@@ -198,7 +223,10 @@ func _prepare_pitch() -> void:
 		var index := player.roster_index
 		player.role = teams[1 - batting_side].field_roles[index]
 		player.set_label(player.role)
-		player.move_to(teams[1 - batting_side].field_positions[index], "Taking field position")
+		player.move_via(
+			dugouts[player.team_index].route_out(player.position, field_position(player)),
+			"Taking field position"
+		)
 	for player in squads[batting_side]:
 		player.swing_visible = false
 		player.set_label("%d %s" % [player.roster_index + 1, player.data.player_name])
@@ -206,31 +234,25 @@ func _prepare_pitch() -> void:
 		if run != null:
 			player.move_to(base_positions[run.reached - 1] + Vector2(10, 9), "Holding base")
 		elif player == batter:
-			player.move_to(home.position, "Walking to bat")
+			player.move_via(
+				equipment.batting_route(player, home.position + Vector2(25, 0)), "Walking to bat"
+			)
 		elif player.roster_index == (next_batter[batting_side] + 1) % 9:
 			_send_on_deck(player)
 		else:
 			_send_to_dugout(player)
-	var origin := ball.position
-	return_ball_time = maxf(0.25, origin.distance_to(mound.position) / 400.0)
-	ball.launch(
-		origin,
-		(mound.position - origin) / return_ball_time,
-		12.0,
-		BaseballBall.GRAVITY * return_ball_time / 2.0
-	)
-	if pitch_count > 0:
-		ball_thrown.emit(origin)
+	ball_return = BaseballBallReturn.new(self, play.holder if play != null else null)
 	last_result = "Players getting ready: %s batting" % batter.data.player_name
 
 
 func _step_preparation(delta: float) -> void:
-	if return_ball_time > 0.0:
-		return_ball_time -= delta
-		ball.step(delta)
-		if return_ball_time <= 0.0:
-			ball.hold_at(mound.position)
-	if _everyone_arrived() and return_ball_time <= 0.0 and phase_elapsed >= between_play_delay:
+	ball_return.step(delta)
+	if (
+		ball_return.ready
+		and _everyone_arrived()
+		and equipment.bat_for(batter).carrier == batter
+		and phase_elapsed >= between_play_delay
+	):
 		pitch_count += 1
 		play = BaseballLivePlay.new(self)
 		phase_elapsed = 0.0
@@ -272,14 +294,9 @@ func _end_half() -> void:
 	batting_side = 1 - batting_side
 	outs = 0
 	strikes = 0
-	play = null
-	phase = Phase.RETURNING
-	phase_elapsed = 0.0
+	_prepare_pitch()
+	last_result = "Change sides: %s taking the field" % teams[1 - batting_side].team_name
 	sides_changed.emit()
-	last_result = "Change sides: players returning to their dugouts"
-	for squad in squads:
-		for player in squad:
-			_send_to_dugout(player)
 
 
 func _finish_game() -> void:
@@ -303,17 +320,49 @@ func runner_for(player: BaseballPlayer) -> BaseballBaseRunning:
 	return null
 
 
+func field_position(player: BaseballPlayer) -> Vector2:
+	var point: Vector2 = teams[player.team_index].field_positions[player.roster_index]
+	match player.role:
+		"P":
+			return point + mound.position
+		"C":
+			return point + home.position - Vector2(0, 220)
+		"1B":
+			return point + base_positions[0] - Vector2(220, 0)
+		"2B", "SS":
+			return point + base_positions[1] - Vector2(0, -220)
+		"3B":
+			return point + base_positions[2] - Vector2(-220, 0)
+		_:
+			var offset := point - Vector2(0, 220)
+			offset *= Vector2(
+				(outfield.flat_half_width + outfield.corner_radius) / 800.0,
+				outfield.fence_distance / 950.0
+			)
+			return outfield.clamp_inside(home.position + offset)
+
+
+func fielder_for(role: String) -> BaseballPlayer:
+	for player in fielders:
+		if player.role == role:
+			return player
+	return fielders[teams[1 - batting_side].field_roles.find(role)]
+
+
 func _send_to_dugout(player: BaseballPlayer) -> void:
 	player.swing_visible = false
 	player.set_label(str(player.roster_index + 1))
-	player.move_to(
-		dugouts[player.team_index].seat_position(player.roster_index), "Returning to dugout"
+	player.move_via(
+		dugouts[player.team_index].route_in(player.position, player.roster_index),
+		"Returning to dugout"
 	)
 
 
 func _send_on_deck(player: BaseballPlayer) -> void:
 	player.set_label("%d next" % (player.roster_index + 1))
-	player.move_to(dugouts[player.team_index].on_deck_position(), "On deck")
+	player.move_via(
+		equipment.batting_route(player, dugouts[player.team_index].on_deck_position()), "On deck"
+	)
 
 
 func _everyone_arrived() -> bool:
@@ -340,7 +389,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_SPACE:
 			start_game()
 		KEY_R:
-			reset_game()
+			reset_game(event.shift_pressed)
 		KEY_P:
 			paused = not paused
 			_refresh_status()
@@ -354,8 +403,8 @@ func _refresh_status() -> void:
 	status.text = (
 		(
 			"%s %d / %d %s | %s %d/%d | %d out(s), %d strike(s)\n%s%s\n"
-			+ "Space: start game   P: pause   R: reset   B: box score   "
-			+ "H: dugouts   D: targets   Q/E: orbit   Right-drag: camera   Wheel: zoom   C: guides"
+			+ "Space: play   P: pause   R: new   Shift+R: replay   B: score   "
+			+ "H: dugouts   V: broadcast   Q/E or drag: orbit   Wheel: zoom   D/C: guides"
 		)
 		% [
 			teams[0].team_name,
@@ -367,7 +416,7 @@ func _refresh_status() -> void:
 			innings,
 			outs,
 			strikes,
-			last_result,
+			last_result + " · seed %d" % active_seed,
 			" [PAUSED]" if paused else ""
 		]
 	)

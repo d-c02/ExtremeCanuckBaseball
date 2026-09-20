@@ -23,13 +23,16 @@ static func world_position(point: Vector2, height: float = 0.0) -> Vector3:
 func _ready() -> void:
 	if not game.error_message.is_empty():
 		return
-	field.build(game)
+	field.build(game.field)
 	for squad in game.squads:
 		for player in squad:
 			var view: BaseballPlayerView = PLAYER_VIEW.instantiate()
 			$Players.add_child(view)
-			view.configure(player, game.teams[player.team_index].color)
+			view.configure(player, game.teams[player.team_index].color, game)
 			player_views.append(view)
+	var equipment_view := BaseballEquipmentView.new()
+	add_child(equipment_view)
+	equipment_view.configure(self)
 	guides.mesh = debug_mesh
 	var surface := BaseballFieldView.material(Color.WHITE)
 	surface.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED

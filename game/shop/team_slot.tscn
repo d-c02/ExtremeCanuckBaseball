@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://game/shop/team_slot.gd" id="script"]
+
+[sub_resource type="BoxShape3D" id="drop_shape"]
+size = Vector3(2.2, 2.4, 2.2)
+
+[sub_resource type="StandardMaterial3D" id="plate_material"]
+albedo_color = Color(0.16, 0.2, 0.24, 0.75)
+roughness = 1.0
+transparency = 1
+
+[sub_resource type="CylinderMesh" id="plate_mesh"]
+material = SubResource("plate_material")
+top_radius = 1.1
+bottom_radius = 1.1
+height = 0.06
+radial_segments = 24
+
+[sub_resource type="CylinderMesh" id="highlight_mesh"]
+top_radius = 1.35
+bottom_radius = 1.35
+height = 0.03
+radial_segments = 24
+
+[node name="TeamSlot" type="Area3D"]
+script = ExtResource("script")
+
+[node name="Drop" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+shape = SubResource("drop_shape")
+
+[node name="Plate" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
+cast_shadow = 0
+mesh = SubResource("plate_mesh")
+
+[node name="Highlight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0)
+cast_shadow = 0
+mesh = SubResource("highlight_mesh")
+
+[node name="Name" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.6)
+visible = false
+pixel_size = 0.018
+font_size = 40
+outline_size = 10
+billboard = 1
+modulate = Color(0.9, 0.93, 0.96, 1)
+text = "open"

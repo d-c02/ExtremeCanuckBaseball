@@ -6,6 +6,8 @@ extends Node2D
 @export var flat_half_width: float = 300.0
 @export var corner_radius: float = 500.0
 @export var home_position: Vector2 = Vector2(0, 220)
+var first_direction := Vector2(220, -220)
+var third_direction := Vector2(-220, -220)
 var boundary: PackedVector2Array
 
 
@@ -29,6 +31,8 @@ func _ready() -> void:
 			)
 		)
 	boundary.append(Vector2(flat_half_width + corner_radius, home_position.y + 180.0))
+	for index in boundary.size():
+		boundary[index].x += home_position.x
 	var wall := StaticBody2D.new()
 	wall.name = "WallCollision"
 	wall.collision_layer = 2
@@ -78,7 +82,7 @@ func boundary_hit(start: Vector2, finish: Vector2) -> Dictionary:
 
 func is_fair(point: Vector2) -> bool:
 	var offset := point - home_position
-	return offset.y <= 0.0 and absf(offset.x) <= -offset.y
+	return first_direction.cross(offset) <= 0.0 and third_direction.cross(offset) >= 0.0
 
 
 func check_crossing(ball: BaseballBall) -> String:

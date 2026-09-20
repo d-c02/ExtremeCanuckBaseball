@@ -3,6 +3,7 @@ extends CharacterBody2D
 
 var data: BaseballPlayerData
 var target: Vector2
+var waypoints: PackedVector2Array
 var intention: String = "Waiting"
 var reaction_remaining: float = 0.0
 var moving: bool = false
@@ -22,13 +23,20 @@ func configure(player_data: BaseballPlayerData) -> void:
 
 
 func move_to(destination: Vector2, action: String, delay: float = 0.0) -> void:
+	waypoints.clear()
 	target = destination
 	intention = action
 	reaction_remaining = delay
 	moving = true
 
 
+func move_via(points: PackedVector2Array, action: String) -> void:
+	move_to(points[0], action)
+	waypoints = points.slice(1)
+
+
 func stop(action: String = "Waiting") -> void:
+	waypoints.clear()
 	moving = false
 	reaction_remaining = 0.0
 	velocity = Vector2.ZERO
@@ -57,7 +65,11 @@ func step(delta: float) -> void:
 	velocity = velocity.move_toward(offset.normalized() * arrival_speed, data.acceleration * delta)
 	move_and_slide()
 	if position.distance_to(target) < 3.0 and velocity.length() < 25.0:
-		stop("In position")
+		if waypoints.is_empty():
+			stop("In position")
+		else:
+			target = waypoints[0]
+			waypoints.remove_at(0)
 
 
 func show_swing(progress: float) -> void:

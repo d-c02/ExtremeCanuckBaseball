@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://game/shop/podium.gd" id="script"]
+
+[sub_resource type="StandardMaterial3D" id="podium_material"]
+albedo_color = Color(0.55, 0.42, 0.28, 1)
+roughness = 1.0
+
+[sub_resource type="CylinderMesh" id="podium_mesh"]
+material = SubResource("podium_material")
+top_radius = 0.85
+bottom_radius = 1.0
+height = 1.2
+radial_segments = 20
+
+[node name="Podium" type="Node3D"]
+script = ExtResource("script")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("podium_mesh")
+
+[node name="Price" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.94, 0.342, 0, -0.342, 0.94, 0, 0.58, 1.06)
+pixel_size = 0.013
+font_size = 44
+outline_size = 10
+modulate = Color(0.97, 0.83, 0.42, 1)
+text = "$0"

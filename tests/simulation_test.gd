@@ -35,6 +35,7 @@ func run() -> void:
 	game = world.game
 	game.set_physics_process(false)
 	check_rosters()
+	check_seed_replay()
 	await check_box_score_toggle()
 	var original_stats := roster_stats()
 	var first_trace: Array = []
@@ -44,15 +45,28 @@ func run() -> void:
 		game.reset_game()
 		var trace: Array = []
 		var record := func(_result: String):
+			if game.play.strikeout or _result.begins_with("Swing and miss"):
+				check(
+					game.play.holder.role == "C" and game.ball.held,
+					"Strike ended before catcher received the pitch"
+				)
 			trace.append([game.scores.duplicate(), game.outs, game.inning, game.batting_side])
 			var occupied: Array[int] = []
 			for runner in game.runners:
+				# A third out can leave a runner between bases; reached is their last touch.
+				if runner.active:
+					continue
 				check(not occupied.has(runner.reached), "Two runners occupy one base")
 				occupied.append(runner.reached)
 		game.play_finished.connect(record)
 		game.start_game()
 		for frame in 100000:
 			await tick()
+			if game.phase == game.Phase.WINDUP:
+				check(
+					game.equipment.bat_for(game.batter).carrier == game.batter,
+					"Pitch began before hitter collected a bat"
+				)
 			if game.phase == game.Phase.FINISHED:
 				break
 		game.play_finished.disconnect(record)
@@ -94,20 +108,44 @@ func run() -> void:
 			)
 			pitches += team.pitching.P
 		check(pitches == game.pitch_count, "Box score lost pitches")
-		print("Seed ", seed_value, ": ", game.scores, ", pitches: ", game.pitch_count)
+		print(
+			"Seed ",
+			seed_value,
+			": ",
+			game.scores,
+			", pitches: ",
+			game.pitch_count,
+			", K: ",
+			game.box_score.teams[0].pitching.K + game.box_score.teams[1].pitching.K
+		)
 	check(roster_stats() == original_stats, "Simulation modified roster Resources")
 	await check_outs()
 	check_continuity()
+	await check_changeover()
 	check_fielders()
 	await check_wall_and_home_run()
 	await check_contact_and_retreat()
-	check_scoring()
+	await check_scoring()
 	check_foul()
+	await check_grounding()
 	check_camera()
 	print("Failures: ", failures)
 	world.queue_free()
 	await process_frame
 	quit(1 if failures else 0)
+
+
+func check_seed_replay() -> void:
+	game.random_seed = 0
+	game.reset_game()
+	var seed_value := game.active_seed
+	var sample := game.rng.randi()
+	game.reset_game(true)
+	check(
+		game.active_seed == seed_value and game.rng.randi() == sample, "Replay lost the active seed"
+	)
+	game.random_seed = 42
+	game.reset_game()
 
 
 func roster_stats() -> Array:
@@ -145,6 +183,8 @@ func contact(base_count: int = 0) -> void:
 	game.play = BaseballLivePlay.new(game)
 	game.play.swing_time = BaseballLivePlay.PITCH_DURATION
 	game.play.aim_error = 0.0
+	game.ball.hold_at(game.home.position)
+	game.equipment.bat_for(game.batter).carrier = game.batter
 	game.play._resolve_swing()
 	game.pitch_count = 1
 
@@ -235,6 +275,41 @@ func check_continuity() -> void:
 	game.phase_elapsed = 0
 	game.step(DELTA)
 	check(is_equal_approx(game.phase_elapsed, DELTA), "Transition speed leaked into the pitch")
+
+
+func check_changeover() -> void:
+	contact(1)
+	var incoming: BaseballPlayer = game.squads[0][7]
+	var outgoing: BaseballPlayer = game.squads[1][7]
+	var runner := game.runners[0].runner
+	var incoming_start := incoming.position
+	var outgoing_start := outgoing.position
+	game.outs = 3
+	game.play.holder = game.fielders[1]
+	game.play.done = true
+	game.ball.hold_at(game.play.holder.position)
+	game._end_half()
+	check(game.runners.is_empty(), "Changeover kept the previous half's runners")
+	check(runner.waypoints.is_empty(), "Runner took a dugout detour before fielding")
+	for frame in 20:
+		await tick()
+	check(
+		(
+			incoming.position.distance_to(incoming_start) > 5.0
+			and outgoing.position.distance_to(outgoing_start) > 5.0
+			and outgoing.moving
+		),
+		"Incoming defense waited for the outgoing team to reach its dugout"
+	)
+	check(game.phase == game.Phase.PREPARING, "Pitch started before changeover finished")
+	for frame in 3000:
+		await tick()
+		if game.phase not in [game.Phase.PREPARING, game.Phase.RETURN_BALL]:
+			break
+	check(
+		game.phase == game.Phase.WINDUP and game._everyone_arrived(),
+		"Changeover stalled or pitched before everyone arrived"
+	)
 
 
 func check_fielders() -> void:
@@ -347,12 +422,17 @@ func check_scoring() -> void:
 		game.box_score.teams[0].H == 0 and game.box_score.teams[0].players[0].AB == 1,
 		"Fielder's choice counted as a hit"
 	)
-	game.reset_game()
-	game.strikes = 2
+	contact()
+	game.runners.clear()
 	game.play = BaseballLivePlay.new(game)
+	game.strikes = 2
+	game.ball.launch(
+		game.home.position, Vector2(0, 220.0 / BaseballLivePlay.PITCH_DURATION), 12.0, 0.0
+	)
+	game.ball.gravity_enabled = false
 	game.play.swing_time = 2.0
 	game.play._resolve_swing()
-	game._complete_play()
+	await finish_play()
 	var pitcher: Dictionary = game.box_score.teams[1].pitching
 	check(
 		(
@@ -369,7 +449,7 @@ func check_scoring() -> void:
 	game._end_half()
 	check(
 		(
-			game.phase == game.Phase.RETURNING
+			game.phase == game.Phase.PREPARING
 			and game.inning == game.innings + 1
 			and game.batting_side == 0
 		),
@@ -397,8 +477,9 @@ func check_foul() -> void:
 	game.reset_game()
 	game.strikes = 2
 	game.play = BaseballLivePlay.new(game)
-	game.play.swing_time = BaseballLivePlay.PITCH_DURATION + 0.14
-	game.play.aim_error = 0
+	game.play.swing_time = BaseballLivePlay.PITCH_DURATION + 0.11
+	game.play.aim_error = 0.8
+	game.ball.hold_at(game.home.position)
 	game.play._resolve_swing()
 	var origin := game.ball.position
 	game.play.step(0.25)
@@ -410,6 +491,42 @@ func check_foul() -> void:
 	)
 
 
+func check_grounding() -> void:
+	game.reset_game()
+	await physics_frame
+	for side in 2:
+		var dugout = game.dugouts[side]
+		var view: BaseballPlayerView = world.player_views[side * 9]
+		var actor := view.player
+		actor.stop()
+		for step in range(-1, 7):
+			var local_y: float = -dugout.room_width / 2 - (step + 0.5) * dugout.stair_run / 6
+			actor.position = dugout.to_global(Vector2(0, local_y))
+			await physics_frame
+			view._physics_process(DELTA)
+			view.sync(0)
+			var expected := clampf(-1.2 + (step + 1) * 0.2, -1.2, 0.0)
+			check(
+				absf(view.position.y - expected) < 0.025,
+				"Player missed a dugout floor or stair tread"
+			)
+		actor.position = dugout.seat_position(0)
+		game._send_on_deck(actor)
+		var crossed_stairs := false
+		for frame in 1200:
+			await tick()
+			var local: Vector2 = dugout.to_local(actor.position)
+			if (
+				local.y < -dugout.room_width / 2
+				and local.y > -dugout.room_width / 2 - dugout.stair_run
+			):
+				crossed_stairs = true
+				check(absf(local.x) < dugout.stair_width / 2, "Player crossed a stair wall")
+			if not actor.moving:
+				break
+		check(crossed_stairs and not actor.moving, "Player failed to use the dugout exit")
+
+
 func check_camera() -> void:
 	game.reset_game()
 	var camera: Camera3D = world.get_node("Camera")
@@ -419,7 +536,9 @@ func check_camera() -> void:
 	world.sync(0.0)
 	for view in world.player_views:
 		check(
-			view.position.is_equal_approx(BaseballWorld.world_position(view.player.position)),
+			Vector2(view.position.x, view.position.z).is_equal_approx(
+				view.player.position * BaseballWorld.FIELD_SCALE
+			),
 			"3D actor diverged from the simulation"
 		)
 	check(
@@ -427,6 +546,15 @@ func check_camera() -> void:
 		"Ball height was not mapped into 3D"
 	)
 	check(is_equal_approx(world.shadow.position.y, 0.04), "Ball shadow left the ground")
+	camera._process(DELTA)
+	for point in camera.framing_points():
+		check(camera.is_position_in_frustum(point), "Broadcast lost the live ball or bases")
+	game.phase = game.Phase.SETTLING
+	var held_transform: Transform3D = camera.transform
+	camera._process(1.0)
+	check(camera.transform == held_transform, "Broadcast moved during the result beat")
+	game.phase = game.Phase.FIELDING
+	camera.broadcast = false
 	for angle in [-120.0, 0.0, 90.0]:
 		camera.azimuth = angle
 		for frame in 30:
@@ -440,6 +568,26 @@ func check_camera() -> void:
 		check(camera.is_position_in_frustum(point), "Dugout camera lost a bench")
 	game.dugout_view = false
 	camera.azimuth = -15.0
+	camera.broadcast = true
+	game.phase = game.Phase.PITCH
+	camera._process(DELTA)
+	var contact_frame: Transform3D = camera.transform
+	game.ball_hit.emit(0.8)
+	game.phase = game.Phase.FIELDING
+	camera._process(0.1)
+	check(camera.transform == contact_frame, "Broadcast cut away at contact")
+	camera._process(camera.contact_hold)
+	check(camera.shot == &"HighHome", "Broadcast never picked up the batted ball")
+	var tape = world.get_node("TapeTransition")
+	game.phase = game.Phase.PREPARING
+	for count in [0, 1]:
+		game.pitch_count = count
+		tape._process(DELTA)
+		check(tape.visible == (count > 0), "Tape effect disagrees with walkout speed")
+	game.paused = true
+	tape._process(DELTA)
+	check(not tape.visible, "Tape effect kept running while paused")
+	game.reset_game()
 
 
 func check_rosters() -> void:
