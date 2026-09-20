@@ -129,6 +129,7 @@ func run() -> void:
 	check_foul()
 	await check_grounding()
 	check_camera()
+	await _check_transition_effect()
 	print("Failures: ", failures)
 	world.queue_free()
 	await process_frame
@@ -578,16 +579,124 @@ func check_camera() -> void:
 	check(camera.transform == contact_frame, "Broadcast cut away at contact")
 	camera._process(camera.contact_hold)
 	check(camera.shot == &"HighHome", "Broadcast never picked up the batted ball")
+	game.ball_return = BaseballBallReturn.new(game, game.fielder_for("CF"))
+	game.phase = game.Phase.RETURN_BALL
+	camera._process(DELTA)
+	check(
+		camera.shot == &"HighHome" and camera.near < 1.0,
+		"Outfield return selected a clipped pitching shot"
+	)
+	check(camera.is_position_in_frustum(world.ball.position), "Return camera clipped out the ball")
+	check(
+		world.player_views.all(func(view): return view.visible),
+		"Pitching shot left fielders hidden"
+	)
+	# Small framing changes should not make the operator hunt with the zoom.
+	camera._update_lens(45.0, 35.0, 0.0, true)
+	for frame in 240:
+		camera._update_lens(45.0 + sin(frame * 0.2), 35.0, DELTA, false)
+	check(is_equal_approx(camera.fov, 45.0), "Broadcast lens hunted over small movements")
+	for frame in 50:
+		camera._update_lens(35.0, 25.0, DELTA, false)
+	check(camera.fov < 45.0 and camera.fov > 35.0, "Stable framing did not start an eased zoom")
+	game.paused = true
+	var paused_lens: float = camera.fov
+	camera._process(1.0)
+	check(is_equal_approx(camera.fov, paused_lens), "Lens kept zooming while paused")
+	game.paused = false
+	camera._update_lens(55.0, 45.0, 0.0, true)
+	camera._update_lens(55.0, 45.0, DELTA, false)
+	check(is_equal_approx(camera.fov, 55.0), "New shot inherited the previous zoom")
+	game.reset_game()
+
+
+func _check_transition_effect() -> void:
+	game.reset_game()
+	game.start_game()
+	var camera = world.get_node("Camera")
 	var tape = world.get_node("TapeTransition")
+	tape.set_process(false)
+	camera.set_process(false)
+	camera.position = BaseballWorld.world_position(game.home.position) + Vector3(0, 25, 25)
+	camera.look_at(BaseballWorld.world_position(game.home.position))
+	camera.fov = 60.0
+	for view in world.actor_views:
+		view.player.stop()
+		view.visible = true
+	game.ball_return = BaseballBallReturn.new(game, game.fielder_for("P"))
+	game.ball_return.ready = true
+	game.pitch_count = 1
+	game.batter.position = game.home.position
+	game.batter.move_to(game.home.position + Vector2(20, 0), "Short adjustment")
+	tape._reset()
+	await tick()
+	tape._process(DELTA)
+	check(tape.visible, "Visible accelerated short movement had no tape effect")
+	check(
+		(
+			is_equal_approx(
+				tape.get_node("Tracking").material.get_shader_parameter("strength"), tape.strength
+			)
+			and tape.get_node("Indicator").modulate.a == 1.0
+		),
+		"Accelerated movement started before the tape effect was fully visible"
+	)
+	tape._process(DELTA / 2.0)
+	check(tape.visible, "Tape flickered between physics ticks")
+	game.batter.stop()
+
+	var attendant: BaseballPlayer = game.equipment.attendants[0]
+	attendant.position = game.home.position
+	attendant.move_to(game.home.position + Vector2(20, 0), "Equipment duty")
+	tape._reset()
+	await tick()
+	tape._process(DELTA)
+	check(tape.visible, "Visible accelerated equipment attendant had no tape effect")
+	attendant.position = Vector2(10000, 10000)
+	attendant.move_to(Vector2(10100, 10000), "Offscreen equipment duty")
+	tape._reset()
+	await tick()
+	tape._process(DELTA)
+	check(not tape.visible, "Offscreen repositioning showed the tape effect")
+	attendant.stop()
+
+	# The catcher's arrival starts a normal-speed return on the last accelerated step.
+	var catcher := game.fielder_for("C")
+	catcher.position = game.home.position
+	catcher.move_to(catcher.position + Vector2(1, 0), "Returning with ball")
+	catcher.velocity = Vector2(24.0 + catcher.data.acceleration * DELTA * 1.5, 0)
+	game.ball.hold_at(catcher.position)
+	game.ball_return = BaseballBallReturn.new(game, catcher)
+	tape._reset()
+	await tick()
+	await tick()
+	tape._process(DELTA)
+	check(
+		game.phase == game.Phase.RETURN_BALL and not catcher.moving and tape.visible,
+		"Accelerated arrival lost its effect across two physics ticks before rendering"
+	)
+	await tick()
+	tape._process(DELTA)
+	check(not tape.visible, "Tape effect leaked into normal-speed return flight")
+
 	game.phase = game.Phase.PREPARING
-	for count in [0, 1]:
-		game.pitch_count = count
-		tape._process(DELTA)
-		check(tape.visible == (count > 0), "Tape effect disagrees with walkout speed")
+	game.ball_return.ready = true
+	game.batter.move_to(game.batter.position + Vector2(20, 0), "Visible repositioning")
+	await tick()
+	tape._process(DELTA)
+	check(tape.visible, "Visible acceleration did not restore the tape effect")
 	game.paused = true
 	tape._process(DELTA)
 	check(not tape.visible, "Tape effect kept running while paused")
 	game.reset_game()
+	check(not tape.visible, "Reset left the tape effect visible")
+	game.start_game()
+	await tick()
+	tape._process(DELTA)
+	check(not tape.visible, "Opening walkout showed the tape effect")
+	game.reset_game()
+	camera.set_process(true)
+	tape.set_process(true)
 
 
 func check_rosters() -> void:

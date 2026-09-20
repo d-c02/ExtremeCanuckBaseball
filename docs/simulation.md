@@ -53,9 +53,18 @@ Set it to 1 for normal speed throughout. Live plays, windups and return throws
 always run at normal speed. The pitcher must receive the return before the next
 windup; repositioning can continue afterward.
 `between_play_delay` controls the result beat. Transitions use the same 3D view
-at the faster simulation speed, with VCR tracking bands, scanlines and a FF indicator.
-The tape effect stays off during the opening walkout, windup, live play, return throw, result beat and pause,
-and when transition speed is 1. Tune or disable it on `TapeTransition` in `main.tscn`.
+at the faster simulation speed. VCR tracking bands, scanlines and a FF indicator
+mark visible accelerated movement immediately, including equipment attendants.
+Only offscreen movement accelerates silently. The effect uses completed fixed
+simulation steps and actor movement, rather than predicting remaining travel or
+waiting through an entry delay. This also covers a player's final step into
+position, when they are no longer marked as moving. Rendering never chooses the
+simulation speed. Pause and reset clear the effect.
+Normal-speed steps have no tape effect, including the opening walkout, windup,
+live play, return throw and result beat. A step that finishes accelerated
+preparation retains its indicator for that movement even if it starts the next
+phase. Setting transition speed to 1 disables acceleration and the effect. Tune
+strength or disable the effect on `TapeTransition` in `main.tscn`.
 
 ## Players and decisions
 
@@ -204,28 +213,43 @@ vertical position follows the simulation's height. Ground shadows are placeholde
 
 ### Broadcast cameras
 
-The center-field camera covers the set, pitch, catcher's reception and return
-throw. After contact it holds for 0.35 seconds before cutting to high home for
+The center-field camera covers the set, pitch and catcher's reception. It can
+stay on a nearby catcher's return and subsequent preparation, but never cuts to
+that angle just for a return throw. Outfield returns use high-home coverage. After contact it holds for 0.35 seconds before cutting to high home for
 ball coverage. Baseline shots require a stable throw/tag assignment for 0.35
 seconds and at least two seconds on the current shot. Pitch setup and the cut
 from contact to ball coverage can override that minimum. The result shot holds
 through the 2.2-second beat, instead of chasing dead-ball activity.
 
-Within a shot, an 8% screen dead zone ignores small movements. Damped tracking
-limits pan to 24 degrees/second and lens changes to 12 degrees/second; the lens
-can widen faster if action reaches the outer safety margin. Camera movement and
-shot timers freeze while paused. The contact hold intentionally prioritizes seeing
-the swing over immediately following a fast ball out of frame.
+Within a shot, an 8% screen goal area ignores small movements. The camera only
+corrects the part of the target's movement outside that area, with damped focus
+and quaternion rotation for soft starts and stops. Pan speed is capped at 24
+degrees/second. Manual orbit, tilt and viewing distance also ease toward their goals.
+
+The broadcast lens holds its framing through small changes. A change of at least
+3 degrees must settle for 0.6 seconds before starting a zoom, with 2.5 seconds
+between completed moves. Godot's native `Tween.interpolate_value` provides a sine
+ease in/out lasting at least 1.2 seconds, limited to 12 degrees/second. Zooms use
+render delta and never restart each frame. Framing reserves breathing room; the
+outer safety margin can override a zoom to keep fast action visible. Cuts set the
+new shot's framing immediately and cancel the previous zoom. Movement and zooms
+freeze during pause, contact holds and result beats; pause also freezes shot timers. The contact
+hold intentionally prioritizes seeing the swing over immediately following a fast
+ball out of frame.
 
 Camera positions are editable `Marker3D` nodes under `BroadcastPositions` in
 `main.tscn`. Select `Camera` for contact hold, minimum shot time, pan/zoom rates,
-dead zone and manual orbit tuning. `pitch_near_clip` excludes foreground fielders
-from the tight center-field shot; retune it if moving that camera. V toggles broadcast mode. Q/E, right-drag or
+goal area, zoom settle time/interval/threshold and manual orbit tuning. All shots use a short 0.05 near plane so the
+camera never slices through the playing surface to hide fielders. In the pitching
+shot, player views closer than the mound (apart from pitcher, catcher and batter)
+are hidden together with their labels and shadows. Other shots restore them.
+This affects presentation only. V toggles broadcast mode. Q/E, right-drag or
 the wheel switch to the manual orbit camera. H inspects both dugouts. Manual
 camera movement remains available while paused. C draws an infield reference
 rectangle; D draws defensive movement targets.
 
 References informing this pass:
+- [Godot Tween easing](https://docs.godotengine.org/en/stable/classes/class_tween.html): native sine easing for deliberate lens moves, stepped with the camera so holds freeze them.
 - [Kansas State camera-operator instructions](https://www.kstatesports.com/documents/download/2022/1/13/Baseball_camera_instructions_docx.pdf): smooth coverage and staying with the player who made the play.
 - [A broadcast director's coverage assignments](https://www.tvtechnology.com/news/directing-baseball-covering-americas-pastimeagain): center-field pitcher/batter coverage and high-home ball follow.
 - [Cinemachine Rotation Composer](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineRotationComposer.html): dead zones, damping and hard framing limits. The implementation here uses Godot Camera3D.
@@ -274,7 +298,11 @@ player movement, or general 3D pathfinding. Dugout routes are explicit waypoints
 `BaseballMatch.step(delta)` advances the simulation. Godot calls it from
 `_physics_process`; headless tests call it on physics frames. Players use
 CharacterBody2D movement and wall collisions. Live rules use RefCounted objects
-with no independent timers. The match exposes play events for presentation.
+with no independent timers. The match exposes play events and a
+`simulation_stepped` signal with the actual number of fixed substeps completed.
+Presentation uses that signal to mark accelerated actor movement; it does not
+control the simulation. Settling and finished phases share ball possession/flight
+handling, while only settling can advance to the next pitch or half.
 
 ## Sound
 
@@ -298,5 +326,8 @@ roster validation, pre-game box-score toggling/reset, roster/inning continuity,
 extra innings, box-score totals and base occupancy, then exercises force/tag decisions,
 consecutive outs, grand-slam RBIs, cancelled runs, fielder's choices, walk-offs, safe runners, pause/pacing, defensive handoffs and
 bobble recovery, wall collisions, a live grand slam, contact starts, caught-fly
-retreats, fouls, seed replay, catcher reception, bat availability at windup, contact-shot holds, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and camera framing through different orbit angles. Repeatability assumes the same
+retreats, fouls, seed replay, catcher reception, bat availability at windup, contact-shot holds, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and camera framing through different orbit angles. Transition
+checks advance actual simulation steps and verify visible acceleration is marked,
+including arrivals and equipment attendants, while offscreen movement stays silent.
+Repeatability assumes the same
 resources, engine version and fixed timestep.

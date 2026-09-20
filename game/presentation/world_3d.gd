@@ -6,6 +6,7 @@ const FIELD_SCALE: float = 0.04
 const PLAYER_VIEW = preload("res://game/presentation/player_3d.tscn")
 
 var player_views: Array[BaseballPlayerView] = []
+var actor_views: Array[BaseballPlayerView] = []
 var show_guides: bool = false
 var debug_mesh := ImmediateMesh.new()
 
@@ -30,9 +31,11 @@ func _ready() -> void:
 			$Players.add_child(view)
 			view.configure(player, game.teams[player.team_index].color, game)
 			player_views.append(view)
+			actor_views.append(view)
 	var equipment_view := BaseballEquipmentView.new()
 	add_child(equipment_view)
 	equipment_view.configure(self)
+	actor_views.append_array(equipment_view.attendants)
 	guides.mesh = debug_mesh
 	var surface := BaseballFieldView.material(Color.WHITE)
 	surface.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED

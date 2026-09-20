@@ -11,7 +11,9 @@ extends Camera3D
 @export_range(5.0, 90.0) var pan_degrees_per_second: float = 24.0
 @export_range(1.0, 45.0) var zoom_degrees_per_second: float = 12.0
 @export_range(0.0, 0.3) var dead_zone: float = 0.08
-@export_range(0.05, 60.0) var pitch_near_clip: float = 42.0
+@export_range(0.1, 2.0) var zoom_settle_time: float = 0.6
+@export_range(1.0, 6.0) var zoom_interval: float = 2.5
+@export_range(1.0, 10.0) var zoom_threshold: float = 3.0
 
 var shot: StringName = &""
 var shot_elapsed: float = 0.0
@@ -19,6 +21,17 @@ var contact_remaining: float = 0.0
 var requested_shot: StringName = &""
 var request_elapsed: float = 0.0
 var focus := Vector3(0, 0, -7)
+var focus_goal := Vector3(0, 0, -7)
+var orbit_yaw: float = -15.0
+var orbit_pitch: float = 48.0
+var orbit_distance: float = 62.0
+var lens_candidate: float = 45.0
+var lens_stable_time: float = 0.0
+var lens_start: float = 45.0
+var lens_goal: float = 45.0
+var lens_elapsed: float = 0.0
+var lens_duration: float = 0.0
+var lens_rest: float = 0.0
 
 @onready var game: BaseballMatch = $"../Simulation"
 
@@ -47,8 +60,10 @@ func _process(delta: float) -> void:
 		broadcast = false
 	if broadcast and not game.dugout_view:
 		_update_broadcast(delta)
+		_update_foreground()
 		return
 	shot = &""
+	_update_foreground()
 	near = 0.05
 	fov = 45.0
 	azimuth += orbit * delta * 50.0
@@ -59,8 +74,11 @@ func _process(delta: float) -> void:
 	elif game.phase in [game.Phase.FIELDING, game.Phase.THROW, game.Phase.TAG, game.Phase.FOUL]:
 		desired_focus = desired_focus.lerp(BaseballWorld.world_position(game.ball.position), 0.4)
 	focus = focus.lerp(desired_focus, 1.0 - exp(-follow_speed * delta))
-	var yaw := deg_to_rad(azimuth)
-	var pitch := deg_to_rad(elevation)
+	var damping := 1.0 - exp(-follow_speed * delta)
+	orbit_yaw = rad_to_deg(lerp_angle(deg_to_rad(orbit_yaw), deg_to_rad(azimuth), damping))
+	orbit_pitch = lerpf(orbit_pitch, elevation, damping)
+	var yaw := deg_to_rad(orbit_yaw)
+	var pitch := deg_to_rad(orbit_pitch)
 	var direction := Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch))
 	position = focus + direction
 	look_at(focus)
@@ -75,7 +93,10 @@ func _process(delta: float) -> void:
 		var depth := offset.dot(direction)
 		distance = maxf(distance, absf(offset.dot(basis.x)) / horizontal_tangent + depth)
 		distance = maxf(distance, absf(offset.dot(basis.y)) / vertical_tangent + depth)
-	position = focus + direction * distance
+	orbit_distance = lerpf(orbit_distance, distance, damping)
+	# The fitted distance includes breathing room; only the outer edge is a hard limit.
+	orbit_distance = maxf(orbit_distance, distance * 0.8)
+	position = focus + direction * orbit_distance
 
 
 func framing_points() -> PackedVector3Array:
@@ -128,15 +149,13 @@ func _update_broadcast(delta: float) -> void:
 		request_elapsed = 0.0
 	request_elapsed += delta
 	var pitch_sequence := next_shot == &"CenterField"
-	var leaving_contact := (
-		shot == &"CenterField"
-		and next_shot == &"HighHome"
-		and game.phase in [game.Phase.FIELDING, game.Phase.FOUL, game.Phase.HOME_RUN]
+	var leaving_pitch_view := (
+		shot == &"CenterField" and next_shot == &"HighHome" and contact_remaining <= 0.0
 	)
 	if (
 		shot != &""
 		and not pitch_sequence
-		and not leaving_contact
+		and not leaving_pitch_view
 		and (shot_elapsed < minimum_shot_time or request_elapsed < 0.35)
 	):
 		next_shot = shot
@@ -145,7 +164,7 @@ func _update_broadcast(delta: float) -> void:
 		next_shot = &"HighHome"
 	var cut := next_shot != shot
 	shot = next_shot
-	near = pitch_near_clip if shot == &"CenterField" else 0.05
+	near = 0.05
 	if cut:
 		shot_elapsed = 0.0
 	var points := _shot_points()
@@ -156,39 +175,106 @@ func _update_broadcast(delta: float) -> void:
 	position = get_node("../BroadcastPositions/" + String(shot)).position
 	if cut:
 		focus = center
+		focus_goal = center
 		look_at(focus)
 	else:
-		var screen := unproject_position(center) / get_viewport().get_visible_rect().size
-		if absf(screen.x - 0.5) > dead_zone or absf(screen.y - 0.5) > dead_zone:
-			focus = focus.lerp(center, 1.0 - exp(-follow_speed * delta))
+		var viewport_size := get_viewport().get_visible_rect().size
+		var screen := unproject_position(center) / viewport_size
+		var offset := screen - Vector2(0.5, 0.5)
+		var excess := (
+			offset - offset.clamp(Vector2(-dead_zone, -dead_zone), Vector2(dead_zone, dead_zone))
+		)
+		if excess.length_squared() > 0.0 and not is_position_behind(center):
+			var depth := maxf(-to_local(center).z, 0.1)
+			focus_goal = project_position((Vector2(0.5, 0.5) + excess) * viewport_size, depth)
+		var damping := 1.0 - exp(-follow_speed * delta)
+		focus = focus.lerp(focus_goal, damping)
 		var desired := Transform3D(Basis.IDENTITY, position).looking_at(focus).basis
 		var current_rotation := basis.get_rotation_quaternion()
 		var target := desired.get_rotation_quaternion()
 		var angle := current_rotation.angle_to(target)
 		basis = Basis(
 			current_rotation.slerp(
-				target, minf(1.0, deg_to_rad(pan_degrees_per_second) * delta / maxf(angle, 0.0001))
+				target,
+				minf(damping, deg_to_rad(pan_degrees_per_second) * delta / maxf(angle, 0.0001))
 			)
 		)
-	var lens := _framed_lens(points, 0.65)
-	var safety_lens := _framed_lens(points, 0.92)
-	fov = (
-		lens if cut else maxf(safety_lens, move_toward(fov, lens, zoom_degrees_per_second * delta))
-	)
+	_update_lens(_framed_lens(points, 0.65), _framed_lens(points, 0.92), delta, cut)
+
+
+func _update_lens(desired: float, safety: float, delta: float, cut: bool) -> void:
+	if cut:
+		fov = desired
+		lens_goal = desired
+		lens_candidate = desired
+		lens_duration = 0.0
+		lens_rest = 0.0
+		lens_stable_time = 0.0
+		return
+	lens_rest += delta
+	if absf(desired - lens_candidate) > zoom_threshold * 0.5:
+		lens_candidate = desired
+		lens_stable_time = 0.0
+	else:
+		lens_stable_time += delta
+	if safety > fov:
+		# Keep fast action in frame without waiting for the operator's next zoom.
+		fov = maxf(safety, lerpf(fov, desired, 1.0 - exp(-follow_speed * delta)))
+		lens_duration = 0.0
+		lens_rest = 0.0
+		lens_stable_time = 0.0
+		return
+	if lens_duration > 0.0:
+		lens_elapsed = minf(lens_elapsed + delta, lens_duration)
+		fov = Tween.interpolate_value(
+			lens_start,
+			lens_goal - lens_start,
+			lens_elapsed,
+			lens_duration,
+			Tween.TRANS_SINE,
+			Tween.EASE_IN_OUT
+		)
+		if lens_elapsed >= lens_duration or fov < safety:
+			fov = maxf(fov, safety)
+			lens_duration = 0.0
+			lens_rest = 0.0
+	elif (
+		lens_rest >= zoom_interval
+		and lens_stable_time >= zoom_settle_time
+		and absf(desired - fov) >= zoom_threshold
+	):
+		lens_start = fov
+		lens_goal = desired
+		lens_elapsed = 0.0
+		lens_duration = maxf(1.2, absf(lens_goal - fov) * PI / (2.0 * zoom_degrees_per_second))
 
 
 func _choose_shot() -> StringName:
-	if game.phase == game.Phase.PREPARING and game.ball_return != null:
-		if game.ball_return.ready and game._everyone_arrived():
-			return &"CenterField"
-	if (
-		game.phase
-		in [game.Phase.WINDUP, game.Phase.PITCH, game.Phase.RECEIVE, game.Phase.RETURN_BALL]
-	):
+	if game.phase in [game.Phase.WINDUP, game.Phase.PITCH, game.Phase.RECEIVE]:
 		return &"CenterField"
+	if game.phase in [game.Phase.PREPARING, game.Phase.RETURN_BALL]:
+		var returning := game.ball_return
+		if shot == &"CenterField" and returning != null:
+			var catcher := game.fielder_for("C")
+			if (
+				returning.carrier == catcher
+				and catcher.position.distance_to(game.home.position) < 100
+			):
+				return &"CenterField"
 	if game.phase in [game.Phase.THROW, game.Phase.TAG] and game.play != null:
 		return &"FirstBase" if game.play.throw_base in [1, 4] else &"ThirdBase"
 	return &"HighHome"
+
+
+func _update_foreground() -> void:
+	var pitcher_depth := -to_local(BaseballWorld.world_position(game.mound.position)).z
+	for view in get_parent().player_views:
+		var player: BaseballPlayer = view.player
+		var foreground := -to_local(view.position).z < pitcher_depth - 2.0
+		var participant := (
+			player == game.batter or player in [game.fielder_for("P"), game.fielder_for("C")]
+		)
+		view.visible = shot != &"CenterField" or not foreground or participant
 
 
 func _shot_points() -> PackedVector3Array:

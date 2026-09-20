@@ -25,6 +25,7 @@ signal out_recorded(player: BaseballPlayer)
 signal half_inning_finished(inning: int, batting_side: int)
 signal game_finished(scores: Array[int])
 signal game_reset
+signal simulation_stepped(steps: int)
 
 enum Phase {
 	READY,
@@ -165,13 +166,17 @@ func _physics_process(delta: float) -> void:
 
 func step(delta: float) -> void:
 	if not error_message.is_empty() or paused:
+		simulation_stepped.emit(0)
 		return
 	# Keep movement and collision steps fixed when speeding up transitions.
 	var steps := transition_speed if is_fast_forwarding() else 1
+	var completed_steps := 0
 	for step_index in steps:
 		if step_index > 0 and (not is_fast_forwarding() or not error_message.is_empty()):
 			break
 		_step_simulation(delta)
+		completed_steps += 1
+	simulation_stepped.emit(completed_steps)
 	_refresh_status()
 
 
@@ -192,17 +197,12 @@ func _step_simulation(delta: float) -> void:
 			play.step(delta)
 			if play.done:
 				_complete_play()
-		Phase.FINISHED:
+		Phase.SETTLING, Phase.FINISHED:
 			if play != null and play.holder != null:
 				ball.hold_at(play.holder.position)
 			else:
 				ball.step(delta)
-		Phase.SETTLING:
-			if play.holder != null:
-				ball.hold_at(play.holder.position)
-			else:
-				ball.step(delta)
-			if phase_elapsed >= between_play_delay:
+			if phase == Phase.SETTLING and phase_elapsed >= between_play_delay:
 				if outs >= 3:
 					_end_half()
 				elif batting_side == 1 and inning >= innings and scores[1] > scores[0]:
