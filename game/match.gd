@@ -63,11 +63,12 @@ var return_ball_time: float = 0.0
 var error_message: String = ""
 
 @onready var ball: BaseballBall = $Ball
-@onready var home: Marker2D = $Field/Home
-@onready var mound: Marker2D = $Field/Mound
+@onready var field: BaseballBallpark = $Field
+@onready var home: Marker2D = field.home
+@onready var mound: Marker2D = field.mound
 @onready var status: Label = $HUD/Status
-@onready var outfield: BaseballOutfield = $Field/Outfield
-@onready var dugouts: Array[Node2D] = [$Dugouts/Visitors, $Dugouts/Home]
+@onready var outfield: BaseballOutfield = field.outfield
+@onready var dugouts: Array[Node2D] = field.dugouts
 
 
 func _ready() -> void:
@@ -80,14 +81,7 @@ func _ready() -> void:
 		if not roster_error.is_empty():
 			simulation_error("%s: %s" % [team.team_name, roster_error])
 			return
-	base_positions = PackedVector2Array(
-		[
-			$Field/FirstBase.position,
-			$Field/SecondBase.position,
-			$Field/ThirdBase.position,
-			home.position
-		]
-	)
+	base_positions = field.base_positions
 	for side in 2:
 		var squad: Array[BaseballPlayer] = []
 		for index in 9:

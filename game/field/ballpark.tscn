@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://game/field/ballpark.gd" id="script"]
+[ext_resource type="PackedScene" path="res://game/field/base.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://game/field/outfield.tscn" id="outfield"]
+
+[node name="Ballpark" type="Node2D"]
+visible = false
+script = ExtResource("script")
+
+[node name="Home" type="Marker2D" parent="."]
+position = Vector2(0, 220)
+
+[node name="Mound" type="Marker2D" parent="."]
+
+[node name="FirstBase" parent="." instance=ExtResource("base")]
+position = Vector2(220, 0)
+
+[node name="SecondBase" parent="." instance=ExtResource("base")]
+position = Vector2(0, -220)
+
+[node name="ThirdBase" parent="." instance=ExtResource("base")]
+position = Vector2(-220, 0)
+
+[node name="Outfield" parent="." instance=ExtResource("outfield")]

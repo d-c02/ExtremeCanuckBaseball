@@ -1,6 +1,8 @@
 # Baseball simulation
 
-Run `main.tscn` with F6, or the project with F5.
+Run `main.tscn` with F6, or the project with F5. The window starts maximized; the
+1280x720 viewport scales to fill it, so a bigger window shows the same framing
+larger, not more field.
 
 | Key | Action |
 | --- | --- |
@@ -148,11 +150,14 @@ movement and ball-height rules. `BaseballWorld.world_position()` maps simulation
 Rendering, camera movement and sound do not advance the rules or consume randomness.
 
 `game/presentation/field_3d.gd` builds the colored ground, dirt diamond, bases,
-foul lines, benches and fence from the simulation layout. The fence uses the
-same boundary as the 2D collision wall. In `game/match.tscn`, select
+foul lines, benches and fence from a `BaseballBallpark`. `game/field/ballpark.tscn`
+holds the field itself and `game/field/match_ballpark.tscn` inherits it and adds the
+two dugouts, so the match gets dugouts and the buy screen, which uses the bare park,
+does not. The fence uses the same boundary as the 2D collision wall. Select
 `Field/Outfield` to tune `fence_distance`, `flat_half_width`, `corner_radius` and
-`fence_height`. Move or rotate the `Dugouts` markers to move the benches and seats;
-edit their `OnDeck` markers for waiting hitters. Layout is built when the scene starts.
+`fence_height`. Move or rotate the `Dugouts` markers in the match park to move the
+benches and seats; edit their `OnDeck` markers for waiting hitters. Layout is built
+when the scene starts.
 
 Player art is a replaceable `Sprite3D` in `game/presentation/player_3d.tscn`, using
 `assets/sprites/player.svg`. Players stay upright and face the camera around the
@@ -180,8 +185,9 @@ height, player jumping, or 3D rigid-body collision response.
 - `game/match.gd` / `game/match.tscn`: hidden planar simulation, rosters, innings and HUD.
 - `game/simulation/`: pitch/play rules, runners, defensive assignments, reads and box-score records.
 - `game/actors/`: player and ball simulation nodes and movement scripts.
-- `game/field/`: simulation markers, dugout seats and outfield collision boundary.
+- `game/field/`: the ballpark scenes, dugout seats and outfield collision boundary.
 - `game/presentation/`: 3D field/player views, camera, box-score panel and sound scene.
+- `game/shop/`: buy-screen buyables, drop targets and drag handling. See [buy_screen.md](buy_screen.md).
 - `assets/audio/`: placeholder WAVs and editable Bfxr presets.
 - `data/`: Resource types and sample teams.
 

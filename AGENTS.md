@@ -19,6 +19,7 @@ The [docs/](docs/) directory describes the implemented game, its controls and kn
   ```sh
   godot --headless --path . --editor --quit
   godot --headless --path . --fixed-fps 60 --script tests/simulation_test.gd
+  godot --headless --path . --fixed-fps 60 --script tests/shop_test.gd
   ```
 
   Use the installed Godot executable if `godot` is not on PATH.

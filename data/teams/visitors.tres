@@ -1,95 +1,85 @@
-[gd_resource type="Resource" script_class="BaseballTeamData" load_steps=12 format=3]
+[gd_resource type="Resource" script_class="BaseballTeamData" format=3 uid="uid://b5yb3yrsbn25u"]
 
-[ext_resource type="Script" path="res://data/team_data.gd" id="team"]
-[ext_resource type="Script" path="res://data/player_data.gd" id="player"]
+[ext_resource type="Script" uid="uid://bbitykktl6wj5" path="res://data/player_data.gd" id="player"]
+[ext_resource type="Script" uid="uid://issayqreaox3" path="res://data/team_data.gd" id="team"]
 
 [sub_resource type="Resource" id="p0"]
 script = ExtResource("player")
-anticipation = 0.8
-idle_behavior = 0
 player_name = "Steady"
-hitting = 0.8
-batting_power = 250.0
 speed = 130.0
+hitting = 0.8
+anticipation = 0.8
+batting_power = 250.0
 
 [sub_resource type="Resource" id="p1"]
 script = ExtResource("player")
-anticipation = 0.6
-idle_behavior = 0
 player_name = "Slugger"
-hitting = 0.35
-batting_power = 380.0
 speed = 100.0
+hitting = 0.35
+anticipation = 0.6
+batting_power = 380.0
 
 [sub_resource type="Resource" id="p2"]
 script = ExtResource("player")
-anticipation = 0.85
-idle_behavior = 0
 player_name = "Quick"
-hitting = 0.55
-batting_power = 230.0
 speed = 180.0
-
+hitting = 0.55
+anticipation = 0.85
+batting_power = 230.0
 
 [sub_resource type="Resource" id="p3"]
 script = ExtResource("player")
-anticipation = 0.7
-idle_behavior = 1
 player_name = "Anchor"
-hitting = 0.7
-batting_power = 260.0
 speed = 120.0
+hitting = 0.7
+idle_behavior = 1
+batting_power = 260.0
 
 [sub_resource type="Resource" id="p4"]
 script = ExtResource("player")
-anticipation = 0.65
-idle_behavior = 0
 player_name = "Scout"
-hitting = 0.6
-batting_power = 270.0
 speed = 165.0
+hitting = 0.6
+anticipation = 0.65
+batting_power = 270.0
 
 [sub_resource type="Resource" id="p5"]
 script = ExtResource("player")
-anticipation = 0.8
-idle_behavior = 0
 player_name = "Drive"
-hitting = 0.65
-batting_power = 320.0
 speed = 145.0
+anticipation = 0.8
+batting_power = 320.0
 
 [sub_resource type="Resource" id="p6"]
 script = ExtResource("player")
+player_name = "Dash"
+speed = 185.0
+hitting = 0.5
 anticipation = 0.75
 idle_behavior = 1
-player_name = "Dash"
-hitting = 0.5
 batting_power = 240.0
-speed = 185.0
 
 [sub_resource type="Resource" id="p7"]
 script = ExtResource("player")
-anticipation = 0.9
-idle_behavior = 0
 player_name = "Hammer"
-hitting = 0.45
-batting_power = 390.0
 speed = 115.0
+hitting = 0.45
+anticipation = 0.9
+batting_power = 390.0
 
 [sub_resource type="Resource" id="p8"]
 script = ExtResource("player")
+player_name = "Patient"
+speed = 140.0
+hitting = 0.75
 anticipation = 0.6
 idle_behavior = 1
-player_name = "Patient"
-hitting = 0.75
 batting_power = 285.0
-speed = 140.0
 
 [resource]
 script = ExtResource("team")
 team_name = "Visitors"
 color = Color(0.9, 0.65, 0.2, 1)
 players = Array[ExtResource("player")]([SubResource("p0"), SubResource("p1"), SubResource("p2"), SubResource("p3"), SubResource("p4"), SubResource("p5"), SubResource("p6"), SubResource("p7"), SubResource("p8")])
-
 field_positions = PackedVector2Array(200, -25, 0, 0, 0, 265, 125, -190, -205, -25, -125, -190, -440, -485, 0, -610, 440, -485)
 field_roles = PackedStringArray("1B", "P", "C", "2B", "3B", "SS", "LF", "CF", "RF")
