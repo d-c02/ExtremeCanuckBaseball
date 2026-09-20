@@ -18,10 +18,12 @@ const SIGNED_PLAYER := preload("res://game/shop/signed_player.tscn")
 var player: BaseballPlayerData
 var occupant: SignedPlayer
 var name_label: Label3D
+var order_label: Label3D
 
 
 func _ready() -> void:
 	name_label = $Name
+	order_label = $Order
 	super()
 
 
@@ -73,6 +75,14 @@ func clear() -> void:
 	_write_roster()
 	refresh()
 	cleared.emit()
+
+
+## Show what number this spot bats at, for the lineup view.
+func show_order(on: bool) -> void:
+	if order_label == null:
+		return
+	order_label.text = "%d" % (slot_index + 1)
+	order_label.visible = on
 
 
 func set_hovered(on: bool) -> void:

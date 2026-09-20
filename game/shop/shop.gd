@@ -9,6 +9,14 @@ signal funds_changed(funds: int)
 signal traded(buyable: Buyable, target: BuyTarget)
 
 const RAY_LENGTH := 1000.0
+## The lineup stands in a grid in front of the podiums, first hitter top left and
+## reading across. Rows and columns are an even distance apart on the ground, so
+## every neighbour sits the same way from its neighbours however far back it is.
+const BATTING_COLUMNS := 3
+const BATTING_CORNER := Vector3(-7.0, 0.0, -3.0)
+const BATTING_COLUMN_STEP := 7.0
+const BATTING_ROW_STEP := 6.0
+const LAYOUT_TIME := 0.3
 
 ## Roster the shop starts from. It is duplicated, so trading never edits the file.
 @export var team: BaseballTeamData
@@ -18,6 +26,8 @@ const RAY_LENGTH := 1000.0
 @export_range(0.3, 1.0) var park_scale: float = 0.6
 
 var roster: BaseballTeamData
+## Whether the slots are lined up in batting order instead of out on the field.
+var batting_view: bool = false
 var park: BaseballBallpark
 var held: Buyable
 var hovered: BuyTarget
@@ -34,7 +44,11 @@ func _ready() -> void:
 	for target in _targets():
 		target.roster = roster
 		target.refresh()
-	_place_slots()
+	_layout_slots(false)
+	_update_order_button()
+	var button := get_node_or_null("HUD/Order") as Button
+	if button != null:
+		button.pressed.connect(_toggle_view)
 	_update_hud()
 
 
@@ -53,6 +67,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			_release(button.position)
 	elif button.button_index == MOUSE_BUTTON_RIGHT and button.pressed and held != null:
 		_cancel()
+
+
+## Line the slots up in batting order, or send them back out to their positions.
+func set_batting_view(on: bool) -> void:
+	if batting_view == on:
+		return
+	batting_view = on
+	_layout_slots(true)
+	_update_order_button()
+
+
+func _toggle_view() -> void:
+	set_batting_view(not batting_view)
 
 
 ## True when the shop would let a buyable land on a target right now.
@@ -200,14 +227,53 @@ func _home_point() -> Vector3:
 	return BaseballWorld.world_position(park.home.position) if park != null else Vector3.ZERO
 
 
-## Stand each slot where that fielder plays, pulled in by the same [member
-## park_scale] as the park. Slots the roster has no position for keep the spot they
-## were placed at in the scene.
-func _place_slots() -> void:
+## Stand every slot where the current view wants it, sliding them over when the
+## view is toggled rather than snapping.
+func _layout_slots(animate: bool) -> void:
 	var home := _home_point()
+	_show_park_markings(not batting_view)
+	var tween: Tween = null
+	if animate:
+		tween = create_tween().set_parallel(true)
 	for target in _targets():
 		var slot := target as TeamSlot
-		if slot == null or slot.slot_index >= roster.field_positions.size():
+		if slot == null:
 			continue
-		var spot := BaseballWorld.world_position(roster.field_positions[slot.slot_index])
-		slot.position = home + (spot - home) * park_scale
+		slot.show_order(batting_view)
+		var spot := _slot_spot(slot, home)
+		if tween == null:
+			slot.position = spot
+		else:
+			tween.tween_property(slot, "position", spot, LAYOUT_TIME).set_trans(Tween.TRANS_CUBIC)
+
+
+## Where one slot stands: a rung of the batting order list, or the spot on the field
+## where that fielder plays, pulled in by [member park_scale]. A slot the roster has
+## no position for keeps the spot it was placed at in the scene.
+func _slot_spot(slot: TeamSlot, home: Vector3) -> Vector3:
+	if batting_view:
+		return _batting_spot(slot.slot_index)
+	if slot.slot_index >= roster.field_positions.size():
+		return slot.position
+	var spot := BaseballWorld.world_position(roster.field_positions[slot.slot_index])
+	return home + (spot - home) * park_scale
+
+
+## Grid spots are spaced on the ground rather than across the screen, so the gap
+## between two of them always looks the same next to the players standing on them.
+func _batting_spot(index: int) -> Vector3:
+	var column := index % BATTING_COLUMNS
+	var row := floori(float(index) / BATTING_COLUMNS)
+	return BATTING_CORNER + Vector3(column * BATTING_COLUMN_STEP, 0.0, row * BATTING_ROW_STEP)
+func _update_order_button() -> void:
+	var button := get_node_or_null("HUD/Order") as Button
+	if button != null:
+		button.text = "Fielding" if batting_view else "Batting order"
+
+
+## Clear the diamond off the grass while the lineup is laid out on it, so the batting
+## order reads as a list rather than as nine fielders standing in odd places.
+func _show_park_markings(on: bool) -> void:
+	var view := get_node_or_null("FieldView") as BaseballShopFieldView
+	if view != null and view.markings != null:
+		view.markings.visible = on

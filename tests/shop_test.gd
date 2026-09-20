@@ -71,6 +71,7 @@ func run() -> void:
 	await check_selling()
 	await check_refused_sales()
 	await check_moving()
+	await check_batting_view()
 	await check_hover_names()
 	await check_dangle()
 	await check_roster_ready()
@@ -239,3 +240,45 @@ func check_moving() -> void:
 	check(open.player == bench, "A swap did not send the other player back")
 	check(shop.roster.players[from.slot_index] == moved, "The roster missed the swap")
 	check(shop.funds == funds, "Swapping players cost money")
+
+
+## The lineup view stands everyone in a numbered column instead of out on the field.
+func check_batting_view() -> void:
+	var first: TeamSlot = shop.get_node("Roster/Slot1")
+	var last: TeamSlot = shop.get_node("Roster/Slot9")
+	var button: Button = shop.get_node("HUD/Order")
+	var fielding := first.position
+	check(not first.order_label.visible, "A batting number showed out on the field")
+	button.pressed.emit()
+	await settle()
+	check(shop.batting_view, "The button did not switch to the lineup")
+	check(first.order_label.visible, "The lineup did not number the spots")
+	check(first.order_label.text == "1", "The leadoff spot was not numbered 1")
+	check(last.order_label.text == "9", "The last spot was not numbered 9")
+	check(not first.position.is_equal_approx(fielding), "The lineup left a slot on the field")
+	var view: BaseballShopFieldView = shop.get_node("FieldView")
+	check(not view.markings.visible, "The diamond stayed under the batting order")
+	var camera := shop.get_viewport().get_camera_3d()
+	var spots: Array[Vector3] = []
+	var screens: Array[Vector2] = []
+	for index in 9:
+		var slot: TeamSlot = shop.get_node("Roster/Slot%d" % (index + 1))
+		spots.append(slot.position)
+		screens.append(camera.unproject_position(slot.global_position))
+	check(is_equal_approx(spots[0].z, spots[2].z), "The first three spots were not one row")
+	check(is_equal_approx(spots[0].x, spots[6].x), "The first column did not line up")
+	check(
+		is_equal_approx(spots[0].distance_to(spots[3]), spots[3].distance_to(spots[6])),
+		"The rows were not spaced evenly on the ground"
+	)
+	check(screens[0].y < screens[8].y, "The leadoff hitter was not at the top of the grid")
+	var closest := INF
+	for a in 9:
+		for b in range(a + 1, 9):
+			closest = minf(closest, screens[a].distance_to(screens[b]))
+	check(closest > 100.0, "Two batting spots crowded each other, %.0f px apart" % closest)
+	button.pressed.emit()
+	await settle()
+	check(first.position.is_equal_approx(fielding), "Leaving the lineup stranded a slot")
+	check(not first.order_label.visible, "A batting number stayed after leaving the lineup")
+	check(view.markings.visible, "The diamond did not come back with the fielders")

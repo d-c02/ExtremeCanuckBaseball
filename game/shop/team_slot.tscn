@@ -49,3 +49,13 @@ outline_size = 10
 billboard = 1
 modulate = Color(0.9, 0.93, 0.96, 1)
 text = "open"
+
+[node name="Order" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1, 0.45, 0.6)
+visible = false
+pixel_size = 0.022
+font_size = 44
+outline_size = 12
+billboard = 1
+modulate = Color(0.97, 0.83, 0.42, 1)
+text = "1"

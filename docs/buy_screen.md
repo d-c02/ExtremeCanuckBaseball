@@ -10,6 +10,7 @@ Nothing links the screen to a match yet.
 | --- | --- |
 | Left-drag | Pick a player up and drop them on a roster slot or the sell spot. |
 | Right-click while dragging | Cancel and send the player back where they started. |
+| Batting order / Fielding | Toggle between the fielding layout and the lineup. |
 
 Three players stand on podiums behind home plate, each podium showing what the
 player on it costs. Nine roster slots stand out on the field, each one where that
@@ -23,10 +24,20 @@ charges the asking price, the player stands in the slot, and the podium reads so
 A slot that already has a player, or a price above the current funds, lights up red
 and refuses the drop.
 
+The button in the top right swaps the two layouts. The lineup view clears the
+diamond, the lines and the wall off the grass and stands the nine spots on it in a
+three by three grid, first hitter top left and reading across, each one numbered
+with where it bats; the fielding view paints the park back in and sends them out
+to their positions. Grid rows and columns are an even distance apart on the
+ground, so the gap between neighbours looks the same next to the players standing
+on them. Slots slide between the two, and a player standing in a slot rides along.
+
 Signed players can be moved around the field for nothing: drag one onto an open
 spot and they take it, or onto a spot somebody else holds and the two trade
 places. A slot is one place in the batting order as well as one fielding spot, so
-a player who moves takes over the order slot they land in.
+a player who moves takes over the order slot they land in. Dragging works the
+same in either layout, so trading two players in the lineup view swaps their
+fielding spots along with their turns at bat.
 
 A player picked up hangs from the cursor by the head, and trails behind a yanked
 mouse: sweep left and they tilt right, sweep right and they tilt left, then they
@@ -85,11 +96,11 @@ scene.
 
 ## Limits
 
-Nothing hands a finished roster to a match. Moving a player changes their spot in
-the batting order along with their fielding position, and there is no way to
-reorder the lineup on its own. A sold player is gone rather than back on their
-podium, there is no buyable other than a player, and there is no way to earn
-funds.
+Nothing hands a finished roster to a match. The lineup view shows and rearranges
+the batting order, but moving a player there changes their fielding position too,
+so the two cannot be set apart from each other. A sold player is gone rather than
+back on their podium, there is no buyable other than a player, and there is no way
+to earn funds.
 
 ## Checks
 
@@ -102,9 +113,11 @@ The suite drags a player onto an open slot and checks the signing, the charge, t
 roster entry and the emptied podium; checks that a taken slot and an unaffordable
 price refuse the drop; sells a signed player and checks the payout, the emptied slot
 and roster entry, and that the sell spot refuses an unsigned listing; checks that
-names stay hidden until the cursor is on a listing or a slot; moves a signed
-player to an open spot and swaps two of them, checking the roster and that
-neither costs anything; sweeps a carried player left and right and checks they
-hang from the cursor and tilt away from the yank before settling upright; then
-fills every slot and checks the roster passes
+names stay hidden until the cursor is on a listing or a slot; toggles the lineup
+view and checks the numbering, the grid rows and columns, the even spacing, the
+cleared diamond, that no two spots crowd each other, and the slides back and
+forth; moves a signed player to an open spot and swaps two of them, checking the
+roster and that neither costs anything; sweeps a carried player left and right and
+checks they hang from the cursor and tilt away from the yank before settling
+upright; then fills every slot and checks the roster passes
 `BaseballTeamData.validation_error()`.

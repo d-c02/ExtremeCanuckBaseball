@@ -2,6 +2,9 @@ class_name BaseballShopFieldView
 extends Node3D
 
 var dugout_labels: Array[Label3D] = []
+## Everything painted on the grass: the diamond, the lines, the wall and the
+## dugouts. The buy screen hides it to line players up on a plain field.
+var markings: Node3D
 
 
 ## Draw [param park]. [param colors] tints its dugouts, visitors first, so a park
@@ -12,6 +15,8 @@ func build(park: BaseballBallpark, colors: Array[Color] = []) -> void:
 	var chalk := material(Color("eee9d8"))
 	var fence := material(Color("365963"))
 	box(Vector3(0, -0.22, -4), Vector3(110, 0.4, 100), grass)
+	markings = Node3D.new()
+	add_child(markings)
 	var home := BaseballWorld.world_position(park.home.position)
 	var bases: Array[Vector3] = []
 	for point in park.base_positions:
@@ -56,7 +61,7 @@ func build(park: BaseballBallpark, colors: Array[Color] = []) -> void:
 		label.font_size = 40
 		label.pixel_size = 0.013
 		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		add_child(label)
+		_attach(label)
 		dugout_labels.append(label)
 		disk(BaseballWorld.world_position(dugout.on_deck_position()), 0.8, dirt)
 
@@ -75,7 +80,7 @@ func box(point: Vector3, size: Vector3, surface: Material) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	node.mesh = mesh
 	node.position = point
-	add_child(node)
+	_attach(node)
 	return node
 
 
@@ -95,4 +100,13 @@ func disk(point: Vector3, radius: float, surface: Material) -> void:
 	var node := MeshInstance3D.new()
 	node.mesh = mesh
 	node.position = point + Vector3(0, 0.04, 0)
-	add_child(node)
+	_attach(node)
+
+
+## Park pieces go under [member markings] so they can be hidden together. The grass
+## is added before there is a markings node, so it stays whatever the view shows.
+func _attach(node: Node3D) -> void:
+	if markings == null:
+		add_child(node)
+		return
+	markings.add_child(node)
