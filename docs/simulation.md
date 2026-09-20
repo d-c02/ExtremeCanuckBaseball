@@ -11,13 +11,8 @@ larger, not more field.
 | B | Toggle the box score. It opens automatically at the final result. |
 | R | Start over with a fresh seed (or the configured fixed seed). Press Space to play. |
 | Shift+R | Replay the current seed. |
-| H | Inspect both dugouts. |
 | D | Show defensive movement targets. |
 | C | Show the infield reference guide. |
-| V | Toggle automatic broadcast cameras. |
-| Q / E | Switch to manual camera and orbit. |
-| Right-drag | Orbit and tilt the camera. |
-| Mouse wheel | Zoom; framing keeps the bases and live ball visible. |
 
 ## Game loop
 
@@ -31,7 +26,7 @@ not regulation pitch speeds. Misses continue to the catcher before the strike ca
 
 `random_seed = 0` chooses a new seed on startup and R. The HUD shows `active_seed`;
 Shift+R replays it. Set `random_seed` to a nonzero value for repeatable development
-runs. The seed controls baseball decisions, not the broadcast camera.
+runs. The seed controls baseball decisions, not the field camera.
 
 Players brake when a play ends and wait through a 2.2-second result beat at normal
 speed. Retired players keep an OUT label during this time. Then safe runners stay
@@ -189,6 +184,21 @@ markers and a separate procedural preview renderer.
 `game/presentation/field_3d.gd` loads the exported GLB and builds StaticBody3D
 triangle collision on the Walkable field layer (3D layer 3). The matching layout Resource
 sets base/mound positions, foul directions, fence dimensions and dugout geometry.
+The exported perimeter tapers to a point behind home. Its sidelines are parallel
+to the foul lines, with the neutral-grey dugouts built into those sides. Guards
+follow both room rims and stair sides, leaving gaps at the top of the stairs.
+The backstop uses a transparent grey crosshatch texture, with the same collision
+height. A 1,000-metre grass slab extends beyond the overview so its edges stay hidden.
+The curved outfield is trimmed to the sideline joins and its evaluated outline
+also supplies collision and home-run boundaries. Collision segments and heights come
+from the evaluated Geometry Nodes panels, not separate hand-authored coordinates.
+Players collide with the guards; every free ball uses swept segment collisions
+below guard height, including return throws and discarded balls. Fielding
+forecasts use the same guard tests. High balls can clear a guard, and the stair
+openings remain open to balls as well as players. This does not implement
+out-of-play awards or make the ball descend into excavations; its rules still
+use the flat playing surface. Fair outfield home runs remain supported.
+
 Fielding stations follow their associated bases; outfield stations scale with
 fence width and depth. Team Resources remain unchanged. Edit the Blender controls
 and re-export, then restart the game; edits to the old scene markers are overridden.
@@ -208,51 +218,28 @@ field during physics ticks. Only the view's height changes; the simulation retai
 its planar coordinates. Small stair height changes are smoothed, while stationary
 players snap to the sampled surface. Pause freezes the height update too. The
 player's shadow moves with its feet. Additional StaticBody3D geometry on the
-Walkable field layer is picked up by the same rays. The ball is a small sphere with a separate ground shadow; its
-vertical position follows the simulation's height. Ground shadows are placeholders.
+Walkable field layer is picked up by the same rays. The ball is a small sphere with a separate ground shadow. A downward ray samples
+the rendered surface for the active ball and discarded balls; the sphere's centre
+is clamped to at least that surface plus its mesh radius. This keeps rolling balls
+above grass, dirt and bases without changing their simulation trajectory. Airborne
+height still follows the simulation. Ground shadows follow the sampled surface
+and remain placeholders.
 
-### Broadcast cameras
+### Field camera
 
-The center-field camera covers the set, pitch and catcher's reception. It can
-stay on a nearby catcher's return and subsequent preparation, but never cuts to
-that angle just for a return throw. Outfield returns use high-home coverage. After contact it holds for 0.35 seconds before cutting to high home for
-ball coverage. Baseline shots require a stable throw/tag assignment for 0.35
-seconds and at least two seconds on the current shot. Pitch setup and the cut
-from contact to ball coverage can override that minimum. The result shot holds
-through the 2.2-second beat, instead of chasing dead-ball activity.
+One elevated camera keeps the entire field and both dugouts in view throughout
+the game. Its position is authored on `Camera` in `main.tscn`. It fits the field's
+bases, exported fence edges and dugout seats on startup, reset and window resize.
+`framing_margin` leaves room around the field and under the HUD. The near plane
+stays at 0.05 so the foreground playing surface is not clipped.
 
-Within a shot, an 8% screen goal area ignores small movements. The camera only
-corrects the part of the target's movement outside that area, with damped focus
-and quaternion rotation for soft starts and stops. Pan speed is capped at 24
-degrees/second. Manual orbit, tilt and viewing distance also ease toward their goals.
-
-The broadcast lens holds its framing through small changes. A change of at least
-3 degrees must settle for 0.6 seconds before starting a zoom, with 2.5 seconds
-between completed moves. Godot's native `Tween.interpolate_value` provides a sine
-ease in/out lasting at least 1.2 seconds, limited to 12 degrees/second. Zooms use
-render delta and never restart each frame. Framing reserves breathing room; the
-outer safety margin can override a zoom to keep fast action visible. Cuts set the
-new shot's framing immediately and cancel the previous zoom. Movement and zooms
-freeze during pause, contact holds and result beats; pause also freezes shot timers. The contact
-hold intentionally prioritizes seeing the swing over immediately following a fast
-ball out of frame.
-
-Camera positions are editable `Marker3D` nodes under `BroadcastPositions` in
-`main.tscn`. Select `Camera` for contact hold, minimum shot time, pan/zoom rates,
-goal area, zoom settle time/interval/threshold and manual orbit tuning. All shots use a short 0.05 near plane so the
-camera never slices through the playing surface to hide fielders. In the pitching
-shot, player views closer than the mound (apart from pitcher, catcher and batter)
-are hidden together with their labels and shadows. Other shots restore them.
-This affects presentation only. V toggles broadcast mode. Q/E, right-drag or
-the wheel switch to the manual orbit camera. H inspects both dugouts. Manual
-camera movement remains available while paused. C draws an infield reference
-rectangle; D draws defensive movement targets.
-
-References informing this pass:
-- [Godot Tween easing](https://docs.godotengine.org/en/stable/classes/class_tween.html): native sine easing for deliberate lens moves, stepped with the camera so holds freeze them.
-- [Kansas State camera-operator instructions](https://www.kstatesports.com/documents/download/2022/1/13/Baseball_camera_instructions_docx.pdf): smooth coverage and staying with the player who made the play.
-- [A broadcast director's coverage assignments](https://www.tvtechnology.com/news/directing-baseball-covering-americas-pastimeagain): center-field pitcher/batter coverage and high-home ball follow.
-- [Cinemachine Rotation Composer](https://docs.unity3d.com/Packages/com.unity.cinemachine@3.1/manual/CinemachineRotationComposer.html): dead zones, damping and hard framing limits. The implementation here uses Godot Camera3D.
+The camera eases in by up to 6% during windup and pitching, then widens for play.
+High or distant balls can widen the view by a further 8%. Exponential smoothing
+keeps these changes gradual; pause and the result beat hold the current zoom.
+`zoom_amount` and `zoom_speed` tune this on Camera. The close view still fits the
+field and dugouts. There are no shot cuts, alternate angles or manual orbit controls. C draws an infield reference
+rectangle; D draws defensive movement targets. The VCR effect still marks visible
+accelerated movement in this same overview.
 
 ### Equipment continuity
 
@@ -269,7 +256,7 @@ Between plays the holder throws the ball back to the pitcher along a visible arc
 An outgoing fielder returns the ball before leaving the field. Loose in-play balls
 are collected rather than teleported to a fielder. Fouls and home runs leave their
 old ball in the scene; the catcher collects a replacement from a visible supply
-behind home, then throws it to the pitcher. The supply contains 128 balls at reset;
+behind home, inside the diagonal backstop, then throws it to the pitcher. The supply contains 128 balls at reset;
 exhausting it reports an error rather than silently inventing a new ball.
 Ball positions continue advancing after fouls and home runs. Reset deliberately
 restores all equipment to its starting positions.
@@ -326,7 +313,7 @@ roster validation, pre-game box-score toggling/reset, roster/inning continuity,
 extra innings, box-score totals and base occupancy, then exercises force/tag decisions,
 consecutive outs, grand-slam RBIs, cancelled runs, fielder's choices, walk-offs, safe runners, pause/pacing, defensive handoffs and
 bobble recovery, wall collisions, a live grand slam, contact starts, caught-fly
-retreats, fouls, seed replay, catcher reception, bat availability at windup, contact-shot holds, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and camera framing through different orbit angles. Transition
+retreats, fouls, seed replay, catcher reception, bat availability at windup, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and whole-field camera framing and window resizing. Transition
 checks advance actual simulation steps and verify visible acceleration is marked,
 including arrivals and equipment attendants, while offscreen movement stays silent.
 Repeatability assumes the same

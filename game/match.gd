@@ -73,7 +73,6 @@ var pitch_count: int = 0
 var phase_elapsed: float = 0.0
 var paused: bool = false
 var debug_visible: bool = false
-var dugout_view: bool = false
 var last_result: String = "Space: start game"
 var ball_return: BaseballBallReturn
 var equipment: BaseballEquipment
@@ -395,8 +394,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_refresh_status()
 		KEY_D:
 			debug_visible = not debug_visible
-		KEY_H:
-			dugout_view = not dugout_view
 
 
 func _refresh_status() -> void:
@@ -404,7 +401,7 @@ func _refresh_status() -> void:
 		(
 			"%s %d / %d %s | %s %d/%d | %d out(s), %d strike(s)\n%s%s\n"
 			+ "Space: play   P: pause   R: new   Shift+R: replay   B: score   "
-			+ "H: dugouts   V: broadcast   Q/E or drag: orbit   Wheel: zoom   D/C: guides"
+			+ "D/C: guides"
 		)
 		% [
 			teams[0].team_name,

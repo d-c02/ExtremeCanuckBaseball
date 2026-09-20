@@ -114,7 +114,7 @@ def build():
         panel, "Foul Line Length", "NodeSocketFloat", 40.8, 20, 70
     )
     ground_size = input_socket(
-        panel, "Ground Size", "NodeSocketVector", (110, 100, 0.4)
+        panel, "Ground Size", "NodeSocketVector", (1000, 1000, 0.4)
     )
     panel = tree.interface.new_panel("Dugouts")
     dugouts = []
@@ -340,6 +340,9 @@ def build():
     from dugouts import install
 
     install(field)
+    from fences import install as install_fences
+
+    install_fences(field)
     path = ROOT / "art/blender/baseball_field.blend"
     path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(path))

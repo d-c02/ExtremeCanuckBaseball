@@ -10,6 +10,7 @@ var previous_height: float = 0.0
 var held: bool = true
 var bounced: bool = false
 var gravity_enabled: bool = true
+var outfield: BaseballOutfield
 
 
 func launch(
@@ -32,17 +33,18 @@ func step(delta: float) -> void:
 	if held:
 		return
 	position += velocity * delta
-	if not gravity_enabled:
-		return
-	if height > 0.0 or vertical_velocity > 0.0:
-		vertical_velocity -= GRAVITY * delta
-		height += vertical_velocity * delta
-		if height <= 0.0:
-			height = 0.0
-			vertical_velocity = 0.0
-			bounced = true
-	else:
-		velocity = velocity.move_toward(Vector2.ZERO, 85.0 * delta)
+	if gravity_enabled:
+		if height > 0.0 or vertical_velocity > 0.0:
+			vertical_velocity -= GRAVITY * delta
+			height += vertical_velocity * delta
+			if height <= 0.0:
+				height = 0.0
+				vertical_velocity = 0.0
+				bounced = true
+		else:
+			velocity = velocity.move_toward(Vector2.ZERO, 85.0 * delta)
+	if outfield != null:
+		outfield.check_barriers(self)
 
 
 func hold_at(point: Vector2) -> void:

@@ -24,7 +24,9 @@ func configure(scene: BaseballWorld) -> void:
 		view.mesh = world.ball.mesh
 		add_child(view)
 		ball_views.append(view)
-	var supply := BaseballWorld.world_position(world.game.home.position + Vector2(116, 109))
+	var supply := BaseballWorld.world_position(
+		world.game.home.position + BaseballEquipment.SUPPLY_OFFSET
+	)
 	for offset in [
 		Vector3(-0.98, 0.44, 0),
 		Vector3(0.98, 0.44, 0),
@@ -71,6 +73,6 @@ func _process(delta: float) -> void:
 	for index in ball_views.size():
 		var ball := world.game.equipment.balls[index]
 		ball_views[index].visible = ball != world.game.ball
-		ball_views[index].position = BaseballWorld.world_position(ball.position, ball.height)
+		ball_views[index].position = world.ball_position(ball)
 	for view in attendants:
 		view.sync(0.0 if world.game.paused else delta)

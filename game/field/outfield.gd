@@ -9,30 +9,33 @@ extends Node2D
 var first_direction := Vector2(220, -220)
 var third_direction := Vector2(-220, -220)
 var boundary: PackedVector2Array
+var barrier_segments: PackedVector2Array
+var barrier_heights: PackedFloat32Array
 
 
 func _ready() -> void:
-	var top := home_position.y - fence_distance
-	boundary.append(Vector2(-flat_half_width - corner_radius, home_position.y + 180.0))
-	for index in 17:
-		var angle := lerpf(PI, PI * 1.5, index / 16.0)
-		boundary.append(
-			(
-				Vector2(-flat_half_width, top + corner_radius)
-				+ Vector2.from_angle(angle) * corner_radius
+	if boundary.is_empty():
+		var top := home_position.y - fence_distance
+		boundary.append(Vector2(-flat_half_width - corner_radius, home_position.y + 180.0))
+		for index in 17:
+			var angle := lerpf(PI, PI * 1.5, index / 16.0)
+			boundary.append(
+				(
+					Vector2(-flat_half_width, top + corner_radius)
+					+ Vector2.from_angle(angle) * corner_radius
+				)
 			)
-		)
-	for index in 17:
-		var angle := lerpf(-PI / 2.0, 0.0, index / 16.0)
-		boundary.append(
-			(
-				Vector2(flat_half_width, top + corner_radius)
-				+ Vector2.from_angle(angle) * corner_radius
+		for index in 17:
+			var angle := lerpf(-PI / 2.0, 0.0, index / 16.0)
+			boundary.append(
+				(
+					Vector2(flat_half_width, top + corner_radius)
+					+ Vector2.from_angle(angle) * corner_radius
+				)
 			)
-		)
-	boundary.append(Vector2(flat_half_width + corner_radius, home_position.y + 180.0))
-	for index in boundary.size():
-		boundary[index].x += home_position.x
+		boundary.append(Vector2(flat_half_width + corner_radius, home_position.y + 180.0))
+		for index in boundary.size():
+			boundary[index].x += home_position.x
 	var wall := StaticBody2D.new()
 	wall.name = "WallCollision"
 	wall.collision_layer = 2
@@ -45,6 +48,14 @@ func _ready() -> void:
 		var points := PackedVector2Array([a, b, b + outward, a + outward])
 		var shape := CollisionPolygon2D.new()
 		shape.polygon = points
+		wall.add_child(shape)
+	for index in barrier_heights.size():
+		var a := barrier_segments[index * 2]
+		var b := barrier_segments[index * 2 + 1]
+		var edge := (b - a).normalized()
+		var side := Vector2(-edge.y, edge.x) * 2.0
+		var shape := CollisionPolygon2D.new()
+		shape.polygon = PackedVector2Array([a - side, b - side, b + side, a + side])
 		wall.add_child(shape)
 
 
@@ -78,6 +89,40 @@ func boundary_hit(start: Vector2, finish: Vector2) -> Dictionary:
 					"point": start.lerp(finish, fraction), "normal": normal, "fraction": fraction
 				}
 	return hit
+
+
+func barrier_hit(
+	start: Vector2, finish: Vector2, start_height: float, finish_height: float
+) -> Dictionary:
+	var hit: Dictionary = {}
+	var distance := start.distance_to(finish)
+	if distance < 0.0001:
+		return hit
+	for index in barrier_heights.size():
+		var a := barrier_segments[index * 2]
+		var b := barrier_segments[index * 2 + 1]
+		var crossing = Geometry2D.segment_intersects_segment(start, finish, a, b)
+		if crossing == null:
+			continue
+		var fraction := start.distance_to(crossing) / distance
+		if lerpf(start_height, finish_height, fraction) > barrier_heights[index]:
+			continue
+		if not hit.is_empty() and fraction >= hit.fraction:
+			continue
+		var edge := b - a
+		var normal := Vector2(-edge.y, edge.x).normalized()
+		if (start - crossing).dot(normal) < 0.0:
+			normal = -normal
+		hit = {"point": crossing, "normal": normal, "fraction": fraction}
+	return hit
+
+
+func check_barriers(ball: BaseballBall) -> void:
+	var hit := barrier_hit(ball.previous_position, ball.position, ball.previous_height, ball.height)
+	if not hit.is_empty():
+		ball.position = hit.point + hit.normal * 2.6
+		ball.velocity = ball.velocity.bounce(hit.normal) * 0.45
+		ball.bounced = true
 
 
 func is_fair(point: Vector2) -> bool:
@@ -124,6 +169,11 @@ func forecast_path(ball: BaseballBall, seconds: float) -> Array[Dictionary]:
 				bounced = true
 		else:
 			velocity = velocity.move_toward(Vector2.ZERO, 85.0 * delta)
+		var guard := barrier_hit(previous, point, previous_height, height)
+		if not guard.is_empty():
+			point = guard.point + guard.normal * 2.6
+			velocity = velocity.bounce(guard.normal) * 0.45
+			bounced = true
 		var hit := boundary_hit(previous, point)
 		if not hit.is_empty():
 			var crossing_height := lerpf(previous_height, height, hit.fraction)

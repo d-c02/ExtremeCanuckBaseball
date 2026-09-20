@@ -128,7 +128,7 @@ func run() -> void:
 	await check_scoring()
 	check_foul()
 	await check_grounding()
-	check_camera()
+	await check_camera()
 	await _check_transition_effect()
 	print("Failures: ", failures)
 	world.queue_free()
@@ -342,6 +342,16 @@ func check_wall_and_home_run() -> void:
 	game.reset_game()
 	var wall := game.outfield
 	var player := game.fielders[7]
+	for side in 2:
+		var endpoint: Vector2 = wall.boundary[0 if side == 0 else -1]
+		var foul_direction: Vector2 = wall.third_direction if side == 0 else wall.first_direction
+		var joined := false
+		for index in wall.barrier_heights.size():
+			var a: Vector2 = wall.barrier_segments[index * 2]
+			var b: Vector2 = wall.barrier_segments[index * 2 + 1]
+			if minf(a.distance_to(endpoint), b.distance_to(endpoint)) < 0.01:
+				joined = absf((b - a).normalized().dot(foul_direction.normalized())) > 0.999
+		check(joined, "Sideline failed to join the outfield parallel to the foul line")
 	for index in [16, 8]:
 		var midpoint := (wall.boundary[index] + wall.boundary[index + 1]) * 0.5
 		var normal := wall.inward_normal(index)
@@ -365,6 +375,31 @@ func check_wall_and_home_run() -> void:
 		not prediction.home_run and prediction.point.y > top,
 		"AI predicted a rebound outside the wall"
 	)
+	for index in wall.barrier_heights.size():
+		var a: Vector2 = wall.barrier_segments[index * 2]
+		var b: Vector2 = wall.barrier_segments[index * 2 + 1]
+		var midpoint := (a + b) / 2.0
+		var edge := (b - a).normalized()
+		var normal := Vector2(-edge.y, edge.x)
+		game.ball.launch(midpoint + normal * 20, -normal * 800, 0, 0)
+		var expected: Dictionary = wall.forecast(game.ball, 0.05)
+		game.ball.step(0.05)
+		check(game.ball.velocity.dot(normal) > 0, "Ball passed through an exported guard")
+		check(
+			game.ball.position.distance_to(expected.point) < 0.01,
+			"Guard forecast disagreed with rebound"
+		)
+		game.ball.launch(midpoint + normal * 20, -normal * 800, wall.barrier_heights[index] + 10, 0)
+		game.ball.step(0.05)
+		check(game.ball.velocity.dot(normal) < 0, "Ball hit an invisible wall above a guard")
+	for dugout in game.dugouts:
+		var entrance: Vector2 = dugout.to_global(
+			Vector2(0, -dugout.room_width / 2 - dugout.stair_run)
+		)
+		var direction := Vector2.DOWN.rotated(dugout.rotation)
+		game.ball.launch(entrance - direction * 10, direction * 200, 0, 0)
+		game.ball.step(0.1)
+		check(game.ball.velocity.dot(direction) > 0, "Fence closed a stair entrance")
 	contact(3)
 	game.ball.launch(game.home.position, Vector2(0, -600), 10, 410)
 	game.play.defense.assign()
@@ -495,6 +530,16 @@ func check_foul() -> void:
 func check_grounding() -> void:
 	game.reset_game()
 	await physics_frame
+	for sample in [
+		[Vector2(0, 100), 0.015], [Vector2(400, -400), 0.0], [game.base_positions[0], 0.15]
+	]:
+		game.ball.launch(sample[0], Vector2.ZERO, 0.0, 0.0)
+		world._physics_process(DELTA)
+		world.sync(0.0)
+		check(
+			absf(world.ball.position.y - world.ball.mesh.radius - sample[1]) < 0.005,
+			"Rolling ball was embedded in the rendered field"
+		)
 	for side in 2:
 		var dugout = game.dugouts[side]
 		var view: BaseballPlayerView = world.player_views[side * 9]
@@ -534,6 +579,7 @@ func check_camera() -> void:
 	check(world.player_views.size() == 18, "3D presentation lost roster actors")
 	game.ball.launch(Vector2(850, -900), Vector2.ZERO, 150, 0)
 	game.phase = game.Phase.FIELDING
+	world._physics_process(DELTA)
 	world.sync(0.0)
 	for view in world.player_views:
 		check(
@@ -546,67 +592,43 @@ func check_camera() -> void:
 		world.ball.position.is_equal_approx(Vector3(34, 6, -36)),
 		"Ball height was not mapped into 3D"
 	)
-	check(is_equal_approx(world.shadow.position.y, 0.04), "Ball shadow left the ground")
-	camera._process(DELTA)
+	check(is_equal_approx(world.shadow.position.y, 0.002), "Ball shadow left the ground")
+	camera._frame_field()
 	for point in camera.framing_points():
-		check(camera.is_position_in_frustum(point), "Broadcast lost the live ball or bases")
-	game.phase = game.Phase.SETTLING
+		check(camera.is_position_in_frustum(point), "Overview lost a field edge or dugout")
 	var held_transform: Transform3D = camera.transform
-	camera._process(1.0)
-	check(camera.transform == held_transform, "Broadcast moved during the result beat")
-	game.phase = game.Phase.FIELDING
-	camera.broadcast = false
-	for angle in [-120.0, 0.0, 90.0]:
-		camera.azimuth = angle
-		for frame in 30:
-			camera._process(DELTA)
-			for point in camera.framing_points():
-				check(camera.is_position_in_frustum(point), "3D camera lost bases or airborne ball")
-	game.dugout_view = true
-	for frame in 30:
+	var wide_lens: float = camera.fov
+	game.phase = game.Phase.WINDUP
+	for frame in 120:
 		camera._process(DELTA)
+	check(
+		camera.fov < wide_lens and camera.fov > wide_lens * 0.9,
+		"Pitch zoom was absent or excessive"
+	)
 	for point in camera.framing_points():
-		check(camera.is_position_in_frustum(point), "Dugout camera lost a bench")
-	game.dugout_view = false
-	camera.azimuth = -15.0
-	camera.broadcast = true
-	game.phase = game.Phase.PITCH
-	camera._process(DELTA)
-	var contact_frame: Transform3D = camera.transform
-	game.ball_hit.emit(0.8)
-	game.phase = game.Phase.FIELDING
-	camera._process(0.1)
-	check(camera.transform == contact_frame, "Broadcast cut away at contact")
-	camera._process(camera.contact_hold)
-	check(camera.shot == &"HighHome", "Broadcast never picked up the batted ball")
-	game.ball_return = BaseballBallReturn.new(game, game.fielder_for("CF"))
-	game.phase = game.Phase.RETURN_BALL
-	camera._process(DELTA)
-	check(
-		camera.shot == &"HighHome" and camera.near < 1.0,
-		"Outfield return selected a clipped pitching shot"
-	)
-	check(camera.is_position_in_frustum(world.ball.position), "Return camera clipped out the ball")
-	check(
-		world.player_views.all(func(view): return view.visible),
-		"Pitching shot left fielders hidden"
-	)
-	# Small framing changes should not make the operator hunt with the zoom.
-	camera._update_lens(45.0, 35.0, 0.0, true)
-	for frame in 240:
-		camera._update_lens(45.0 + sin(frame * 0.2), 35.0, DELTA, false)
-	check(is_equal_approx(camera.fov, 45.0), "Broadcast lens hunted over small movements")
-	for frame in 50:
-		camera._update_lens(35.0, 25.0, DELTA, false)
-	check(camera.fov < 45.0 and camera.fov > 35.0, "Stable framing did not start an eased zoom")
+		check(camera.is_position_in_frustum(point), "Gentle zoom cropped the field")
+	var held_lens: float = camera.fov
 	game.paused = true
-	var paused_lens: float = camera.fov
 	camera._process(1.0)
-	check(is_equal_approx(camera.fov, paused_lens), "Lens kept zooming while paused")
+	check(camera.fov == held_lens, "Paused camera kept zooming")
 	game.paused = false
-	camera._update_lens(55.0, 45.0, 0.0, true)
-	camera._update_lens(55.0, 45.0, DELTA, false)
-	check(is_equal_approx(camera.fov, 55.0), "New shot inherited the previous zoom")
+	game.phase = game.Phase.SETTLING
+	camera._process(1.0)
+	check(camera.fov == held_lens, "Result beat kept zooming")
+	game.phase = game.Phase.FIELDING
+	for frame in 120:
+		camera._process(DELTA)
+	check(
+		camera.fov > held_lens and camera.fov <= wide_lens * 1.08,
+		"Field camera failed to ease wider"
+	)
+	check(camera.transform == held_transform, "Overview switched camera angle")
+	var window_size := root.size
+	root.size = Vector2i(900, 1200)
+	camera._frame_field()
+	for point in camera.framing_points():
+		check(camera.is_position_in_frustum(point), "Resized overview clipped the field")
+	root.size = window_size
 	game.reset_game()
 
 
@@ -616,7 +638,6 @@ func _check_transition_effect() -> void:
 	var camera = world.get_node("Camera")
 	var tape = world.get_node("TapeTransition")
 	tape.set_process(false)
-	camera.set_process(false)
 	camera.position = BaseballWorld.world_position(game.home.position) + Vector3(0, 25, 25)
 	camera.look_at(BaseballWorld.world_position(game.home.position))
 	camera.fov = 60.0
@@ -695,7 +716,6 @@ func _check_transition_effect() -> void:
 	tape._process(DELTA)
 	check(not tape.visible, "Opening walkout showed the tape effect")
 	game.reset_game()
-	camera.set_process(true)
 	tape.set_process(true)
 
 

@@ -14,6 +14,9 @@ extends Resource
 @export var dugout_depth: float
 @export var stair_width: float
 @export var stair_run: float
+@export var outfield_boundary: PackedVector2Array
+@export var barrier_segments: PackedVector2Array
+@export var barrier_heights: PackedFloat32Array
 
 
 func apply_to(park: Node) -> void:
@@ -29,6 +32,9 @@ func apply_to(park: Node) -> void:
 	fence.fence_height = fence_height
 	fence.flat_half_width = flat_half_width
 	fence.corner_radius = corner_radius
+	fence.boundary = outfield_boundary
+	fence.barrier_segments = barrier_segments
+	fence.barrier_heights = barrier_heights
 	for side in 2:
 		var dugout = park.get_node("Dugouts/" + ["Visitors", "Home"][side])
 		dugout.position = dugout_positions[side]
