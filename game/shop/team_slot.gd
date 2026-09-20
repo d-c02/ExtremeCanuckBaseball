@@ -2,8 +2,8 @@ class_name TeamSlot
 extends BuyTarget
 
 ## One spot in the batting order. Empty slots take player buyables; filled slots
-## hold a [SignedPlayer] that can be dragged back out, and are where buyables
-## aimed at a single player land.
+## hold a [SignedPlayer] that can be dragged out to another slot or the sell spot,
+## and are where buyables aimed at a single player land.
 
 signal filled(player: BaseballPlayerData)
 signal cleared
@@ -40,6 +40,30 @@ func fill(new_player: BaseballPlayerData, value: int) -> void:
 	add_child(occupant)
 	refresh()
 	filled.emit(new_player)
+
+
+## Trade players with [param other]. Either side may be empty, so this covers both
+## moving a player to an open spot and swapping two of them. Each player takes the
+## slot's fielding role and its spot in the batting order.
+func swap_with(other: TeamSlot) -> void:
+	var mine := occupant
+	var theirs := other.occupant
+	var my_player := player
+	player = other.player
+	other.player = my_player
+	occupant = theirs
+	other.occupant = mine
+	if mine != null:
+		mine.slot = other
+		mine.reparent(other)
+	if theirs != null:
+		theirs.slot = self
+		theirs.reparent(self)
+		theirs.return_home()
+	_write_roster()
+	other._write_roster()
+	refresh()
+	other.refresh()
 
 
 ## Empty the slot. The player being sold frees their own node.

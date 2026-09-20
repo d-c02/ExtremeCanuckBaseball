@@ -1,8 +1,11 @@
 class_name SignedPlayer
 extends Buyable
 
-## A player already on the roster, standing in their [TeamSlot]. Dragging them to
-## a [SellSpot] sells them back and empties the slot they came from.
+## A player already on the roster, standing in their [TeamSlot]. Drag them to a
+## [SellSpot] to sell them back, or to another slot to move them there: an open
+## slot takes them and a taken one trades players with the slot they came from.
+## Moving is free, and a player takes over the batting order spot of the slot they
+## land in, because a slot is one place in the order as well as one fielding spot.
 
 var slot: TeamSlot
 var player: BaseballPlayerData
@@ -18,17 +21,29 @@ func _ready() -> void:
 
 
 func fits(target: BuyTarget) -> bool:
-	return slot != null and target is SellSpot
+	if slot == null:
+		return false
+	if target is SellSpot:
+		return true
+	var other := target as TeamSlot
+	return other != null and other != slot
 
 
-func price(_target: BuyTarget) -> int:
-	return -sell_value
+func price(target: BuyTarget) -> int:
+	return -sell_value if target is SellSpot else 0
+
+
+func spent_on(target: BuyTarget) -> bool:
+	return target is SellSpot
 
 
 func apply_to(target: BuyTarget) -> bool:
 	if not fits(target):
 		return false
-	slot.clear()
+	if target is SellSpot:
+		slot.clear()
+		return true
+	slot.swap_with(target as TeamSlot)
 	return true
 
 

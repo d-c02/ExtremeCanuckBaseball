@@ -121,13 +121,19 @@ func return_home() -> void:
 	_tween.tween_callback(returned.emit)
 
 
-## Called by the shop once a sale went through and the money was taken.
+## Virtual. True when the trade uses the buyable up, so it leaves the board. A drop
+## that only moves it somewhere else says false and slides home to its new spot.
+func spent_on(_target: BuyTarget) -> bool:
+	return not restocks
+
+
+## Called by the shop once a trade went through and the money moved.
 func consume(target: BuyTarget) -> void:
 	purchased.emit(target)
-	if restocks:
-		return_home()
+	if spent_on(target):
+		queue_free()
 		return
-	queue_free()
+	return_home()
 
 
 ## The axis pointing back at the camera: the body swings and rolls around it, so a

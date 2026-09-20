@@ -70,6 +70,7 @@ func run() -> void:
 	await check_refused_drops()
 	await check_selling()
 	await check_refused_sales()
+	await check_moving()
 	await check_hover_names()
 	await check_dangle()
 	await check_roster_ready()
@@ -136,10 +137,6 @@ func check_refused_sales() -> void:
 	await drag(arthur, open)
 	var signed_player: SignedPlayer = open.occupant
 	check(signed_player != null, "A signing after a refused sale did not go through")
-	var slot_funds := shop.funds
-	await drag(signed_player, shop.get_node("Roster/Slot4"))
-	check(open.player != null, "Dropping a signed player on an empty slot emptied their own")
-	check(shop.funds == slot_funds, "Moving a signed player between slots moved money")
 
 
 ## The shop roster starts with every fielding position, so filling all nine slots
@@ -212,3 +209,33 @@ func check_dangle() -> void:
 	cancel_drag()
 	await settle()
 	check(harrhy.position.is_equal_approx(harrhy.rest_position), "A cancel stranded a player")
+
+
+## Players can be shuffled around the field for free: an open spot takes them, and
+## a taken one trades back whoever was standing there.
+func check_moving() -> void:
+	var from: TeamSlot = shop.get_node("Roster/Slot3")
+	var open: TeamSlot = shop.get_node("Roster/Slot5")
+	var mover := from.occupant
+	var moved := from.player
+	var funds := shop.funds
+	check(mover != null, "Nobody was on the field to move")
+	await drag(mover, from)
+	check(from.player == moved, "Dropping a player on their own slot moved them")
+	await drag(mover, open)
+	check(from.is_empty(), "Moving a player left them in their old spot")
+	check(open.player == moved, "A moved player did not take the open spot")
+	check(mover.slot == open, "The moved player did not follow their slot")
+	check(shop.funds == funds, "Moving a player cost money")
+	check(shop.roster.players[open.slot_index] == moved, "The roster missed the move")
+	check(shop.roster.players[from.slot_index] == null, "The roster kept the old spot filled")
+	check(shop.roster.field_roles[open.slot_index] == open.role, "A move rewrote the role")
+	var bench := BaseballPlayerData.new()
+	bench.player_name = "Bench"
+	from.fill(bench, 1)
+	await settle()
+	await drag(open.occupant, from)
+	check(from.player == moved, "A swap did not bring the dragged player over")
+	check(open.player == bench, "A swap did not send the other player back")
+	check(shop.roster.players[from.slot_index] == moved, "The roster missed the swap")
+	check(shop.funds == funds, "Swapping players cost money")

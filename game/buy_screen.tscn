@@ -153,9 +153,9 @@ text = "Funds  $12"
 [node name="Hint" type="Label" parent="HUD" unique_id=1661217605]
 offset_left = 24.0
 offset_top = 52.0
-offset_right = 620.0
+offset_right = 780.0
 offset_bottom = 78.0
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-text = "Drag a player onto an open roster slot to sign them, or onto Sell to cash them in."
+text = "Drag players onto open spots to sign or move them, onto each other to swap, or onto Sell."
