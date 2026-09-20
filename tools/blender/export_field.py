@@ -52,6 +52,44 @@ def export():
     mesh = bpy.data.meshes.new_from_object(field.evaluated_get(depsgraph))
     if not mesh.vertices or not mesh.polygons:
         raise RuntimeError("Field evaluated to an empty mesh")
+    barriers, outfield_edges = [], []
+    for attribute, destination in [
+        ("field_barrier", barriers),
+        ("field_outfield", outfield_edges),
+    ]:
+        tagged = mesh.attributes.get(attribute)
+        if tagged is None:
+            raise ValueError("Install the diamond perimeter before exporting")
+        for polygon in mesh.polygons:
+            if not tagged.data[polygon.index].value:
+                continue
+            vertices = [mesh.vertices[index].co for index in polygon.vertices]
+            bottom = [v for v in vertices if abs(v.z) < 0.0001]
+            if len(bottom) != 2:
+                raise ValueError("Fence faces must have two ground-level endpoints")
+            destination.append(
+                (
+                    [(round(v.x * 25, 4), round(-v.y * 25, 4)) for v in bottom],
+                    round(max(v.z for v in vertices) * 25, 4),
+                )
+            )
+    neighbors = {}
+    for (a, b), _ in outfield_edges:
+        neighbors.setdefault(a, []).append(b)
+        neighbors.setdefault(b, []).append(a)
+    ends = [p for p, adjacent in neighbors.items() if len(adjacent) == 1]
+    if len(ends) != 2 or any(len(adjacent) > 2 for adjacent in neighbors.values()):
+        raise ValueError("Outfield must be one open chain from left to right")
+    boundary = [min(ends)]
+    previous = None
+    while True:
+        following = [p for p in neighbors[boundary[-1]] if p != previous]
+        if not following:
+            break
+        previous = boundary[-1]
+        boundary.append(following[0])
+    if len(boundary) != len(outfield_edges) + 1:
+        raise ValueError("Disconnected outfield panels")
     baked = bpy.data.objects.new("BaseballField", mesh)
     bpy.context.scene.collection.objects.link(baked)
     baked.matrix_world = field.matrix_world
@@ -69,7 +107,7 @@ def export():
         (output / "baseball_field.layout.json").write_text(
             json.dumps(
                 {
-                    "schema_version": 2,
+                    "schema_version": 4,
                     "simulation_units_per_meter": 25,
                     "coordinates": "Blender Z-up; simulation (x, y) = (Blender x * 25, -Blender y * 25)",
                     "controls": controls,
@@ -104,6 +142,19 @@ def export():
             )
             + ")",
         ]
+        layout.append(
+            "outfield_boundary = PackedVector2Array(" + packed(boundary) + ")"
+        )
+        layout.append(
+            "barrier_segments = PackedVector2Array("
+            + packed([p for segment, _ in barriers for p in segment])
+            + ")"
+        )
+        layout.append(
+            "barrier_heights = PackedFloat32Array("
+            + ", ".join(str(height) for _, height in barriers)
+            + ")"
+        )
         for property_name, control in {
             "fence_distance": "Fence Depth",
             "fence_height": "Fence Height",

@@ -1,6 +1,8 @@
 class_name BaseballEquipment
 extends Node2D
 
+const SUPPLY_OFFSET := Vector2(71, 39)
+
 var game: BaseballMatch
 var bats: Array[BaseballBat] = []
 var attendants: Array[BaseballPlayer] = []
@@ -25,9 +27,11 @@ func configure(match_scene: BaseballMatch) -> void:
 		attendant.team_index = side
 		attendant.set_label("KIT")
 		attendants.append(attendant)
+	game.ball.outfield = game.outfield
 	balls.append(game.ball)
 	for index in 127:
 		var spare := BaseballBall.new()
+		spare.outfield = game.outfield
 		add_child(spare)
 		balls.append(spare)
 
@@ -38,7 +42,9 @@ func reset() -> void:
 	game.ball = balls[0]
 	for index in balls.size():
 		var point := (
-			game.home.position + Vector2(95 + (index % 8) * 6, 100 + (floori(index / 8.0) % 4) * 6)
+			game.home.position
+			+ SUPPLY_OFFSET
+			+ Vector2((index % 8) * 6 - 21, (floori(index / 8.0) % 4) * 6 - 9)
 		)
 		balls[index].hold_at(point)
 		balls[index].height = 3.0 + floori(index / 32.0) * 6.0

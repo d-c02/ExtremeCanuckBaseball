@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 4,
   "simulation_units_per_meter": 25,
   "coordinates": "Blender Z-up; simulation (x, y) = (Blender x * 25, -Blender y * 25)",
   "controls": {
@@ -36,8 +36,8 @@
     "Line Radius": 0.03500000014901161,
     "Foul Line Length": 40.79999923706055,
     "Ground Size": [
-      110.0,
-      100.0,
+      1000.0,
+      1000.0,
       0.4000000059604645
     ],
     "Visitors Dugout": [
@@ -56,6 +56,8 @@
     "Dugout Width": 3.5999999046325684,
     "Dugout Depth": 1.2000000476837158,
     "Dugout Stair Width": 2.0,
-    "Dugout Stair Run": 2.4000000953674316
+    "Dugout Stair Run": 2.4000000953674316,
+    "Backstop Height": 3.200000047683716,
+    "Dugout Fence Height": 1.100000023841858
   }
 }

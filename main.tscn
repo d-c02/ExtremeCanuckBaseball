@@ -34,7 +34,7 @@ albedo_color = Color(0.12, 0.17, 0.12, 1)
 material = SubResource("shadow_material")
 top_radius = 0.26
 bottom_radius = 0.26
-height = 0.025
+height = 0.002
 radial_segments = 16
 [sub_resource type="StyleBoxFlat" id="hud_background"]
 bg_color = Color(0.055, 0.075, 0.085, 0.9)
@@ -54,7 +54,7 @@ cast_shadow = 0
 [node name="Guides" type="MeshInstance3D" parent="."]
 cast_shadow = 0
 [node name="Camera" type="Camera3D" parent="."]
-position = Vector3(-10, 45, 40)
+position = Vector3(0, 38, 40)
 current = true
 fov = 45.0
 far = 300.0
@@ -77,15 +77,6 @@ grow_horizontal = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("hud_background")
 
-[node name="BroadcastPositions" type="Node3D" parent="."]
-[node name="HighHome" type="Marker3D" parent="BroadcastPositions"]
-position = Vector3(0, 30, 37)
-[node name="CenterField" type="Marker3D" parent="BroadcastPositions"]
-position = Vector3(-12, 7, -42)
-[node name="FirstBase" type="Marker3D" parent="BroadcastPositions"]
-position = Vector3(25, 9, 17)
-[node name="ThirdBase" type="Marker3D" parent="BroadcastPositions"]
-position = Vector3(-25, 9, 17)
 [node name="TapeTransition" type="CanvasLayer" parent="."]
 layer = 0
 script = ExtResource("tape")

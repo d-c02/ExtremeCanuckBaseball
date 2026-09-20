@@ -25,6 +25,7 @@ signal out_recorded(player: BaseballPlayer)
 signal half_inning_finished(inning: int, batting_side: int)
 signal game_finished(scores: Array[int])
 signal game_reset
+signal simulation_stepped(steps: int)
 
 enum Phase {
 	READY,
@@ -72,7 +73,6 @@ var pitch_count: int = 0
 var phase_elapsed: float = 0.0
 var paused: bool = false
 var debug_visible: bool = false
-var dugout_view: bool = false
 var last_result: String = "Space: start game"
 var ball_return: BaseballBallReturn
 var equipment: BaseballEquipment
@@ -165,13 +165,17 @@ func _physics_process(delta: float) -> void:
 
 func step(delta: float) -> void:
 	if not error_message.is_empty() or paused:
+		simulation_stepped.emit(0)
 		return
 	# Keep movement and collision steps fixed when speeding up transitions.
 	var steps := transition_speed if is_fast_forwarding() else 1
+	var completed_steps := 0
 	for step_index in steps:
 		if step_index > 0 and (not is_fast_forwarding() or not error_message.is_empty()):
 			break
 		_step_simulation(delta)
+		completed_steps += 1
+	simulation_stepped.emit(completed_steps)
 	_refresh_status()
 
 
@@ -192,17 +196,12 @@ func _step_simulation(delta: float) -> void:
 			play.step(delta)
 			if play.done:
 				_complete_play()
-		Phase.FINISHED:
+		Phase.SETTLING, Phase.FINISHED:
 			if play != null and play.holder != null:
 				ball.hold_at(play.holder.position)
 			else:
 				ball.step(delta)
-		Phase.SETTLING:
-			if play.holder != null:
-				ball.hold_at(play.holder.position)
-			else:
-				ball.step(delta)
-			if phase_elapsed >= between_play_delay:
+			if phase == Phase.SETTLING and phase_elapsed >= between_play_delay:
 				if outs >= 3:
 					_end_half()
 				elif batting_side == 1 and inning >= innings and scores[1] > scores[0]:
@@ -395,8 +394,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_refresh_status()
 		KEY_D:
 			debug_visible = not debug_visible
-		KEY_H:
-			dugout_view = not dugout_view
 
 
 func _refresh_status() -> void:
@@ -404,7 +401,7 @@ func _refresh_status() -> void:
 		(
 			"%s %d / %d %s | %s %d/%d | %d out(s), %d strike(s)\n%s%s\n"
 			+ "Space: play   P: pause   R: new   Shift+R: replay   B: score   "
-			+ "H: dugouts   V: broadcast   Q/E or drag: orbit   Wheel: zoom   D/C: guides"
+			+ "D/C: guides"
 		)
 		% [
 			teams[0].team_name,
