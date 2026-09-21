@@ -5,6 +5,7 @@ const SUPPLY_OFFSET := Vector2(71, 39)
 
 var game: BaseballMatch
 var bats: Array[BaseballBat] = []
+var bat_by_player: Dictionary = {}
 var attendants: Array[BaseballPlayer] = []
 var jobs: Array[BaseballBat] = [null, null]
 var balls: Array[BaseballBall] = []
@@ -21,6 +22,7 @@ func configure(match_scene: BaseballMatch) -> void:
 			bat.rack = game.dugouts[side].seat_position(player.roster_index)
 			add_child(bat)
 			bats.append(bat)
+			bat_by_player[player] = bat
 		var attendant: BaseballPlayer = game.PLAYER_SCENE.instantiate()
 		add_child(attendant)
 		attendant.configure(BaseballPlayerData.new())
@@ -58,7 +60,7 @@ func reset() -> void:
 
 
 func bat_for(player: BaseballPlayer) -> BaseballBat:
-	return bats[player.team_index * 9 + player.roster_index]
+	return bat_by_player[player]
 
 
 func batting_route(player: BaseballPlayer, destination: Vector2) -> PackedVector2Array:

@@ -16,7 +16,7 @@ larger, not more field.
 
 ## Game loop
 
-Each team has nine persistent players. They start in numbered dugout seats; a
+Each team has up to nine persistent players. They start in numbered dugout seats; a
 label shows the current batting-order position. Players walk onto the field,
 the batter heads to home, and the ball returns to the pitcher. The opening walk
 runs at normal speed. Pitching starts once everyone is ready, the batter has their
@@ -64,11 +64,21 @@ strength or disable the effect on `TapeTransition` in `main.tscn`.
 ## Players and decisions
 
 The `Simulation` node's `visiting_team` and `home_team` are Resources from `data/teams/`.
-Each needs nine player Resources, field positions and roles with matching indices.
-Roster order is batting order. Edit the `.tres` files in the Inspector.
-Startup rejects null player entries and requires exactly one of each field role:
+Each has nine roster slots: field positions and roles with matching indices, and
+up to nine player Resources. Roster order is batting order. Edit the `.tres` files
+in the Inspector. Startup requires exactly one of each field role across the slots:
 P, C, 1B, 2B, 3B, SS, LF, CF and RF. Invalid rosters show an error before players
 spawn; correct the Resources and restart the scene.
+
+A null or missing player leaves that slot open, so a team can start short-handed.
+Open slots spawn nobody, take no turn at bat, and leave their fielding station empty.
+When a half-inning starts, including the first, the batting team wins by forfeit
+if the fielding team has no pitcher or catcher. A team with no players at all
+forfeits when it is due to bat. So a home team without a battery loses before the
+first pitch, while visitors without one bat the top of the first and lose when the
+home team comes up. A forfeit keeps the score as it stood; `winner()` reports the
+winning side. A short lineup skips hitters who are still on base. If every hitter
+is on base, the side is retired and those runners are left on base.
 Resources hold stats; live objects hold movement and play state.
 
 Each fielder predicts where they can reach the ball during flight or after it
@@ -128,7 +138,8 @@ JSON serialization, including a pitch-by-pitch result log. Disk saving is not wi
 - Team line score: runs by inning, total runs (R), hits (H), and runners left on
   base (LOB). A dash means that half-inning has not been played. LOB accumulates
   runners remaining at the end of each half, including the final walk-off.
-- Each batter: plate appearances (PA), at-bats (AB), runs (R), hits (H), doubles
+- Each batter present, in lineup order (open slots have no row): plate
+  appearances (PA), at-bats (AB), runs (R), hits (H), doubles
   (2B), triples (3B), home runs (HR), runs batted in (RBI), and strikeouts (K).
 - Team pitching: completed pitches (P), batters faced (BF), outs, hits allowed,
   runs allowed and strikeouts. IP displays outs as innings plus remaining outs:
@@ -316,5 +327,7 @@ bobble recovery, wall collisions, a live grand slam, contact starts, caught-fly
 retreats, fouls, seed replay, catcher reception, bat availability at windup, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and whole-field camera framing and window resizing. Transition
 checks advance actual simulation steps and verify visible acceleration is marked,
 including arrivals and equipment attendants, while offscreen movement stays silent.
+Separate matches then check forfeits against a missing catcher or pitcher, a pair of
+empty teams, and a four-player team with a battery completing a full game.
 Repeatability assumes the same
 resources, engine version and fixed timestep.

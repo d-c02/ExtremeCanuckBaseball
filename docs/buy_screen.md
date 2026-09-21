@@ -90,8 +90,9 @@ layer separately, so the held buyable never hides the target under the cursor.
 Match terrain uses layer 3, separate from both shop layers.
 
 `data/teams/shop_roster.tres` starts empty of players but carries the nine fielding
-positions and roles, so signing all nine leaves a roster `BaseballMatch` would
-accept. Slots the roster has no position for keep the spot they were given in the
+positions and roles, so any number of signings leaves a roster `BaseballMatch` would
+accept. Open slots stay empty in the match, and a roster without a pitcher or
+catcher loses by forfeit. Slots the roster has no position for keep the spot they were given in the
 scene.
 
 ## Limits

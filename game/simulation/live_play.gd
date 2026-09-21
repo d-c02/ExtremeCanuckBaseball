@@ -181,7 +181,7 @@ func _record_strike() -> void:
 	if batter_done:
 		strikeout = true
 		outs_made = 1
-		game.box_score.teams[holder.team_index].players[holder.roster_index].PO += 1
+		game.box_score.teams[holder.team_index].players[holder.lineup_index].PO += 1
 		game.outs += 1
 		game.batter.set_label("%d OUT" % (game.batter.roster_index + 1))
 		game.out_recorded.emit(game.batter)
@@ -289,7 +289,7 @@ func _step_fielding(delta: float) -> void:
 			continue
 		if game.rng.randf() > lerpf(0.45, 0.98, player.data.fielding):
 			catch_retries[player] = 0.65
-			game.box_score.teams[player.team_index].players[player.roster_index].bobbles += 1
+			game.box_score.teams[player.team_index].players[player.lineup_index].bobbles += 1
 			game.last_result = "%s bobbled it" % player.data.player_name
 			continue
 		holder = player
@@ -475,7 +475,7 @@ func retire_runner(run: BaseballBaseRunning, force_out: bool) -> void:
 		return
 	outs_made += 1
 	if holder != null:
-		game.box_score.teams[holder.team_index].players[holder.roster_index].PO += 1
+		game.box_score.teams[holder.team_index].players[holder.lineup_index].PO += 1
 	if force_out and not fly_caught:
 		force_outs += 1
 	ground_double_play = not fly_caught and outs_made >= 2 and force_outs > 0

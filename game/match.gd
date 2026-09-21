@@ -77,6 +77,8 @@ var last_result: String = "Space: start game"
 var ball_return: BaseballBallReturn
 var equipment: BaseballEquipment
 var error_message: String = ""
+## Side that lost by forfeit, or -1.
+var forfeit_side: int = -1
 
 @onready var ball: BaseballBall = $Ball
 @onready var field: BaseballBallpark = $Field
@@ -101,11 +103,15 @@ func _ready() -> void:
 	for side in 2:
 		var squad: Array[BaseballPlayer] = []
 		for index in 9:
+			var player_data := teams[side].player_at(index)
+			if player_data == null:
+				continue
 			var player: BaseballPlayer = PLAYER_SCENE.instantiate()
 			$Players.add_child(player)
 			player.team_index = side
 			player.roster_index = index
-			player.configure(teams[side].players[index])
+			player.lineup_index = squad.size()
+			player.configure(player_data)
 			squad.append(player)
 		squads.append(squad)
 	equipment = BaseballEquipment.new()
@@ -138,6 +144,7 @@ func reset_game(replay: bool = false) -> void:
 	phase = Phase.READY
 	phase_elapsed = 0.0
 	error_message = ""
+	forfeit_side = -1
 	last_result = "Ready: Space starts the whole game"
 	for squad in squads:
 		for player in squad:
@@ -146,7 +153,7 @@ func reset_game(replay: bool = false) -> void:
 			player.swing_visible = false
 			player.set_label(str(player.roster_index + 1))
 	fielders = squads[1]
-	batter = squads[0][0]
+	batter = null if squads[0].is_empty() else squads[0][0]
 	ball_return = null
 	equipment.reset()
 	_refresh_status()
@@ -156,7 +163,8 @@ func reset_game(replay: bool = false) -> void:
 func start_game() -> void:
 	if phase != Phase.READY:
 		return
-	_prepare_pitch()
+	if not _forfeit_half():
+		_prepare_pitch()
 
 
 func _physics_process(delta: float) -> void:
@@ -206,6 +214,8 @@ func _step_simulation(delta: float) -> void:
 					_end_half()
 				elif batting_side == 1 and inning >= innings and scores[1] > scores[0]:
 					_finish_game()
+				elif not _skip_to_free_batter():
+					_end_half()
 				else:
 					_prepare_pitch()
 	if phase == Phase.PREPARING and phase_elapsed > 40.0:
@@ -236,12 +246,23 @@ func _prepare_pitch() -> void:
 			player.move_via(
 				equipment.batting_route(player, home.position + Vector2(25, 0)), "Walking to bat"
 			)
-		elif player.roster_index == (next_batter[batting_side] + 1) % 9:
+		elif player.lineup_index == (next_batter[batting_side] + 1) % squads[batting_side].size():
 			_send_on_deck(player)
 		else:
 			_send_to_dugout(player)
 	ball_return = BaseballBallReturn.new(self, play.holder if play != null else null)
 	last_result = "Players getting ready: %s batting" % batter.data.player_name
+
+
+## A short lineup can wrap around to hitters still on base; they keep running
+## and the order passes to the next hitter. False when everyone is on base.
+func _skip_to_free_batter() -> bool:
+	var squad: Array = squads[batting_side]
+	for attempt in squad.size():
+		if runner_for(squad[next_batter[batting_side]]) == null:
+			return true
+		next_batter[batting_side] = (next_batter[batting_side] + 1) % squad.size()
+	return false
 
 
 func _step_preparation(delta: float) -> void:
@@ -262,7 +283,7 @@ func _complete_play() -> void:
 	scores[batting_side] += play.pending_runs
 	runners = runners.filter(func(run): return not run.retired and not run.scored)
 	if play.batter_done:
-		next_batter[batting_side] = (next_batter[batting_side] + 1) % 9
+		next_batter[batting_side] = (next_batter[batting_side] + 1) % squads[batting_side].size()
 		strikes = 0
 	phase = Phase.SETTLING
 	phase_elapsed = 0.0
@@ -293,19 +314,44 @@ func _end_half() -> void:
 	batting_side = 1 - batting_side
 	outs = 0
 	strikes = 0
+	if _forfeit_half():
+		return
 	_prepare_pitch()
 	last_result = "Change sides: %s taking the field" % teams[1 - batting_side].team_name
 	sides_changed.emit()
 
 
-func _finish_game() -> void:
+## A defense without a pitcher or catcher cannot field the half, so the batting
+## team wins by default. A batting team with nobody to send up forfeits instead.
+func _forfeit_half() -> bool:
+	var offense := teams[batting_side]
+	var defense := teams[1 - batting_side]
+	if not defense.has_role("P") or not defense.has_role("C"):
+		forfeit_side = 1 - batting_side
+		var missing := "pitcher" if not defense.has_role("P") else "catcher"
+		var reason := "%s has no %s" % [defense.team_name, missing]
+		_finish_game("%s wins by forfeit: %s" % [offense.team_name, reason])
+		return true
+	if squads[batting_side].is_empty():
+		forfeit_side = batting_side
+		var reason := "%s has no batters" % offense.team_name
+		_finish_game("%s wins by forfeit: %s" % [defense.team_name, reason])
+		return true
+	return false
+
+
+func winner() -> int:
+	if forfeit_side >= 0:
+		return 1 - forfeit_side
+	return -1 if scores[0] == scores[1] else (0 if scores[0] > scores[1] else 1)
+
+
+func _finish_game(result: String = "") -> void:
 	box_score.teams[batting_side].LOB += runners.size()
 	phase = Phase.FINISHED
-	last_result = (
-		"Draw"
-		if scores[0] == scores[1]
-		else "%s wins" % teams[0 if scores[0] > scores[1] else 1].team_name
-	)
+	last_result = result
+	if result.is_empty():
+		last_result = "Draw" if winner() < 0 else "%s wins" % teams[winner()].team_name
 	for squad in squads:
 		for player in squad:
 			_send_to_dugout(player)
@@ -343,9 +389,9 @@ func field_position(player: BaseballPlayer) -> Vector2:
 
 func fielder_for(role: String) -> BaseballPlayer:
 	for player in fielders:
-		if player.role == role:
+		if teams[player.team_index].field_roles[player.roster_index] == role:
 			return player
-	return fielders[teams[1 - batting_side].field_roles.find(role)]
+	return null
 
 
 func _send_to_dugout(player: BaseballPlayer) -> void:

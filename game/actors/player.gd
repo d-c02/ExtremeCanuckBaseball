@@ -10,6 +10,8 @@ var moving: bool = false
 var role: String = ""
 var team_index: int = 0
 var roster_index: int = 0
+## Place among the team's present players; open roster slots are skipped.
+var lineup_index: int = 0
 
 var display_label: String = ""
 var swing_visible: bool = false

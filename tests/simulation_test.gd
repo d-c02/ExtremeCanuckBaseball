@@ -130,6 +130,7 @@ func run() -> void:
 	await check_grounding()
 	await check_camera()
 	await _check_transition_effect()
+	await check_short_handed()
 	print("Failures: ", failures)
 	world.queue_free()
 	await process_frame
@@ -728,7 +729,70 @@ func check_rosters() -> void:
 	check(not roster.validation_error().is_empty(), "Roster without a catcher was accepted")
 	roster.field_roles[catcher] = "C"
 	roster.players[0] = null
-	check(not roster.validation_error().is_empty(), "Null player Resource was accepted")
+	check(roster.validation_error().is_empty(), "An open roster slot was rejected")
+	roster.players.clear()
+	check(roster.validation_error().is_empty(), "An empty roster was rejected")
+
+
+## A copy of [param team] with only the players in [param roles].
+func short_roster(team: BaseballTeamData, roles: Array) -> BaseballTeamData:
+	var roster: BaseballTeamData = team.duplicate(true)
+	for index in roster.players.size():
+		if roster.field_roles[index] not in roles:
+			roster.players[index] = null
+	return roster
+
+
+## Plays a separate match between the given rosters until it finishes.
+func play_short_handed(visitors: BaseballTeamData, home: BaseballTeamData) -> BaseballMatch:
+	var scene: BaseballWorld = load("res://main.tscn").instantiate()
+	var match_scene: BaseballMatch = scene.get_node("Simulation")
+	match_scene.visiting_team = visitors
+	match_scene.home_team = home
+	match_scene.random_seed = 11
+	root.add_child(scene)
+	match_scene.set_physics_process(false)
+	match_scene.start_game()
+	for frame in 100000:
+		if match_scene.phase == match_scene.Phase.FINISHED:
+			break
+		await physics_frame
+		match_scene.step(DELTA)
+	check(
+		match_scene.error_message.is_empty(),
+		"Short-handed game failed: " + match_scene.error_message
+	)
+	check(match_scene.phase == match_scene.Phase.FINISHED, "Short-handed game did not finish")
+	scene.queue_free()
+	return match_scene
+
+
+func check_short_handed() -> void:
+	var full: BaseballTeamData = game.visiting_team
+	var no_catcher := short_roster(game.home_team, ["P", "1B", "SS", "CF"])
+	var result := await play_short_handed(full, no_catcher)
+	check(
+		result.winner() == 0 and result.pitch_count == 0 and result.inning == 1,
+		"Visitors did not win by default against a home team without a catcher"
+	)
+	var no_pitcher := short_roster(game.visiting_team, ["C", "2B", "LF"])
+	result = await play_short_handed(no_pitcher, game.home_team)
+	check(
+		result.winner() == 1 and result.inning == 1 and result.batting_side == 1,
+		"Home did not win by default when they came to bat against no pitcher"
+	)
+	check(
+		result.box_score.teams[0].players.size() == 3 and result.box_score.teams[1].pitching.P > 0,
+		"Visitors without a pitcher did not bat the top of the first with three hitters"
+	)
+	var battery := short_roster(game.visiting_team, ["P", "C", "SS", "CF"])
+	result = await play_short_handed(battery, game.home_team)
+	check(
+		result.forfeit_side < 0 and result.inning >= result.innings,
+		"A four-player team with a pitcher and catcher could not play a full game"
+	)
+	result = await play_short_handed(short_roster(full, []), short_roster(full, []))
+	check(result.winner() == 0, "Visitors did not win when neither empty team could field")
 
 
 func check_box_score_toggle() -> void:
