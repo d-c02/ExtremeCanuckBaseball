@@ -542,8 +542,26 @@ func check_pitching() -> void:
 		game.phase == game.Phase.FIELDING and pitcher.pitch_strength == 61,
 		"The spent arm kept pitching instead of giving up contact and refreshing"
 	)
+	# Identical random draws on both sides of each pair, so only the strength gap
+	# moves the ball. Carry is the batted speed times its lift.
+	hitter.data.strength = BaseballPlayerData.MAX_STAT
+	var carry := [0.0, 0.0]
+	for sample in 40:
+		for index in 2:
+			game.rng.seed = 1000 + sample
+			game.runners.clear()
+			pitcher.pitch_strength = 1 if index == 0 else hitter.data.strength - 1
+			game.play = BaseballLivePlay.new(game)
+			game.ball.hold_at(game.home.position)
+			game.play._resolve_swing()
+			carry[index] += game.ball.velocity.length() * game.ball.vertical_velocity
+	check(
+		carry[0] > carry[1] * 2.0,
+		"A spent arm gave up no more carry than one that barely lost the matchup"
+	)
 	pitcher.configure(pitcher_data)
 	hitter.configure(hitter_data)
+	game.runners.clear()
 
 
 func check_grounding() -> void:

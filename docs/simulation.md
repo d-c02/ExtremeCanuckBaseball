@@ -111,7 +111,7 @@ derived from the pair, so a roster only authors those two numbers plus
 
 | Stat | Ability | Derived value |
 | --- | --- | --- |
-| STR | Batting | `batting_power`, 200 to 380 units per second before contact quality |
+| STR | Batting | `batting_power`, 150 to 460 units per second before contact quality |
 | STR | Pitching | the live strength the matchup is decided on |
 | STR | Passing | `throwing_speed`, 240 to 480 units per second |
 | DEX | Catching | `catching`, the share of reachable balls collected cleanly |
@@ -124,10 +124,16 @@ than the hitter's strength the hitter strikes out, and the pitcher loses the
 hitter's strength from it. When it no longer beats the hitter, the ball is put in
 play and the pitcher refreshes to their bought strength. An arm therefore mows
 down weak hitters, tires as it does so, and eventually leaves something hittable.
-The margin the hitter wins by sets contact quality, so the most worn-down arm
-gives up the hardest contact. Each player keeps their own live strength across
-half-innings and games within a match; a reset restores every player's. The HUD
-shows the matchup the next pitch turns on.
+The margin the hitter wins by drives both halves of the batted ball: it scales
+contact quality, which multiplies `batting_power` by 0.65 to 1.6, and it scales
+lift by 0.75 to 1.65 while drying up the topped-ball roll from 35% to 2%. A
+mismatch therefore drives the ball and gets under it at the same time, so it
+carries; a hitter who only just wins the matchup mostly tops it. Measured over
+400 swings each: a 99 hitter against a spent arm clears the fence 94% of the
+time, a 70 hitter 48%, and a 50 hitter 4%, while any hitter who wins by a single
+point never does. Each player keeps their own live strength across half-innings
+and games within a match; a reset restores every player's. The HUD shows the
+matchup the next pitch turns on.
 
 ## Baseball rules
 
@@ -147,12 +153,15 @@ shows the matchup the next pitch turns on.
   their base is safe from a tag. A third force out, or a batter out before first,
   cancels runs from the play. The scoreboard commits runs when the play resolves.
 - Fair airborne fence clearances award a circuit of the bases. Low hits rebound.
-  A grand slam scores four. Home runs are rare with the sample power/lift tuning.
+  A grand slam scores four. Home runs come out of the strength gap rather than a
+  flat power roll: the sample rosters average under two a game, and a lineup of
+  strong hitters against a drained arm hits far more.
 
 Pitches have fixed height and throws aim accurately. The swing is resolved at the
-plate from the two strengths alone, and batted balls take a random fair direction
-and lift. Nothing here is calibrated to an MLB strikeout percentage; the sample
-rosters put roughly a quarter of plate appearances in the strikeout column.
+plate from the two strengths alone. Batted balls take a random fair direction,
+and their speed and lift scale with the strength margin. Nothing here is
+calibrated to MLB rates; the sample rosters put roughly a quarter of plate
+appearances in the strikeout column and score about 1.3 runs an inning.
 There are no balls/walks, steals, error accounting, player-to-player collisions,
 or a shop feeding its bought rosters into a match yet.
 Decisions and close races resolve at physics-tick precision.
@@ -361,7 +370,8 @@ extra innings, box-score totals and base occupancy, then exercises force/tag dec
 consecutive outs, grand-slam RBIs, cancelled runs, fielder's choices, walk-offs, safe runners, pause/pacing, defensive handoffs and
 bobble recovery, wall collisions, a live grand slam, contact starts, caught-fly
 retreats, the strength matchup that decides a pitch and the drain and refresh of
-the pitcher's strength, the STR and DEX labels at a player's feet, seed replay, catcher reception, bat availability at windup, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and whole-field camera framing and window resizing. Transition
+the pitcher's strength, the extra carry a strength mismatch buys, the STR and DEX
+labels at a player's feet, seed replay, catcher reception, bat availability at windup, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and whole-field camera framing and window resizing. Transition
 checks advance actual simulation steps and verify visible acceleration is marked,
 including arrivals and equipment attendants, while offscreen movement stays silent.
 Separate matches then check forfeits against a missing catcher or pitcher, a pair of

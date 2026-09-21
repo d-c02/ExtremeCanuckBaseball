@@ -143,8 +143,10 @@ func _resolve_swing() -> void:
 		game.outfield.first_direction.angle() + PI / 2 - foul_margin
 	)
 	var power: float = game.batter.data.batting_power * lerpf(0.65, 1.6, quality)
-	var lift: float = game.rng.randf_range(180.0, 410.0)
-	if game.rng.randf() < 0.3:
+	# Lift follows the same margin, so a big mismatch both drives the ball and gets
+	# under it. A hitter who barely wins the matchup mostly tops it instead.
+	var lift: float = game.rng.randf_range(180.0, 410.0) * lerpf(0.75, 1.65, margin)
+	if game.rng.randf() < lerpf(0.35, 0.02, margin):
 		lift = game.rng.randf_range(20.0, 80.0)
 	game.ball.launch(game.ball.position, Vector2.UP.rotated(angle) * power, game.ball.height, lift)
 	game.equipment.bat_for(game.batter).follow_through = 0.2

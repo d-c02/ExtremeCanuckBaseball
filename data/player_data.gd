@@ -43,7 +43,7 @@ var throwing_speed: float:
 ## Batting: batted-ball speed before contact quality scales it.
 var batting_power: float:
 	get:
-		return lerpf(200.0, 380.0, strength_fraction())
+		return lerpf(150.0, 460.0, strength_fraction())
 
 
 func strength_fraction() -> float:
