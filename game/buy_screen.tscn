@@ -20,23 +20,21 @@ ambient_light_energy = 0.7
 [sub_resource type="Resource" id="prospect_jack"]
 script = ExtResource("player")
 player_name = "Jack"
-speed = 115.0
-hitting = 0.82
-batting_power = 360.0
+strength = 84
+dexterity = 30
 
 [sub_resource type="Resource" id="prospect_arthur"]
 script = ExtResource("player")
 player_name = "Arthur"
-speed = 165.0
-acceleration = 420.0
-fielding = 0.74
+strength = 44
+dexterity = 78
 
 [sub_resource type="Resource" id="prospect_harrhy"]
 script = ExtResource("player")
 player_name = "Harrhy"
-fielding = 0.88
+strength = 66
+dexterity = 85
 anticipation = 0.85
-throwing_speed = 470.0
 
 [node name="BuyScreen" type="Node3D" unique_id=1857475372]
 script = ExtResource("shop")

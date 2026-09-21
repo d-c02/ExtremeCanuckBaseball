@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://game/presentation/sounds.gd" id="script"]
 [ext_resource type="AudioStream" path="res://assets/audio/footstep_dirt.wav" id="footstep_dirt"]
@@ -8,9 +8,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/hit.wav" id="hit"]
 [ext_resource type="AudioStream" path="res://assets/audio/catch.wav" id="catch_ball"]
 [ext_resource type="AudioStream" path="res://assets/audio/out.wav" id="out"]
-[ext_resource type="AudioStream" path="res://assets/audio/strike.wav" id="strike"]
 [ext_resource type="AudioStream" path="res://assets/audio/strikeout.wav" id="strikeout"]
-[ext_resource type="AudioStream" path="res://assets/audio/foul.wav" id="foul"]
 [ext_resource type="AudioStream" path="res://assets/audio/change_sides.wav" id="change_sides"]
 [ext_resource type="AudioStream" path="res://assets/audio/home_run.wav" id="home_run"]
 
@@ -23,9 +21,7 @@ flight = ExtResource("flight")
 hit = ExtResource("hit")
 catch_ball = ExtResource("catch_ball")
 out = ExtResource("out")
-strike = ExtResource("strike")
 strikeout = ExtResource("strikeout")
-foul = ExtResource("foul")
 change_sides = ExtResource("change_sides")
 home_run = ExtResource("home_run")
 

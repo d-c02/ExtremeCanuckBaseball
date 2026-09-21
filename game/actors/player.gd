@@ -13,6 +13,10 @@ var roster_index: int = 0
 ## Place among the team's present players; open roster slots are skipped.
 var lineup_index: int = 0
 
+## Live pitching strength. Strikeouts drain it and contact refreshes it, while
+## the Resource keeps the value the player was bought with.
+var pitch_strength: int = 0
+
 var display_label: String = ""
 var swing_visible: bool = false
 var swing_progress: float = 0.0
@@ -22,6 +26,12 @@ func configure(player_data: BaseballPlayerData) -> void:
 	data = player_data
 	display_label = data.player_name
 	target = position
+	refresh_strength()
+
+
+## Restore the pitching strength bought in the buy phase.
+func refresh_strength() -> void:
+	pitch_strength = data.strength
 
 
 func move_to(destination: Vector2, action: String, delay: float = 0.0) -> void:

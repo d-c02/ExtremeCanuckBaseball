@@ -25,3 +25,21 @@ pixel_size = 0.024
 alpha_cut = 1
 texture_filter = 0
 shaded = false
+
+[node name="Strength" type="Label3D" parent="Hang"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -2.01, 0)
+pixel_size = 0.01
+font_size = 44
+outline_size = 10
+billboard = 1
+modulate = Color(0.98, 0.7, 0.38, 1)
+text = "STR 0"
+
+[node name="Dexterity" type="Label3D" parent="Hang"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -2.01, 0)
+pixel_size = 0.01
+font_size = 44
+outline_size = 10
+billboard = 1
+modulate = Color(0.56, 0.86, 0.98, 1)
+text = "DEX 0"

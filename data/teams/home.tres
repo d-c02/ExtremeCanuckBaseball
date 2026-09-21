@@ -6,66 +6,67 @@
 [sub_resource type="Resource" id="p0"]
 script = ExtResource("player")
 player_name = "1B"
+strength = 70
+dexterity = 40
 anticipation = 0.8
-throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p1"]
 script = ExtResource("player")
 player_name = "P"
-speed = 130.0
+strength = 50
+dexterity = 45
 anticipation = 0.6
-throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p2"]
 script = ExtResource("player")
 player_name = "C"
-speed = 115.0
+strength = 60
+dexterity = 35
 anticipation = 0.85
-throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p3"]
 script = ExtResource("player")
 player_name = "2B"
-speed = 140.0
+strength = 45
+dexterity = 60
 idle_behavior = 1
-throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p4"]
 script = ExtResource("player")
 player_name = "3B"
-speed = 130.0
+strength = 62
+dexterity = 45
 anticipation = 0.65
-throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p5"]
 script = ExtResource("player")
 player_name = "SS"
-speed = 150.0
+strength = 50
+dexterity = 70
 anticipation = 0.8
-throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p6"]
 script = ExtResource("player")
 player_name = "LF"
-speed = 165.0
+strength = 55
+dexterity = 80
 anticipation = 0.75
 idle_behavior = 1
-throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p7"]
 script = ExtResource("player")
 player_name = "CF"
-speed = 175.0
+strength = 48
+dexterity = 88
 anticipation = 0.9
-throwing_speed = 440.0
 
 [sub_resource type="Resource" id="p8"]
 script = ExtResource("player")
 player_name = "RF"
-speed = 160.0
+strength = 66
+dexterity = 72
 anticipation = 0.6
 idle_behavior = 1
-throwing_speed = 440.0
 
 [resource]
 script = ExtResource("team")

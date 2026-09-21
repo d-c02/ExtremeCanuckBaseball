@@ -21,6 +21,9 @@ Bfxr is only needed to regenerate assets; the game plays the checked-in WAVs.
 Seeds live in each preset. They make local rendering repeatable; the website
 may use a different random noise seed when you open a preset.
 
+`strike.wav` and `foul.wav` are kept but unwired: one pitch settles an at-bat, so
+there is no mid-count strike and no foul ball to call.
+
 Select `Sounds` in `main.tscn` to replace clips, adjust the four mix levels or
 mute effects with `enabled`. Footsteps and ball actions use AudioStreamPlayer3D at mapped field positions;
 calls use a regular AudioStreamPlayer. Ball-flight pitch follows height.

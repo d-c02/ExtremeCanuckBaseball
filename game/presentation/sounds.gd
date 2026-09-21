@@ -9,9 +9,7 @@ extends Node
 @export var hit: AudioStream
 @export var catch_ball: AudioStream
 @export var out: AudioStream
-@export var strike: AudioStream
 @export var strikeout: AudioStream
-@export var foul: AudioStream
 @export var change_sides: AudioStream
 @export var home_run: AudioStream
 @export_group("Mix")
@@ -45,12 +43,7 @@ func _ready() -> void:
 	game.ball_hit.connect(func(_quality): _at(hit, game.ball.position))
 	game.ball_caught.connect(func(player): _at(catch_ball, player.position))
 	game.out_recorded.connect(_on_out)
-	game.strike_called.connect(func(is_strikeout): _call(strikeout if is_strikeout else strike))
-	game.foul_called.connect(
-		func():
-			_at(hit, game.home.position)
-			_call(foul)
-	)
+	game.strikeout_called.connect(func(): _call(strikeout))
 	game.sides_changed.connect(func(): _call(change_sides))
 	game.home_run.connect(func(): _call(home_run))
 
@@ -108,8 +101,7 @@ func _update_flight(delta: float) -> void:
 			game.Phase.RECEIVE,
 			game.Phase.RETURN_BALL,
 			game.Phase.FIELDING,
-			game.Phase.THROW,
-			game.Phase.FOUL
+			game.Phase.THROW
 		]
 	)
 	if not audible or ball.held or ball.height <= 1.0 or flight == null:

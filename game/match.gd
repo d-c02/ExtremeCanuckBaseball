@@ -12,9 +12,7 @@ signal play_finished(result: String)
 @warning_ignore("unused_signal")
 signal ball_thrown(origin: Vector2)
 @warning_ignore("unused_signal")
-signal strike_called(strikeout: bool)
-@warning_ignore("unused_signal")
-signal foul_called
+signal strikeout_called
 signal sides_changed
 @warning_ignore("unused_signal")
 signal home_run
@@ -39,8 +37,7 @@ enum Phase {
 	TAG,
 	HOME_RUN,
 	SETTLING,
-	FINISHED,
-	FOUL
+	FINISHED
 }
 const PLAYER_SCENE = preload("res://game/actors/player.tscn")
 
@@ -68,7 +65,6 @@ var next_batter: Array[int] = [0, 0]
 var batting_side: int = 0
 var inning: int = 1
 var outs: int = 0
-var strikes: int = 0
 var pitch_count: int = 0
 var phase_elapsed: float = 0.0
 var paused: bool = false
@@ -136,7 +132,6 @@ func reset_game(replay: bool = false) -> void:
 	batting_side = 0
 	inning = 1
 	outs = 0
-	strikes = 0
 	pitch_count = 0
 	runners.clear()
 	play = null
@@ -151,6 +146,7 @@ func reset_game(replay: bool = false) -> void:
 			player.position = dugouts[player.team_index].seat_position(player.roster_index)
 			player.stop("In dugout")
 			player.swing_visible = false
+			player.refresh_strength()
 			player.set_label(str(player.roster_index + 1))
 	fielders = squads[1]
 	batter = null if squads[0].is_empty() else squads[0][0]
@@ -282,9 +278,8 @@ func _complete_play() -> void:
 	box_score.record_play(self)
 	scores[batting_side] += play.pending_runs
 	runners = runners.filter(func(run): return not run.retired and not run.scored)
-	if play.batter_done:
-		next_batter[batting_side] = (next_batter[batting_side] + 1) % squads[batting_side].size()
-		strikes = 0
+	# One pitch settles a plate appearance, so the order always moves on.
+	next_batter[batting_side] = (next_batter[batting_side] + 1) % squads[batting_side].size()
 	phase = Phase.SETTLING
 	phase_elapsed = 0.0
 	last_result = play.result
@@ -313,7 +308,6 @@ func _end_half() -> void:
 		inning += 1
 	batting_side = 1 - batting_side
 	outs = 0
-	strikes = 0
 	if _forfeit_half():
 		return
 	_prepare_pitch()
@@ -442,10 +436,27 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			debug_visible = not debug_visible
 
 
+## The matchup the next pitch is decided on: what the arm has left against the
+## hitter it has to beat.
+func pitcher_status() -> String:
+	var pitcher := fielder_for("P")
+	if pitcher == null or batter == null:
+		return "No pitcher"
+	return (
+		"%s %d STR vs %s %d STR"
+		% [
+			pitcher.data.player_name,
+			pitcher.pitch_strength,
+			batter.data.player_name,
+			batter.data.strength
+		]
+	)
+
+
 func _refresh_status() -> void:
 	status.text = (
 		(
-			"%s %d / %d %s | %s %d/%d | %d out(s), %d strike(s)\n%s%s\n"
+			"%s %d / %d %s | %s %d/%d | %d out(s) | %s\n%s%s\n"
 			+ "Space: play   P: pause   R: new   Shift+R: replay   B: score   "
 			+ "D/C: guides"
 		)
@@ -458,7 +469,7 @@ func _refresh_status() -> void:
 			inning,
 			innings,
 			outs,
-			strikes,
+			pitcher_status(),
 			last_result + " · seed %d" % active_seed,
 			" [PAUSED]" if paused else ""
 		]

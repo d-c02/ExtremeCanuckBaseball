@@ -17,10 +17,13 @@ player on it costs. Nine roster slots stand out on the field, each one where tha
 fielder plays: the shop reads the positions out of its roster Resource, so the
 slots sit where the match would put the players. The park and the slots are both
 drawn pulled in toward home by the shop's `park_scale`, so the whole field reads at
-a glance; the roster itself keeps the real match positions. Nothing labels the
-positions, and no name shows until the cursor is on something: hover a listing or a
-slot to read who is there. Dropping a player on an open slot signs them: the shop
-charges the asking price, the player stands in the slot, and the podium reads sold.
+a glance; the roster itself keeps the real match positions. Every player, on a
+podium or in a slot, carries the two stats they are bought on at their feet: STR
+on the left in orange, DEX on the right in blue, the same labels the match shows.
+Nothing labels the positions, and no name shows until the cursor is on something:
+hover a listing or a slot to read who is there.
+Dropping a player on an open slot signs them: the shop charges the asking price,
+the player stands in the slot, and the podium reads sold.
 A slot that already has a player, or a price above the current funds, lights up red
 and refuses the drop.
 
@@ -51,7 +54,8 @@ Listings on podiums cannot be sold; only signed players can.
 ## Classes
 
 - `Buyable` (`game/shop/buyable.gd`): an `Area3D` that can be dragged and slid back
-  home, names itself while the cursor is on it, and dangles from its `hang` pivot
+  home, names itself while the cursor is on it, stands a player's STR and DEX in its
+  `stat_labels` through `show_stats()`, and dangles from its `hang` pivot
   on a spring while carried. Its `swing_body` is turned to face the camera by hand,
   because a billboard would throw the tilt away. It declares `fits()`,
   `apply_to()` and `price()`, so each kind of buyable decides which targets it
@@ -65,7 +69,8 @@ Listings on podiums cannot be sold; only signed players can.
 - `PlayerSlot` (`game/shop/player_slot.gd`): a buyable player on a podium. It fits
   empty team slots and signs a duplicate of its `BaseballPlayerData`, so later
   changes to a signed player never reach the shop listing. Its `sell_value` travels
-  with the signing.
+  with the signing. Its feet carry `stat_texts()`, the STR and DEX the match runs
+  on, and hovering adds the name over the same pair.
 - `SignedPlayer` (`game/shop/signed_player.gd`): the player standing in a filled
   slot. It fits the sell spot, where it prices itself at minus its sell value and
   empties its slot, and any other slot, where it moves or swaps for free.
@@ -114,7 +119,8 @@ The suite drags a player onto an open slot and checks the signing, the charge, t
 roster entry and the emptied podium; checks that a taken slot and an unaffordable
 price refuse the drop; sells a signed player and checks the payout, the emptied slot
 and roster entry, and that the sell spot refuses an unsigned listing; checks that
-names stay hidden until the cursor is on a listing or a slot; toggles the lineup
+names stay hidden until the cursor is on a listing or a slot while STR and DEX stay
+readable without it; toggles the lineup
 view and checks the numbering, the grid rows and columns, the even spacing, the
 cleared diamond, that no two spots crowd each other, and the slides back and
 forth; moves a signed player to an open spot and swaps two of them, checking the

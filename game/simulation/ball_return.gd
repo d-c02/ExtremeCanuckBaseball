@@ -22,7 +22,7 @@ func _init(match_scene: BaseballMatch, previous_holder: BaseballPlayer) -> void:
 		carrier.stop("Returning ball before leaving field")
 	if carrier == null:
 		carrier = game.fielder_for("C")
-		if game.play != null and (game.play.foul or game.play.is_home_run):
+		if game.play != null and game.play.is_home_run:
 			game.equipment.issue_ball()
 		carrier.move_via(
 			game.dugouts[carrier.team_index].route_out(carrier.position, game.ball.position),

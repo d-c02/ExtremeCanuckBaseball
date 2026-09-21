@@ -169,6 +169,15 @@ func check_hover_names() -> void:
 	check(not harrhy.name_label.visible, "A listing kept its name after the cursor left")
 	check(slot.name_label.visible, "Hovering a roster slot did not show its name")
 	check(not slot.highlight.visible, "A roster slot lit up with nothing being dragged")
+	# The two numbers a player is bought on stay readable without the cursor.
+	check(
+		(
+			harrhy.stat_labels[0].text == "STR %d" % harrhy.player.strength
+			and harrhy.stat_labels[1].text == "DEX %d" % harrhy.player.dexterity
+			and harrhy.stat_labels[0].visible
+		),
+		"A listing hid the STR and DEX it is bought on"
+	)
 
 
 func cancel_drag() -> void:

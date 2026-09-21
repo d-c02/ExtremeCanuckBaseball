@@ -55,10 +55,10 @@ func record_play(game: BaseballMatch) -> void:
 	begin_half(game.batting_side, game.inning)
 	pitching.P += 1
 	pitching.outs += play.outs_made
-	if play.batter_done:
-		batter.PA += 1
-		batter.AB += 1
-		pitching.BF += 1
+	# One pitch settles a plate appearance, so every play is a completed at-bat.
+	batter.PA += 1
+	batter.AB += 1
+	pitching.BF += 1
 	if play.strikeout:
 		batter.K += 1
 		pitching.K += 1

@@ -33,6 +33,8 @@ var rest_position := Vector3.ZERO
 ## dangle set it, along with the part that has to keep facing the camera.
 var hang: Node3D
 var swing_body: Node3D
+## Labels standing at the body's feet, STR on the left and DEX on the right.
+var stat_labels: Array[Label3D] = []
 
 ## How far the body is leaning, in radians, while it hangs from the cursor.
 var swing: float = 0.0
@@ -94,6 +96,14 @@ func price(_target: BuyTarget) -> int:
 ## Virtual. Redraw labels and meshes after the data behind the buyable changed.
 func refresh() -> void:
 	pass
+
+
+## Stand the two numbers a player is bought on at their feet. An empty buyable
+## shows nothing.
+func show_stats(data: BaseballPlayerData) -> void:
+	var texts := data.stat_texts() if data != null else PackedStringArray(["", ""])
+	for index in stat_labels.size():
+		stat_labels[index].text = texts[index]
 
 
 func can_grab() -> bool:

@@ -22,7 +22,8 @@ the batter heads to home, and the ball returns to the pitcher. The opening walk
 runs at normal speed. Pitching starts once everyone is ready, the batter has their
 bat, and the pitcher has received the ball. A 1.5-second set/windup precedes each
 release, followed by the 0.85-second pitch flight. These are compressed game timings,
-not regulation pitch speeds. Misses continue to the catcher before the strike call.
+not regulation pitch speeds. One pitch settles a plate appearance. A pitch the hitter
+cannot beat continues to the catcher before the strikeout call.
 
 `random_seed = 0` chooses a new seed on startup and R. The HUD shows `active_seed`;
 Shift+R replays it. Set `random_seed` to a nonzero value for repeatable development
@@ -79,7 +80,8 @@ first pitch, while visitors without one bat the top of the first and lose when t
 home team comes up. A forfeit keeps the score as it stood; `winner()` reports the
 winning side. A short lineup skips hitters who are still on base. If every hitter
 is on base, the side is retired and those runners are left on base.
-Resources hold stats; live objects hold movement and play state.
+Resources hold stats; live objects hold movement, play state and the pitcher's
+remaining strength.
 
 Each fielder predicts where they can reach the ball during flight or after it
 rolls. `anticipation` ranges from 0 to 1 and controls error and read frequency:
@@ -100,10 +102,38 @@ retouch appeal or tag first. It then compares carrying with throwing, including
 the windup and receiver's travel time. After an out, it reassesses the remaining
 runners. Results report the number of outs made on the play.
 
+### Stats
+
+Every player is bought with two stats, `strength` and `dexterity`, each from 0 to
+`BaseballPlayerData.MAX_STAT`, which is 99 for now. The rest of the tuning is
+derived from the pair, so a roster only authors those two numbers plus
+`reaction_time`, `anticipation` and `idle_behavior`.
+
+| Stat | Ability | Derived value |
+| --- | --- | --- |
+| STR | Batting | `batting_power`, 200 to 380 units per second before contact quality |
+| STR | Pitching | the live strength the matchup is decided on |
+| STR | Passing | `throwing_speed`, 240 to 480 units per second |
+| DEX | Catching | `catching`, the share of reachable balls collected cleanly |
+| DEX | Running | `speed`, 90 to 190, and `acceleration`, 260 to 460 |
+| DEX | Fielding | the same running, which is the ground a fielder can cover |
+
+Pitching is decided by strength alone. A pitcher carries a live strength that
+starts at the value they were bought with in the buy phase. When it is greater
+than the hitter's strength the hitter strikes out, and the pitcher loses the
+hitter's strength from it. When it no longer beats the hitter, the ball is put in
+play and the pitcher refreshes to their bought strength. An arm therefore mows
+down weak hitters, tires as it does so, and eventually leaves something hittable.
+The margin the hitter wins by sets contact quality, so the most worn-down arm
+gives up the hardest contact. Each player keeps their own live strength across
+half-innings and games within a match; a reset restores every player's. The HUD
+shows the matchup the next pitch turns on.
+
 ## Baseball rules
 
-- Three missed swings strike the batter out. Fouls add strikes up to two, fly
-  visibly for 1.5 seconds, then bring the same batter back. Foul catches are absent.
+- Strength alone settles the pitch. A pitcher with more strength left than the
+  hitter strikes them out; otherwise the hitter puts the ball in play. There is no
+  ball-strike count, and fouls, foul catches and called balls are absent.
 - Fair contact sends the batter toward first. Existing runners use anticipation
   to run, take a short lead on an uncertain fly, or hold for a likely catch.
   With two outs they run on contact. Reaction time delays their first movement.
@@ -120,10 +150,11 @@ runners. Results report the number of outs made on the play.
   A grand slam scores four. Home runs are rare with the sample power/lift tuning.
 
 Pitches have fixed height and throws aim accurately. The swing is resolved at the
-plate using timing and aim errors. Hitting stats narrow those distributions;
-misses now use a tighter contact window, so more pitches reach the catcher.
-This tuning is not calibrated to an MLB strikeout percentage. There are no balls/walks,
-steals, error accounting, player-to-player collisions, shop or upgrades yet.
+plate from the two strengths alone, and batted balls take a random fair direction
+and lift. Nothing here is calibrated to an MLB strikeout percentage; the sample
+rosters put roughly a quarter of plate appearances in the strikeout column.
+There are no balls/walks, steals, error accounting, player-to-player collisions,
+or a shop feeding its bought rosters into a match yet.
 Decisions and close races resolve at physics-tick precision.
 
 ## Scorekeeping
@@ -148,9 +179,9 @@ JSON serialization, including a pitch-by-pitch result log. Disk saving is not wi
   counts a failed collection attempt, not an official error. Assists and earned
   runs are not adjudicated, so there is no E column or ERA.
 
-Scoring uses play state, never result text or sound signals. Completed plate
-appearances count as at-bats under the rules currently supported; a miss or foul
-before strike three does not complete a PA. Runs and RBIs commit together after
+Scoring uses play state, never result text or sound signals. One pitch settles a
+plate appearance, so every pitch is a completed at-bat under the rules currently
+supported. Runs and RBIs commit together after
 resolution, so a third force out cannot leave phantom player runs or RBIs behind.
 `run_scored` is a provisional presentation cue when a runner crosses home.
 A ground double play earns no RBI. Fair fence home runs credit all valid runs and
@@ -169,8 +200,8 @@ The rules and terminology were checked against MLB's definitions of
 [hits](https://www.mlb.com/glossary/standard-stats/hit),
 [RBIs](https://www.mlb.com/glossary/standard-stats/runs-batted-in), and
 [fielders' choices](https://img.mlbstatic.com/mlb-images/image/upload/mlb/atcjzj9j7wrgvsm8wnjq.pdf).
-The simulation still omits balls/walks, HBP, steals, bunts, advances after tagging
-up, sacrifice flies, infield fly, interference, balks, dropped third strikes,
+The simulation still omits balls/walks, HBP, steals, bunts, fouls, advances after
+tagging up, sacrifice flies, infield fly, interference, balks, ball-strike counts,
 substitutions and official error decisions. It is a shortened baseball auto-battler,
 not a complete implementation of the official rulebook. Tick-order determines
 races that happen within the same physics step.
@@ -224,8 +255,12 @@ All nine roster players remain visible; positions are standing placeholders.
 Player art is a replaceable `Sprite3D` in `game/presentation/player_3d.tscn`, using
 `assets/sprites/player.svg`. Players stay upright and face the camera around the
 vertical axis. They use team colors, short labels, a simple movement bob and a
-separate persistent box-mesh bat. Each view has a downward RayCast3D that samples the exported
-field during physics ticks. Only the view's height changes; the simulation retains
+separate persistent box-mesh bat. Their bought stats stand at their feet, STR on
+the left in orange and DEX on the right in blue, straight off the roster Resource.
+A player inside their dugout hides both, because nine benched labels overlap into
+one another; the pitcher's live strength is on the HUD rather than the field.
+Each view has a downward RayCast3D that samples the exported field during physics
+ticks. Only the view's height changes; the simulation retains
 its planar coordinates. Small stair height changes are smoothed, while stationary
 players snap to the sampled surface. Pause freezes the height update too. The
 player's shadow moves with its feet. Additional StaticBody3D geometry on the
@@ -262,14 +297,14 @@ keeps their bat after a strikeout carries it back to its seat. Changing to defen
 also drops any carried bat for collection. These are deterministic equipment
 actors, not rigid bodies, and the visual bat does not decide contact outcomes.
 
-The catcher receives missed pitches before strikes/strikeouts are recorded.
+The catcher receives the pitch before a strikeout is recorded.
 Between plays the holder throws the ball back to the pitcher along a visible arc.
 An outgoing fielder returns the ball before leaving the field. Loose in-play balls
-are collected rather than teleported to a fielder. Fouls and home runs leave their
-old ball in the scene; the catcher collects a replacement from a visible supply
+are collected rather than teleported to a fielder. A home run leaves its old ball
+in the scene; the catcher collects a replacement from a visible supply
 behind home, inside the diagonal backstop, then throws it to the pitcher. The supply contains 128 balls at reset;
 exhausting it reports an error rather than silently inventing a new ball.
-Ball positions continue advancing after fouls and home runs. Reset deliberately
+Ball positions continue advancing after home runs. Reset deliberately
 restores all equipment to its starting positions.
 
 This is 3D presentation with planar player movement, not a rigid-body simulation.
@@ -306,7 +341,8 @@ handling, while only settling can advance to the next pitch or half.
 
 Select the `Sounds` node in the main scene to replace individual clips or adjust
 footstep, action, call and flight volumes. It covers dirt/grass footsteps, throws,
-hits, catches, outs, strikes, strikeouts, fouls, side changes and home runs. A quiet
+hits, catches, outs, strikeouts, side changes and home runs. The strike and foul
+clips are unused while a single pitch settles the at-bat. A quiet
 loop follows the ball's height in pitch. Footstep playback is capped so a whole
 team moving together does not flood the mix. Pause and reset stop playback;
 headless runs are silent. Details and regeneration steps are in
@@ -324,7 +360,8 @@ roster validation, pre-game box-score toggling/reset, roster/inning continuity,
 extra innings, box-score totals and base occupancy, then exercises force/tag decisions,
 consecutive outs, grand-slam RBIs, cancelled runs, fielder's choices, walk-offs, safe runners, pause/pacing, defensive handoffs and
 bobble recovery, wall collisions, a live grand slam, contact starts, caught-fly
-retreats, fouls, seed replay, catcher reception, bat availability at windup, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and whole-field camera framing and window resizing. Transition
+retreats, the strength matchup that decides a pitch and the drain and refresh of
+the pitcher's strength, the STR and DEX labels at a player's feet, seed replay, catcher reception, bat availability at windup, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and whole-field camera framing and window resizing. Transition
 checks advance actual simulation steps and verify visible acceleration is marked,
 including arrivals and equipment attendants, while offscreen movement stays silent.
 Separate matches then check forfeits against a missing catcher or pitcher, a pair of

@@ -33,6 +33,22 @@ font_size = 48
 outline_size = 10
 billboard = 1
 modulate = Color(1, 1, 1, 1)
+[node name="Strength" type="Label3D" parent="."]
+position = Vector3(-1.5, 0.36, 0)
+pixel_size = 0.01
+font_size = 44
+outline_size = 10
+billboard = 1
+modulate = Color(0.98, 0.7, 0.38, 1)
+text = "STR 0"
+[node name="Dexterity" type="Label3D" parent="."]
+position = Vector3(1.5, 0.36, 0)
+pixel_size = 0.01
+font_size = 44
+outline_size = 10
+billboard = 1
+modulate = Color(0.56, 0.86, 0.98, 1)
+text = "DEX 0"
 [node name="GroundRay" type="RayCast3D" parent="."]
 target_position = Vector3(0, -16, 0)
 collision_mask = 4

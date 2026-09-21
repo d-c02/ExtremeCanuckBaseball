@@ -18,6 +18,7 @@ func _ready() -> void:
 	hang = $Hang
 	swing_body = sprite
 	name_label = $Name
+	stat_labels = [$Hang/Strength, $Hang/Dexterity]
 	super()
 
 
@@ -44,4 +45,5 @@ func refresh() -> void:
 		return
 	if player != null:
 		display_name = player.player_name
-	name_label.text = display_name
+	name_label.text = player.stat_line() if player != null else display_name
+	show_stats(player)

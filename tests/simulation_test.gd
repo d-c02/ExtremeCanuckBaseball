@@ -45,7 +45,7 @@ func run() -> void:
 		game.reset_game()
 		var trace: Array = []
 		var record := func(_result: String):
-			if game.play.strikeout or _result.begins_with("Swing and miss"):
+			if game.play.strikeout:
 				check(
 					game.play.holder.role == "C" and game.ball.held,
 					"Strike ended before catcher received the pitch"
@@ -126,7 +126,7 @@ func run() -> void:
 	await check_wall_and_home_run()
 	await check_contact_and_retreat()
 	await check_scoring()
-	check_foul()
+	check_pitching()
 	await check_grounding()
 	await check_camera()
 	await _check_transition_effect()
@@ -155,11 +155,12 @@ func roster_stats() -> Array:
 	for team in game.teams:
 		for player in team.players:
 			for property in [
+				"strength",
+				"dexterity",
 				"speed",
 				"acceleration",
 				"reaction_time",
-				"hitting",
-				"fielding",
+				"catching",
 				"throwing_speed",
 				"batting_power",
 				"anticipation",
@@ -183,8 +184,8 @@ func contact(base_count: int = 0) -> void:
 		player.position = game.base_positions[index] + Vector2(10, 9)
 		game.runners.append(runner)
 	game.play = BaseballLivePlay.new(game)
-	game.play.swing_time = BaseballLivePlay.PITCH_DURATION
-	game.play.aim_error = 0.0
+	# A spent arm cannot beat the hitter, so the swing always puts the ball in play.
+	game.fielder_for("P").pitch_strength = 0
 	game.ball.hold_at(game.home.position)
 	game.equipment.bat_for(game.batter).carrier = game.batter
 	game.play._resolve_swing()
@@ -462,12 +463,12 @@ func check_scoring() -> void:
 	contact()
 	game.runners.clear()
 	game.play = BaseballLivePlay.new(game)
-	game.strikes = 2
 	game.ball.launch(
 		game.home.position, Vector2(0, 220.0 / BaseballLivePlay.PITCH_DURATION), 12.0, 0.0
 	)
 	game.ball.gravity_enabled = false
-	game.play.swing_time = 2.0
+	# A fresh arm outmuscles the hitter, so the pitch is blown past them.
+	game.fielder_for("P").pitch_strength = BaseballPlayerData.MAX_STAT
 	game.play._resolve_swing()
 	await finish_play()
 	var pitcher: Dictionary = game.box_score.teams[1].pitching
@@ -510,22 +511,39 @@ func check_scoring() -> void:
 	)
 
 
-func check_foul() -> void:
+## Strength alone settles the matchup: a stronger arm rings the hitter up and
+## tires by their strength, and the hitter who outlasts it puts the ball in play
+## while the arm goes back to the strength it was bought with.
+func check_pitching() -> void:
 	game.reset_game()
-	game.strikes = 2
+	var pitcher := game.fielder_for("P")
+	var hitter := game.batter
+	var pitcher_data := pitcher.data
+	var hitter_data := hitter.data
+	# Try-out stats, so the check never edits the rosters on disk.
+	pitcher.configure(pitcher_data.duplicate(true))
+	hitter.configure(hitter_data.duplicate(true))
+	pitcher.data.strength = 61
+	hitter.data.strength = 30
+	pitcher.refresh_strength()
+	for remaining in [31, 1]:
+		game.play = BaseballLivePlay.new(game)
+		game.ball.hold_at(game.home.position)
+		game.play._resolve_swing()
+		check(
+			game.phase == game.Phase.RECEIVE and pitcher.pitch_strength == remaining,
+			"The stronger arm did not blow the pitch past the hitter and tire by their strength"
+		)
+		check(not game.play.strikeout, "The strikeout was called before the catcher received it")
 	game.play = BaseballLivePlay.new(game)
-	game.play.swing_time = BaseballLivePlay.PITCH_DURATION + 0.11
-	game.play.aim_error = 0.8
 	game.ball.hold_at(game.home.position)
 	game.play._resolve_swing()
-	var origin := game.ball.position
-	game.play.step(0.25)
-	check(game.ball.position != origin and not game.play.done, "Foul had no visible flight")
-	game.play.step(1.3)
 	check(
-		game.play.done and not game.play.batter_done and game.strikes == 2,
-		"Two-strike foul retired the batter"
+		game.phase == game.Phase.FIELDING and pitcher.pitch_strength == 61,
+		"The spent arm kept pitching instead of giving up contact and refreshing"
 	)
+	pitcher.configure(pitcher_data)
+	hitter.configure(hitter_data)
 
 
 func check_grounding() -> void:
@@ -578,6 +596,14 @@ func check_camera() -> void:
 	game.reset_game()
 	var camera: Camera3D = world.get_node("Camera")
 	check(world.player_views.size() == 18, "3D presentation lost roster actors")
+	var first_view: BaseballPlayerView = world.player_views[0]
+	check(
+		(
+			first_view.strength_label.text == "STR %d" % first_view.player.data.strength
+			and first_view.dexterity_label.text == "DEX %d" % first_view.player.data.dexterity
+		),
+		"A player on the field stopped showing their STR and DEX"
+	)
 	game.ball.launch(Vector2(850, -900), Vector2.ZERO, 150, 0)
 	game.phase = game.Phase.FIELDING
 	world._physics_process(DELTA)

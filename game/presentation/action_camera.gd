@@ -37,7 +37,7 @@ func _process(delta: float) -> void:
 	if game.phase in [game.Phase.WINDUP, game.Phase.PITCH, game.Phase.RECEIVE]:
 		goal = close_fov
 	elif (
-		game.phase in [game.Phase.FIELDING, game.Phase.THROW, game.Phase.FOUL, game.Phase.HOME_RUN]
+		game.phase in [game.Phase.FIELDING, game.Phase.THROW, game.Phase.HOME_RUN]
 	):
 		var ball_point := BaseballWorld.world_position(game.ball.position, game.ball.height)
 		goal = clampf(

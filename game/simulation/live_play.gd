@@ -10,18 +10,14 @@ var holder: BaseballPlayer
 var throw_base: int = 1
 var timer: float = 0.0
 var elapsed: float = 0.0
-var swing_time: float
-var aim_error: float
 var throw_started: bool = false
 var ground_released: bool = false
 var catch_retries: Dictionary = {}
 var pending_runs: int = 0
 var done: bool = false
-var batter_done: bool = true
 var result: String = ""
 var is_home_run: bool = false
 var fly_caught: bool = false
-var foul: bool = false
 var outs_made: int = 0
 var strikeout: bool = false
 var ground_double_play: bool = false
@@ -38,9 +34,6 @@ func _init(match_scene: BaseballMatch) -> void:
 		run.awarded_base = 0
 		run.returning = false
 		run.contact_judgement = game.rng.randfn(0.0, lerpf(0.8, 0.05, run.runner.data.anticipation))
-	var spread := lerpf(0.27, 0.08, game.batter.data.hitting)
-	swing_time = PITCH_DURATION + game.rng.randfn(0.0, spread)
-	aim_error = game.rng.randfn(0.0, lerpf(1.3, 0.5, game.batter.data.hitting))
 	game.batter.show_swing(0.0)
 	game.phase = game.Phase.WINDUP
 	game.last_result = "Pitcher set: %s batting" % game.batter.data.player_name
@@ -53,12 +46,6 @@ func step(delta: float) -> void:
 	elapsed += delta
 	if game.phase in [game.Phase.WINDUP, game.Phase.PITCH, game.Phase.RECEIVE]:
 		_step_pitch(delta)
-		return
-	if game.phase == game.Phase.FOUL:
-		game.ball.step(delta)
-		game.outfield.check_crossing(game.ball)
-		if timer >= 1.5:
-			_end("Foul: %d strike(s)" % game.strikes)
 		return
 	game.ball.step(delta)
 	if game.phase == game.Phase.FIELDING:
@@ -114,45 +101,44 @@ func _step_pitch(delta: float) -> void:
 		return
 	if game.phase == game.Phase.PITCH:
 		game.ball.step(delta)
-		game.batter.show_swing((timer - swing_time + 0.12) / 0.24)
+		# The bat comes through as the pitch arrives; one swing settles the at-bat.
+		game.batter.show_swing((timer - PITCH_DURATION + 0.12) / 0.24)
 		if timer >= PITCH_DURATION:
 			_resolve_swing()
 		return
 	if game.phase == game.Phase.RECEIVE:
 		game.ball.step(delta)
-		game.batter.show_swing((timer - swing_time + 0.12) / 0.24)
+		game.batter.show_swing((timer - PITCH_DURATION + 0.12) / 0.24)
 		var catcher := game.fielder_for("C")
 		if within_reach(catcher):
 			holder = catcher
 			game.ball.hold_at(catcher.position)
 			game.ball_caught.emit(catcher)
-			_record_strike()
+			_record_strikeout()
 		return
 
 
+## Simplified pitching: a pitcher with strength left over the hitter blows the
+## pitch by them and tires by the hitter's strength. Once the hitter matches what
+## the arm has left, the ball is put in play and the pitcher starts over at the
+## strength they were bought with. The margin the hitter wins by sets how well
+## they square it up, so a worn-down arm gives up the hardest contact.
 func _resolve_swing() -> void:
-	var timing_error := (swing_time - PITCH_DURATION) / 0.16
-	var quality := clampf(1.0 - absf(timing_error) * 0.55 - absf(aim_error) * 0.35, 0, 1)
-	if absf(timing_error) > 0.75 or absf(aim_error) > 1.2:
+	var pitcher := game.fielder_for("P")
+	var strength: int = game.batter.data.strength
+	if pitcher.pitch_strength > strength:
+		pitcher.pitch_strength = maxi(0, pitcher.pitch_strength - strength)
 		game.phase = game.Phase.RECEIVE
 		return
-	var angle := timing_error * 1.15 + aim_error * 0.35
-	if not game.outfield.is_fair(game.home.position + Vector2.UP.rotated(angle)):
-		foul = true
-		game.strikes = mini(2, game.strikes + 1)
-		batter_done = false
-		game.ball.launch(
-			game.ball.position, Vector2.UP.rotated(angle) * 320.0, game.ball.height, 130.0
-		)
-		game.batter.swing_visible = false
-		game.phase = game.Phase.FOUL
-		game.last_result = "Foul ball!"
-		game.foul_called.emit()
-		timer = 0.0
-		return
+	# Winning the matchup at all is solid contact; the further the arm has fallen
+	# behind the hitter, the better it is squared up.
+	var margin := clampf(
+		float(strength - pitcher.pitch_strength) / float(BaseballPlayerData.MAX_STAT), 0, 1
+	)
+	var quality := lerpf(0.7, 1.0, margin)
+	pitcher.refresh_strength()
 	var foul_margin := PI / 4.0 - 0.77
-	angle = clampf(
-		angle + game.rng.randf_range(-0.5, 0.5),
+	var angle := game.rng.randf_range(
 		game.outfield.third_direction.angle() + PI / 2 + foul_margin,
 		game.outfield.first_direction.angle() + PI / 2 - foul_margin
 	)
@@ -174,18 +160,15 @@ func _resolve_swing() -> void:
 	game.last_result = "Fair hit: %s fielding" % defense.chaser.role
 
 
-func _record_strike() -> void:
-	game.strikes += 1
-	batter_done = game.strikes >= 3
-	game.strike_called.emit(batter_done)
-	if batter_done:
-		strikeout = true
-		outs_made = 1
-		game.box_score.teams[holder.team_index].players[holder.lineup_index].PO += 1
-		game.outs += 1
-		game.batter.set_label("%d OUT" % (game.batter.roster_index + 1))
-		game.out_recorded.emit(game.batter)
-	_end("Strikeout" if batter_done else "Swing and miss: strike %d" % game.strikes)
+func _record_strikeout() -> void:
+	strikeout = true
+	outs_made = 1
+	game.strikeout_called.emit()
+	game.box_score.teams[holder.team_index].players[holder.lineup_index].PO += 1
+	game.outs += 1
+	game.batter.set_label("%d OUT" % (game.batter.roster_index + 1))
+	game.out_recorded.emit(game.batter)
+	_end("Strikeout: pitcher down to %d STR" % game.fielder_for("P").pitch_strength)
 
 
 func _advance_on_contact() -> void:
@@ -287,7 +270,7 @@ func _step_fielding(delta: float) -> void:
 			or not within_reach(player)
 		):
 			continue
-		if game.rng.randf() > lerpf(0.45, 0.98, player.data.fielding):
+		if game.rng.randf() > player.data.catching:
 			catch_retries[player] = 0.65
 			game.box_score.teams[player.team_index].players[player.lineup_index].bobbles += 1
 			game.last_result = "%s bobbled it" % player.data.player_name

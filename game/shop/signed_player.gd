@@ -17,6 +17,7 @@ func _ready() -> void:
 	sprite = $Hang/Sprite
 	hang = $Hang
 	swing_body = sprite
+	stat_labels = [$Hang/Strength, $Hang/Dexterity]
 	super()
 
 
@@ -52,5 +53,6 @@ func refresh() -> void:
 		return
 	if player != null:
 		display_name = player.player_name
+	show_stats(player)
 	if slot != null and slot.roster != null:
 		sprite.modulate = slot.roster.color

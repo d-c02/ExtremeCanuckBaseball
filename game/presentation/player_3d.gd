@@ -10,6 +10,8 @@ var ground_initialized: bool = false
 @onready var ground_ray: RayCast3D = $GroundRay
 @onready var sprite: Sprite3D = $Sprite
 @onready var label: Label3D = $Label
+@onready var strength_label: Label3D = $Strength
+@onready var dexterity_label: Label3D = $Dexterity
 @onready var standing_height: float = sprite.position.y
 
 
@@ -17,6 +19,9 @@ func configure(actor: BaseballPlayer, color: Color, match_scene: BaseballMatch) 
 	player = actor
 	game = match_scene
 	sprite.modulate = color
+	# Bought stats stand at the player's feet, STR on the left and DEX on the right.
+	strength_label.text = "STR %d" % player.data.strength
+	dexterity_label.text = "DEX %d" % player.data.dexterity
 
 
 func _physics_process(delta: float) -> void:
@@ -41,3 +46,7 @@ func sync(delta: float) -> void:
 	stride += player.velocity.length() * delta * 0.12
 	sprite.position.y = standing_height + (absf(sin(stride)) * 0.1 if player.moving else 0.0)
 	label.text = player.display_label
+	# A benched squad stands shoulder to shoulder, so the stats wait outside.
+	var benched: bool = game.dugouts[player.team_index].contains(player.position)
+	strength_label.visible = not benched
+	dexterity_label.visible = not benched

@@ -6,80 +6,72 @@
 [sub_resource type="Resource" id="p0"]
 script = ExtResource("player")
 player_name = "Steady"
-speed = 130.0
-hitting = 0.8
+strength = 50
+dexterity = 48
 anticipation = 0.8
-batting_power = 250.0
 
 [sub_resource type="Resource" id="p1"]
 script = ExtResource("player")
 player_name = "Slugger"
-speed = 100.0
-hitting = 0.35
+strength = 95
+dexterity = 18
 anticipation = 0.6
-batting_power = 380.0
 
 [sub_resource type="Resource" id="p2"]
 script = ExtResource("player")
 player_name = "Quick"
-speed = 180.0
-hitting = 0.55
+strength = 35
+dexterity = 90
 anticipation = 0.85
-batting_power = 230.0
 
 [sub_resource type="Resource" id="p3"]
 script = ExtResource("player")
 player_name = "Anchor"
-speed = 120.0
-hitting = 0.7
+strength = 58
+dexterity = 38
 idle_behavior = 1
-batting_power = 260.0
 
 [sub_resource type="Resource" id="p4"]
 script = ExtResource("player")
 player_name = "Scout"
-speed = 165.0
-hitting = 0.6
+strength = 52
+dexterity = 75
 anticipation = 0.65
-batting_power = 270.0
 
 [sub_resource type="Resource" id="p5"]
 script = ExtResource("player")
 player_name = "Drive"
-speed = 145.0
+strength = 72
+dexterity = 58
 anticipation = 0.8
-batting_power = 320.0
 
 [sub_resource type="Resource" id="p6"]
 script = ExtResource("player")
 player_name = "Dash"
-speed = 185.0
-hitting = 0.5
+strength = 40
+dexterity = 95
 anticipation = 0.75
 idle_behavior = 1
-batting_power = 240.0
 
 [sub_resource type="Resource" id="p7"]
 script = ExtResource("player")
 player_name = "Hammer"
-speed = 115.0
-hitting = 0.45
+strength = 90
+dexterity = 28
 anticipation = 0.9
-batting_power = 390.0
 
 [sub_resource type="Resource" id="p8"]
 script = ExtResource("player")
 player_name = "Patient"
-speed = 140.0
-hitting = 0.75
+strength = 48
+dexterity = 62
 anticipation = 0.6
 idle_behavior = 1
-batting_power = 285.0
 
 [resource]
 script = ExtResource("team")
 team_name = "Visitors"
 color = Color(0.9, 0.65, 0.2, 1)
 players = Array[ExtResource("player")]([SubResource("p0"), SubResource("p1"), SubResource("p2"), SubResource("p3"), SubResource("p4"), SubResource("p5"), SubResource("p6"), SubResource("p7"), SubResource("p8")])
-field_positions = PackedVector2Array(200, -25, 0, 0, 0, 265, 125, -190, -205, -25, -125, -190, -440, -485, 0, -610, 440, -485)
-field_roles = PackedStringArray("1B", "P", "C", "2B", "3B", "SS", "LF", "CF", "RF")
+field_positions = PackedVector2Array(0, 0, 200, -25, 0, 265, 125, -190, -205, -25, -125, -190, -440, -485, 0, -610, 440, -485)
+field_roles = PackedStringArray("P", "1B", "C", "2B", "3B", "SS", "LF", "CF", "RF")
