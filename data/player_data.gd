@@ -10,11 +10,24 @@ enum IdleBehavior { STILL, PACE }
 
 ## Both stats run from 0 to this cap.
 const MAX_STAT: int = 99
+## Levels run 1 to 3. Merging a player of the same level is a level up on its own;
+## one level below counts half, so two of those do it.
+const MAX_LEVEL: int = 3
+const STEPS_PER_LEVEL: int = 2
+## What the shop keeps when it buys a player back.
+const SELL_LOSS: int = 2
 ## What the cheapest and the dearest player cost in the shop.
 const MIN_VALUE: int = 2
 const MAX_VALUE: int = 9
 
 @export var player_name: String = "Player"
+## What kind of player this is. It sets the stats they start with and the passive
+## that grows as they level. Shared, never copied, so merging can tell two players
+## of a kind apart from two that only look alike.
+@export var type: BaseballPlayerType
+@export_range(1, 3) var level: int = 1
+## Half-levels merged in since the last level up.
+@export var steps: int = 0
 ## Batting power, pitching stamina and throwing speed.
 @export_range(0, 99) var strength: int = 50
 ## Catching, running speed and the ground a fielder can cover.
@@ -57,15 +70,76 @@ func dexterity_fraction() -> float:
 	return clampf(float(dexterity) / float(MAX_STAT), 0.0, 1.0)
 
 
-## Shop price for this pair of stats. Worth is what ties the shop, the sell spot and
-## a rolled opponent together, so it lives with the stats it is read from.
+## Shop price for this player: what the pair of stats is worth, doubled for every
+## level, because a level costs the players that went into it.
 func value() -> int:
 	var average := (strength_fraction() + dexterity_fraction()) / 2.0
-	return int(roundf(lerpf(MIN_VALUE, MAX_VALUE, average)))
+	return int(roundf(lerpf(MIN_VALUE, MAX_VALUE, average))) * copies()
 
 
-## The two numbers a player is bought on, strength first, dexterity second. They
-## read bare: the labels beside a player are coloured and placed to say which is
-## which, so spelling it out again only adds clutter.
+## How many level ones stand behind this player.
+func copies() -> int:
+	return 1 << (level - 1)
+
+
+## What the sell spot pays for them.
+func sell_price() -> int:
+	return maxi(1, value() - SELL_LOSS)
+
+
+## Whether [param other] can be merged into this player: the same kind, either the
+## same level or one below, and room left to grow.
+func can_absorb(other: BaseballPlayerData) -> bool:
+	if other == null or other == self or type == null or other.type != type:
+		return false
+	if level >= MAX_LEVEL:
+		return false
+	return other.level == level or other.level == level - 1
+
+
+## Merge [param other] in and report whether that took a level. Two of this level
+## is a level up on its own; one below counts half, so the second one does it.
+func absorb(other: BaseballPlayerData) -> bool:
+	if not can_absorb(other):
+		return false
+	steps += STEPS_PER_LEVEL if other.level == level else 1
+	if steps < STEPS_PER_LEVEL:
+		return false
+	steps -= STEPS_PER_LEVEL
+	return gain_level()
+
+
+## Take a level with nobody merged in, for rolling a team that already has some.
+func gain_level() -> bool:
+	if level >= MAX_LEVEL or type == null:
+		return false
+	level += 1
+	strength = mini(strength + type.strength_per_level, MAX_STAT)
+	dexterity = mini(dexterity + type.dexterity_per_level, MAX_STAT)
+	return true
+
+
+## The badge that stands over a player: what level they are, and a half when they
+## are one merge short of the next.
+func level_text() -> String:
+	return "Lv %d%s" % [level, "½" if steps > 0 else ""]
+
+
+## The two lines the shop shows while the cursor is on a player: what kind they
+## are, and what their passive does. The level stands over them either way.
+func shop_card() -> String:
+	if type == null:
+		return player_name
+	return "%s\n%s" % [type.type_name, type.passive]
+
+
+## One stat as its label reads it. They read bare: the labels beside a player are
+## coloured and placed to say which is which, so spelling it out again only adds
+## clutter. Live values, such as a tiring arm, are worded here too.
+static func stat_text(value: int) -> String:
+	return "%d" % value
+
+
+## The two numbers a player is bought on, strength first, dexterity second.
 func stat_texts() -> PackedStringArray:
-	return PackedStringArray(["%d" % strength, "%d" % dexterity])
+	return PackedStringArray([stat_text(strength), stat_text(dexterity)])

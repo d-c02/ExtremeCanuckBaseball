@@ -45,9 +45,18 @@ modulate = Color(0.56, 0.86, 0.98, 1)
 text = "DEX 0"
 
 [node name="Name" type="Label3D" parent="." unique_id=669512955]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.3, 0)
 visible = false
-pixel_size = 0.013
+pixel_size = 0.01
 billboard = 1
 text = "Prospect"
-font_size = 48
+font_size = 40
+
+[node name="Level" type="Label3D" parent="Hang"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+pixel_size = 0.012
+font_size = 44
+outline_size = 10
+billboard = 1
+modulate = Color(0.97, 0.83, 0.42, 1)
+text = "Lv 1"

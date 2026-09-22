@@ -32,16 +32,26 @@ func is_empty() -> bool:
 
 
 ## Stand a player in the slot. [param value] is what selling them pays back.
-func fill(new_player: BaseballPlayerData, value: int) -> void:
+func fill(new_player: BaseballPlayerData) -> void:
 	player = new_player
 	_write_roster()
 	occupant = SIGNED_PLAYER.instantiate()
 	occupant.slot = self
 	occupant.player = new_player
-	occupant.sell_value = value
 	add_child(occupant)
 	refresh()
 	filled.emit(new_player)
+
+
+## Merge a player into the one standing here, levelling them up when enough of
+## their kind have gone in. Returns false when they are no match.
+func absorb(incoming: BaseballPlayerData) -> bool:
+	if player == null or not player.can_absorb(incoming):
+		return false
+	player.absorb(incoming)
+	_write_roster()
+	refresh()
+	return true
 
 
 ## Trade players with [param other]. Either side may be empty, so this covers both
@@ -93,7 +103,7 @@ func set_hovered(on: bool) -> void:
 func refresh() -> void:
 	if name_label == null:
 		return
-	name_label.text = player.player_name if player != null else "open"
+	name_label.text = player.shop_card() if player != null else "open"
 	if occupant != null:
 		occupant.refresh()
 

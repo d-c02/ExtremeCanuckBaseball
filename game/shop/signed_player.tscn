@@ -43,3 +43,12 @@ outline_size = 10
 billboard = 1
 modulate = Color(0.56, 0.86, 0.98, 1)
 text = "DEX 0"
+
+[node name="Level" type="Label3D" parent="Hang"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+pixel_size = 0.012
+font_size = 44
+outline_size = 10
+billboard = 1
+modulate = Color(0.97, 0.83, 0.42, 1)
+text = "Lv 1"

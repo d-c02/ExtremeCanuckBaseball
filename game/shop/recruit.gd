@@ -33,23 +33,15 @@ const TEAM_NAMES: PackedStringArray = [
 const TEAM_COLORS: PackedStringArray = ["2f6fbb", "d9a227", "4c9a5a", "8a4fbe"]
 
 
-## Roll a player worth [param price], splitting that worth between strength and
-## dexterity at random so two players of a price still play differently.
-static func roll(
-	rng: RandomNumberGenerator, price: int, taken: PackedStringArray
-) -> BaseballPlayerData:
-	var player := BaseballPlayerData.new()
+## Every kind of player the shop can stock. One for now; a roll picks between them.
+const TYPES: PackedStringArray = ["res://data/types/baseball_player.tres"]
+
+
+## Roll a level one of a random kind, with a name of their own for the box score.
+static func roll(rng: RandomNumberGenerator, taken: PackedStringArray) -> BaseballPlayerData:
+	var type: BaseballPlayerType = load(TYPES[rng.randi() % TYPES.size()])
+	var player := type.recruit()
 	player.player_name = roll_name(rng, taken)
-	var average := inverse_lerp(
-		float(BaseballPlayerData.MIN_VALUE), float(BaseballPlayerData.MAX_VALUE), float(price)
-	)
-	# Keep the tilt inside the range where the other stat can still balance it, so
-	# the pair always averages out to the price that was asked for.
-	var lowest := maxf(0.0, average * 2.0 - 1.0)
-	var highest := minf(1.0, average * 2.0)
-	var strength := clampf(average + rng.randf_range(-0.22, 0.22), lowest, highest)
-	player.strength = roundi(strength * BaseballPlayerData.MAX_STAT)
-	player.dexterity = roundi((average * 2.0 - strength) * BaseballPlayerData.MAX_STAT)
 	return player
 
 
@@ -62,8 +54,9 @@ static func roll_name(rng: RandomNumberGenerator, taken: PackedStringArray) -> S
 
 
 ## Roll a team worth about as much as [param roster] and laid out on the same spots.
-## A pitcher and a catcher are always signed; the rest of the money is spread over
-## as many other spots as the roster it will face has filled.
+## A pitcher and a catcher are always signed; the rest of the spots go to as many
+## other players as the roster it will face has filled. Everybody starts at level
+## one, then the roll merges them up until the two teams are worth about the same.
 static func roll_opponent(rng: RandomNumberGenerator, roster: BaseballTeamData) -> BaseballTeamData:
 	var team := BaseballTeamData.new()
 	team.team_name = TEAM_NAMES[rng.randi() % TEAM_NAMES.size()]
@@ -78,14 +71,39 @@ static func roll_opponent(rng: RandomNumberGenerator, roster: BaseballTeamData) 
 			budget += player.value()
 			signed += 1
 	var spots := _spots(rng, team.field_roles, maxi(signed, 2))
-	var prices := _prices(rng, budget, spots.size())
 	var taken := PackedStringArray()
+	var rolled: Array[BaseballPlayerData] = []
 	team.players.resize(team.field_roles.size())
-	for spot in spots.size():
-		var player := roll(rng, prices[spot], taken)
+	for spot in spots:
+		var player := roll(rng, taken)
 		taken.append(player.player_name)
-		team.players[spots[spot]] = player
+		team.players[spot] = player
+		rolled.append(player)
+	_level_up_to(rng, rolled, budget)
 	return team
+
+
+## Level rolled players up one at a time, while doing so leaves the team nearer
+## [param budget] than leaving it alone would.
+static func _level_up_to(
+	rng: RandomNumberGenerator, rolled: Array[BaseballPlayerData], budget: int
+) -> void:
+	for attempt in rolled.size() * BaseballPlayerData.MAX_LEVEL:
+		var worth := 0
+		var candidates: Array[BaseballPlayerData] = []
+		for player in rolled:
+			worth += player.value()
+			if player.level < BaseballPlayerData.MAX_LEVEL:
+				candidates.append(player)
+		if candidates.is_empty():
+			return
+		var pick: BaseballPlayerData = candidates[rng.randi() % candidates.size()]
+		var probe: BaseballPlayerData = pick.duplicate()
+		probe.gain_level()
+		var after := worth - pick.value() + probe.value()
+		if absi(after - budget) >= absi(worth - budget):
+			return
+		pick.gain_level()
 
 
 ## Pick which spots to fill: the pitcher and the catcher first, then a random spread
@@ -105,17 +123,3 @@ static func _spots(rng: RandomNumberGenerator, roles: PackedStringArray, count: 
 	return chosen
 
 
-## Split [param budget] over [param count] players a dollar at a time, so the spread
-## is uneven but nobody breaks the price range.
-static func _prices(rng: RandomNumberGenerator, budget: int, count: int) -> Array[int]:
-	var prices: Array[int] = []
-	for spot in count:
-		prices.append(BaseballPlayerData.MIN_VALUE)
-	var room := count * (BaseballPlayerData.MAX_VALUE - BaseballPlayerData.MIN_VALUE)
-	var left := mini(maxi(budget - count * BaseballPlayerData.MIN_VALUE, 0), room)
-	while left > 0:
-		var pick := rng.randi() % count
-		if prices[pick] < BaseballPlayerData.MAX_VALUE:
-			prices[pick] += 1
-			left -= 1
-	return prices

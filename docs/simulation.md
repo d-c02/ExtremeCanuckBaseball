@@ -111,6 +111,12 @@ Every player is bought with two stats, `strength` and `dexterity`, each from 0 t
 derived from the pair, so a roster only authors those two numbers plus
 `reaction_time`, `anticipation` and `idle_behavior`.
 
+A player bought in the shop gets those two numbers from their kind
+(`BaseballPlayerType`) and keeps whatever their levels have added since:
+merging is a buy-phase idea, and the match only ever reads the stats it is
+handed. The sample teams in `data/teams/` author the numbers directly and have
+no kind at all.
+
 | Stat | Ability | Derived value |
 | --- | --- | --- |
 | STR | Batting | `batting_power`, 150 to 460 units per second before contact quality |
@@ -135,7 +141,8 @@ carries; a hitter who only just wins the matchup mostly tops it. Measured over
 time, a 70 hitter 48%, and a 50 hitter 4%, while any hitter who wins by a single
 point never does. Each player keeps their own live strength across half-innings
 and games within a match; a reset restores every player's. The HUD shows the
-matchup the next pitch turns on.
+matchup the next pitch turns on, and the arm on the mound counts its own strength
+down at its feet.
 
 ## Baseball rules
 
@@ -266,12 +273,15 @@ All nine roster players remain visible; positions are standing placeholders.
 Player art is a replaceable `Sprite3D` in `game/presentation/player_3d.tscn`, using
 `assets/sprites/player.svg`. Players stay upright and face the camera around the
 vertical axis. They use team colors, short labels, a simple movement bob and a
-separate persistent box-mesh bat. Their bought stats stand at their feet as bare
+separate persistent box-mesh bat. Their stats stand at their feet as bare
 numbers, strength on the left in orange and dexterity on the right in blue,
-worded by `BaseballPlayerData.stat_texts()` so the match and the buy screen read
-the same.
-A player inside their dugout hides both, because nine benched labels overlap into
-one another; the pitcher's live strength is on the HUD rather than the field.
+worded by `BaseballPlayerData.stat_text()` so the match and the buy screen read
+the same. The pitcher's left-hand number is their live strength: it counts down
+by the hitter's strength on every strikeout and fades toward red as the arm
+empties, then snaps back to what they were bought with on contact. The same
+player shows their bought strength again once they come up to bat, because
+hitting spends nothing. A player inside their dugout hides both numbers, because
+nine benched labels overlap into one another.
 Each view has a downward RayCast3D that samples the exported field during physics
 ticks. Only the view's height changes; the simulation retains
 its planar coordinates. Small stair height changes are smoothed, while stationary
@@ -340,7 +350,7 @@ player movement, or general 3D pathfinding. Dugout routes are explicit waypoints
   stock it. See [buy_screen.md](buy_screen.md).
 - `game/session.gd`: the teams the buy screen hands to the next match.
 - `assets/audio/`: placeholder WAVs and editable Bfxr presets.
-- `data/`: Resource types and sample teams.
+- `data/`: Resource types, the kinds of player in `data/types/`, and sample teams.
 - `assets/field/`: generated field GLB, layout Resource and JSON control snapshot.
 
 `BaseballMatch.step(delta)` advances the simulation. Godot calls it from
@@ -377,7 +387,8 @@ consecutive outs, grand-slam RBIs, cancelled runs, fielder's choices, walk-offs,
 bobble recovery, wall collisions, a live grand slam, contact starts, caught-fly
 retreats, the strength matchup that decides a pitch and the drain and refresh of
 the pitcher's strength, the extra carry a strength mismatch buys, the STR and DEX
-labels at a player's feet, seed replay, catcher reception, bat availability at windup, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and whole-field camera framing and window resizing. Transition
+labels at a player's feet, the arm on the mound counting its strength down in
+view and showing its bought strength again at bat, seed replay, catcher reception, bat availability at windup, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and whole-field camera framing and window resizing. Transition
 checks advance actual simulation steps and verify visible acceleration is marked,
 including arrivals and equipment attendants, while offscreen movement stays silent.
 Separate matches then check forfeits against a missing catcher or pitcher, a pair of

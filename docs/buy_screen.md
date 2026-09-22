@@ -15,12 +15,16 @@ you signed to `main.tscn` to play.
 | Refresh | Roll a new player onto every podium. |
 | Start game | Play the signed team against a rolled opponent. |
 
+Everybody is a kind of player, and a kind sets the stats a level one is bought
+with and owns a passive that grows with every level. The only kind written so far
+is the Baseball Player, whose passive is +2 strength and +2 dexterity a level.
+
 Three players stand on podiums behind home plate, each podium showing what the
-player on it costs. The shop rolls its own stock: a rolled player is asked for a
-price and given the stats to match it, so a podium price always reads off the two
-numbers beside the player. Refresh rolls a new shelf, including podiums that have
-already been sold.
-fielder plays: the shop reads the positions out of its roster Resource, so the
+player on it costs. The shop rolls its own stock, one level one of a random kind
+per podium, priced off the stats that kind starts with. Refresh rolls a new shelf,
+including podiums that have already been sold.
+Nine roster slots stand out on the field, each one where that fielder plays: the
+shop reads the positions out of its roster Resource, so the
 slots sit where the match would put the players. The park and the slots are both
 drawn pulled in toward home by the shop's `park_scale`, so the whole field reads at
 a glance; the roster itself keeps the real match positions. Every player, on a
@@ -30,20 +34,26 @@ They read as bare numbers, because the colour and the side already say which is
 which. The match stands the same two numbers at a player's feet, worded by
 `BaseballPlayerData.stat_texts()` on both screens so they cannot drift apart.
 Nothing labels the positions, and no name shows until the cursor is on something:
-hover a listing or a slot to read the name, which is all the card carries: the two
-numbers are already at the feet.
+hover a listing or a slot to read the card: what kind of player they are and what
+their passive does, in as few words as it takes. Carrying a player puts every
+card away, because the cursor is busy saying where they will land. A gold badge
+stands over every player either way, reading
+`Lv 2` for their level and `Lv 2½` when one more of their kind is all that stands
+between them and the next one.
 Dropping a player on an open slot signs them: the shop charges the asking price,
-the player stands in the slot, and the podium reads sold.
-A slot that already has a player, or a price above the current funds, lights up red
-and refuses the drop.
+the player stands in the slot, and the podium reads sold. Dropping one on a player
+of the same kind merges instead: two of a level is a level up on its own, and a
+level below counts half, so two level ones take a level two up to three. Levels
+stop at three. A slot holding another kind of player, a player already at the cap,
+or a price above the current funds lights up red and refuses the drop.
 
 Start game rolls the other team and goes to the match. The opponent is worth about
-what the signed players are: the shop adds up what it sold you, spreads the same
-money over the same number of spots, and rolls a player for each price. A pitcher
-and a catcher are always among them, so a match always has the two players it
-cannot do without. `BaseballSession` carries both teams across the scene change;
-`main.tscn` opened on its own finds nothing there and uses the sample teams in
-`match.tscn` instead.
+what the signed players are: the shop adds up what it sold you, rolls the same
+number of level ones, and merges them up one at a time while that leaves the two
+teams closer in worth. A pitcher and a catcher are always among them, so a match
+always has the two players it cannot do without. `BaseballSession` carries both
+teams across the scene change; `main.tscn` opened on its own finds nothing there
+and uses the sample teams in `match.tscn` instead.
 
 The button in the top right swaps the two layouts. The lineup view clears the
 diamond, the lines and the wall off the grass and stands the nine spots on it in a
@@ -81,9 +91,13 @@ Listings on podiums cannot be sold; only signed players can.
   player instead of charging them, which is how selling works. `restocks` keeps the
   buyable in place after a trade, and `spent_on()` says whether a drop uses the
   buyable up at all, so a move can slide it to its new home instead.
-- `BaseballRecruit` (`game/shop/recruit.gd`): rolls players and whole teams. Every
-  roll is asked for a price and builds stats worth exactly that, which is what
-  keeps a rolled opponent even with the team it faces.
+- `BaseballPlayerType` (`data/player_type.gd`): a kind of player. It holds the
+  stats a level one starts with, the words its passive is described in, and what
+  that passive adds per level. Types are shared, never copied, which is how two
+  players are told to be the same kind. `data/types/` holds them.
+- `BaseballRecruit` (`game/shop/recruit.gd`): rolls players and whole teams. A
+  rolled player is a level one of a random kind; a rolled team is levelled up
+  until it is worth about what it will face.
 - `BaseballSession` (`game/session.gd`): static holder for the two teams a match
   is about to play. Static rather than an autoload, so a match run on its own
   still compiles and falls back to its own sample teams.
@@ -92,13 +106,14 @@ Listings on podiums cannot be sold; only signed players can.
   stays put while the player is carried off. `stock()` puts a rolled listing on it
   and clears off whatever was there.
 - `PlayerSlot` (`game/shop/player_slot.gd`): a buyable player on a podium. It fits
-  empty team slots and signs a duplicate of its `BaseballPlayerData`, so later
-  changes to a signed player never reach the shop listing. Its `sell_value` travels
-  with the signing. Its feet carry `stat_texts()`, the STR and DEX the match runs
-  on, and hovering adds the name over the same pair.
+  an empty team slot, where it signs a copy of its `BaseballPlayerData`, and a
+  slot holding the same kind, where it merges into them instead. The copy is
+  shallow on purpose: the stats are its own, the type is shared. Its feet carry
+  `stat_texts()`, and hovering adds the card above them.
 - `SignedPlayer` (`game/shop/signed_player.gd`): the player standing in a filled
-  slot. It fits the sell spot, where it prices itself at minus its sell value and
-  empties its slot, and any other slot, where it moves or swaps for free.
+  slot. It fits the sell spot, where it prices itself at minus `sell_price()` and
+  empties its slot; a slot holding the same kind, where it merges and leaves its
+  own slot empty; and any other slot, where it moves or swaps for free.
 - `BuyTarget` (`game/shop/buy_target.gd`): a place a buyable can be dropped. It holds
   the roster being built, names itself on hover, can narrow what it takes with
   `accepts()`, and can show what a hovering buyable would do with `preview()`.
@@ -127,13 +142,15 @@ were given in the scene.
 
 ## Limits
 
-There is no way back: the match has no button to return to the shop, so a run is
-one visit and one game. Refresh is free, and what it rolls pays no attention to
-what is left in the wallet. The lineup view shows and rearranges the batting
-order, but moving a player there changes their fielding position too, so the two
-cannot be set apart from each other. A sold player is gone rather than back on
-their podium, there is no buyable other than a player, and there is no way to
-earn funds.
+Only one kind of player is written, so every listing is a Baseball Player and any
+two of them can merge. That also means two players of the same level can no longer
+be swapped: the drop merges them instead. There is no way back: the match has no
+button to return to the shop, so a run is one visit and one game. Refresh
+is free, and what it rolls pays no attention to what is left in the wallet. The
+lineup view shows and rearranges the batting order, but moving a player there
+changes their fielding position too, so the two cannot be set apart from each
+other. A sold player is gone rather than back on their podium, there is no buyable
+other than a player, and there is no way to earn funds.
 
 ## Checks
 
@@ -146,15 +163,21 @@ The suite drags a player onto an open slot and checks the signing, the charge, t
 roster entry and the emptied podium; checks that a taken slot and an unaffordable
 price refuse the drop; sells a signed player and checks the payout, the emptied slot
 and roster entry, and that the sell spot refuses an unsigned listing; checks that
-names stay hidden until the cursor is on a listing or a slot while STR and DEX stay
-readable without it; refreshes the shelf from the button and checks every podium
-came back with a new player priced on their stats; rolls an opponent and checks it
+names stay hidden until the cursor is on a listing or a slot while the two numbers
+and the level badge stay readable without it, that the card names the kind and its
+passive, and that carrying a player puts the cards away while the slot under them
+still lights up; merges
+and the badge followed, that one level
+below only counts half and the second finishes it, and that a player at the cap
+refuses another; merges two signed players and checks the slot left behind is
+empty and free; refreshes the shelf from the button and checks every podium came
+back with a new player priced on their stats; rolls an opponent and checks it
 fields as many players for about the same money, with a pitcher and a catcher
-among them, and that the session carries the pair; toggles the lineup
-view and checks the numbering, the grid rows and columns, the even spacing, the
-cleared diamond, that no two spots crowd each other, and the slides back and
-forth; moves a signed player to an open spot and swaps two of them, checking the
-roster and that neither costs anything; sweeps a carried player left and right and
-checks they hang from the cursor and tilt away from the yank before settling
-upright; then fills every slot and checks the roster passes
+among them, and that the session carries the pair; toggles the lineup view and
+checks the numbering, the grid rows and columns, the even spacing, the cleared
+diamond, that no two spots crowd each other, and the slides back and forth; moves
+a signed player to an open spot and swaps two of them, checking the roster and
+that neither costs anything; sweeps a carried player left and right and checks
+they hang from the cursor and tilt away from the yank before settling upright;
+then fills every slot and checks the roster passes
 `BaseballTeamData.validation_error()`.

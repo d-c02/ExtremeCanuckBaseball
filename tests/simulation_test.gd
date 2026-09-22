@@ -622,6 +622,7 @@ func check_camera() -> void:
 		),
 		"A player on the field stopped showing their STR and DEX"
 	)
+	check_tiring_arm()
 	game.ball.launch(Vector2(850, -900), Vector2.ZERO, 150, 0)
 	game.phase = game.Phase.FIELDING
 	world._physics_process(DELTA)
@@ -858,4 +859,35 @@ func check_box_score_toggle() -> void:
 	await process_frame
 	await process_frame
 	check(panel.visible, "Box score could not reopen after reset")
+	game.reset_game()
+
+
+## The arm on the mound wears down where it can be seen, while the same player
+## still shows the strength they were bought with when their turn to bat comes.
+func check_tiring_arm() -> void:
+	var pitcher := game.fielder_for("P")
+	var view: BaseballPlayerView = null
+	for candidate in world.player_views:
+		if candidate.player == pitcher:
+			view = candidate
+	pitcher.pitch_strength = pitcher.data.strength - 7
+	world.sync(0.0)
+	check(
+		view.strength_label.text == "%d" % (pitcher.data.strength - 7),
+		"The pitcher's strength label ignored the strikeout that drained it"
+	)
+	check(
+		view.strength_label.modulate != view.strength_tint,
+		"A tiring arm kept the colour of a fresh one"
+	)
+	game.batting_side = 1
+	game.fielders = game.squads[0]
+	world.sync(0.0)
+	check(
+		(
+			view.strength_label.text == "%d" % pitcher.data.strength
+			and view.strength_label.modulate == view.strength_tint
+		),
+		"A drained pitcher took their bat up showing a pitching total"
+	)
 	game.reset_game()

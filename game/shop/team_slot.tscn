@@ -41,9 +41,9 @@ cast_shadow = 0
 mesh = SubResource("highlight_mesh")
 
 [node name="Name" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.3, 0.4)
 visible = false
-pixel_size = 0.018
+pixel_size = 0.01
 font_size = 40
 outline_size = 10
 billboard = 1

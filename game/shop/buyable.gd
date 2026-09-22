@@ -35,6 +35,8 @@ var hang: Node3D
 var swing_body: Node3D
 ## Labels standing at the body's feet, STR on the left and DEX on the right.
 var stat_labels: Array[Label3D] = []
+## The badge over a player's head, showing their level and how far along the next.
+var level_label: Label3D
 
 ## How far the body is leaning, in radians, while it hangs from the cursor.
 var swing: float = 0.0
@@ -104,6 +106,8 @@ func show_stats(data: BaseballPlayerData) -> void:
 	var texts := data.stat_texts() if data != null else PackedStringArray(["", ""])
 	for index in stat_labels.size():
 		stat_labels[index].text = texts[index]
+	if level_label != null:
+		level_label.text = data.level_text() if data != null else ""
 
 
 func can_grab() -> bool:
@@ -137,10 +141,11 @@ func spent_on(_target: BuyTarget) -> bool:
 	return not restocks
 
 
-## Called by the shop once a trade went through and the money moved.
-func consume(target: BuyTarget) -> void:
+## Called by the shop once a trade went through and the money moved. [param spent]
+## was asked before the drop landed, because applying it can change the answer.
+func consume(target: BuyTarget, spent: bool) -> void:
 	purchased.emit(target)
-	if spent_on(target):
+	if spent:
 		queue_free()
 		return
 	return_home()

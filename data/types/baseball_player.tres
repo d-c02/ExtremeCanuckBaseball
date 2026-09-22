@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BaseballPlayerType" format=3]
+
+[ext_resource type="Script" path="res://data/player_type.gd" id="type"]
+
+[resource]
+script = ExtResource("type")
+type_name = "Baseball Player"
+base_strength = 1
+base_dexterity = 1
+passive = "+2/+2 on level up"
+strength_per_level = 2
+dexterity_per_level = 2

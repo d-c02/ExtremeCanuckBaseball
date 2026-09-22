@@ -19,10 +19,8 @@ const BATTING_ROW_STEP := 6.0
 const LAYOUT_TIME := 0.3
 const LISTING := preload("res://game/shop/player_slot.tscn")
 const MATCH_SCENE := "res://main.tscn"
-## Where a listing stands on its podium, and what the shop keeps when it buys a
-## player back.
+## Where a listing stands on its podium.
 const PODIUM_TOP := 1.2
-const SELL_LOSS := 2
 
 ## Roster the shop starts from. It is duplicated, so trading never edits the file.
 @export var team: BaseballTeamData
@@ -113,16 +111,20 @@ func can_trade(buyable: Buyable, target: BuyTarget) -> bool:
 
 ## Move a buyable onto a target and settle the money, for tests and scripted trades.
 func trade(buyable: Buyable, target: BuyTarget) -> bool:
-	if not can_trade(buyable, target) or not buyable.apply_to(target):
+	if not can_trade(buyable, target):
 		return false
-	funds -= buyable.price(target)
+	# Ask before the drop lands: a merge changes the answers it would give after.
+	var price := buyable.price(target)
+	var spent := buyable.spent_on(target)
+	if not buyable.apply_to(target):
+		return false
+	funds -= price
 	target.refresh()
-	buyable.consume(target)
+	buyable.consume(target, spent)
 	funds_changed.emit(funds)
 	traded.emit(buyable, target)
 	_update_hud()
 	return true
-
 
 func _grab(screen: Vector2) -> void:
 	var buyable := _pick(screen, Buyable.LAYER) as Buyable
@@ -135,13 +137,14 @@ func _grab(screen: Vector2) -> void:
 
 
 ## Follow the cursor: name whatever it is over, carry the held buyable, and while
-## one is held, judge the drop onto the target underneath it.
+## one is held, judge the drop onto the target underneath it. Nothing is named while
+## a player is being carried, because the cursor is busy saying where they will land.
 func _point(screen: Vector2) -> void:
 	if held != null:
 		held.drag_to(_plane_point(screen))
 	_set_hovered(_pick(screen, BuyTarget.LAYER) as BuyTarget)
-	var under := held
-	if under == null:
+	var under: Buyable = null
+	if held == null:
 		under = _pick(screen, Buyable.LAYER) as Buyable
 	_set_pointed(under)
 
@@ -176,7 +179,7 @@ func _set_hovered(target: BuyTarget) -> void:
 	_hover_allowed = can_trade(held, target)
 	if hovered == null:
 		return
-	hovered.set_hovered(true)
+	hovered.set_hovered(held == null)
 	if held != null:
 		hovered.set_highlighted(true, _hover_allowed)
 		hovered.preview(held)
@@ -305,12 +308,9 @@ func refresh_stock() -> void:
 	var taken := PackedStringArray()
 	for podium in podiums():
 		var listing: PlayerSlot = LISTING.instantiate()
-		listing.player = BaseballRecruit.roll(
-			rng, rng.randi_range(BaseballPlayerData.MIN_VALUE, BaseballPlayerData.MAX_VALUE), taken
-		)
+		listing.player = BaseballRecruit.roll(rng, taken)
 		taken.append(listing.player.player_name)
 		listing.cost = listing.player.value()
-		listing.sell_value = maxi(1, listing.cost - SELL_LOSS)
 		listing.position = Vector3(0.0, PODIUM_TOP, 0.0)
 		podium.stock(listing)
 
