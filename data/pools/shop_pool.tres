@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="BaseballPlayerPool" format=3]
+
+[ext_resource type="Script" path="res://data/player_pool.gd" id="pool"]
+[ext_resource type="Script" path="res://data/player_type.gd" id="type_script"]
+[ext_resource type="Resource" path="res://data/types/baseball_player.tres" id="baseball_player"]
+
+[resource]
+script = ExtResource("pool")
+types = Array[ExtResource("type_script")]([ExtResource("baseball_player")])

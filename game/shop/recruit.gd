@@ -33,14 +33,14 @@ const TEAM_NAMES: PackedStringArray = [
 const TEAM_COLORS: PackedStringArray = ["2f6fbb", "d9a227", "4c9a5a", "8a4fbe"]
 
 
-## Every kind of player the shop can stock. One for now; a roll picks between them.
-const TYPES: PackedStringArray = ["res://data/types/baseball_player.tres"]
-
-
-## Roll a level one of a random kind, with a name of their own for the box score.
-static func roll(rng: RandomNumberGenerator, taken: PackedStringArray) -> BaseballPlayerData:
-	var type: BaseballPlayerType = load(TYPES[rng.randi() % TYPES.size()])
-	var player := type.recruit()
+## Roll a level one of one of [param types], with a name of their own for the box
+## score. The caller picks what is on offer; the roll picks between them.
+static func roll(
+	rng: RandomNumberGenerator, types: Array[BaseballPlayerType], taken: PackedStringArray
+) -> BaseballPlayerData:
+	if types.is_empty():
+		return null
+	var player := types[rng.randi() % types.size()].recruit()
 	player.player_name = roll_name(rng, taken)
 	return player
 
@@ -57,7 +57,9 @@ static func roll_name(rng: RandomNumberGenerator, taken: PackedStringArray) -> S
 ## A pitcher and a catcher are always signed; the rest of the spots go to as many
 ## other players as the roster it will face has filled. Everybody starts at level
 ## one, then the roll merges them up until the two teams are worth about the same.
-static func roll_opponent(rng: RandomNumberGenerator, roster: BaseballTeamData) -> BaseballTeamData:
+static func roll_opponent(
+	rng: RandomNumberGenerator, roster: BaseballTeamData, types: Array[BaseballPlayerType]
+) -> BaseballTeamData:
 	var team := BaseballTeamData.new()
 	team.team_name = TEAM_NAMES[rng.randi() % TEAM_NAMES.size()]
 	team.color = Color(TEAM_COLORS[rng.randi() % TEAM_COLORS.size()])
@@ -75,7 +77,9 @@ static func roll_opponent(rng: RandomNumberGenerator, roster: BaseballTeamData) 
 	var rolled: Array[BaseballPlayerData] = []
 	team.players.resize(team.field_roles.size())
 	for spot in spots:
-		var player := roll(rng, taken)
+		var player := roll(rng, types, taken)
+		if player == null:
+			continue
 		taken.append(player.player_name)
 		team.players[spot] = player
 		rolled.append(player)

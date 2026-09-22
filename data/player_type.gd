@@ -7,6 +7,8 @@ extends Resource
 ## to do something else will need more than the two numbers here.
 
 @export var type_name: String = "Baseball Player"
+## The round this kind starts turning up in the shop.
+@export_range(1, 20) var from_round: int = 1
 ## Stats a level one of this type starts with.
 @export_range(0, 99) var base_strength: int = 1
 @export_range(0, 99) var base_dexterity: int = 1

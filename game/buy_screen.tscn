@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://game/presentation/shop_field_3d.gd" id="field_view"]
 [ext_resource type="PackedScene" path="res://game/shop/podium.tscn" id="podium"]
 [ext_resource type="Resource" path="res://data/teams/shop_roster.tres" id="roster"]
+[ext_resource type="Resource" path="res://data/pools/shop_pool.tres" id="pool"]
 [ext_resource type="PackedScene" path="res://game/shop/sell_spot.tscn" id="sell_spot"]
 [ext_resource type="Script" uid="uid://dwchvn0sa0sw0" path="res://game/shop/shop.gd" id="shop"]
 [ext_resource type="PackedScene" path="res://game/shop/team_slot.tscn" id="team_slot"]
@@ -18,6 +19,7 @@ ambient_light_energy = 0.7
 [node name="BuyScreen" type="Node3D" unique_id=1857475372]
 script = ExtResource("shop")
 team = ExtResource("roster")
+pool = ExtResource("pool")
 
 [node name="Field" parent="." unique_id=721208164 instance=ExtResource("ballpark")]
 
@@ -159,3 +161,14 @@ grow_horizontal = 0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 24
 text = "Start game"
+
+[node name="Run" type="Label" parent="HUD"]
+offset_left = 24.0
+offset_top = 82.0
+offset_right = 420.0
+offset_bottom = 110.0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 22
+text = "Round 1    Lives 5"

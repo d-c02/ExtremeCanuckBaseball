@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://game/presentation/action_camera.gd" id="camera"]
 [ext_resource type="PackedScene" path="res://game/presentation/sounds.tscn" id="sounds"]
 [ext_resource type="Script" path="res://game/presentation/tape_transition.gd" id="tape"]
+[ext_resource type="Script" path="res://game/run_end.gd" id="run_end"]
 [ext_resource type="Shader" path="res://game/presentation/tape_transition.gdshader" id="tape_shader"]
 
 [sub_resource type="ShaderMaterial" id="tape_material"]
@@ -92,3 +93,41 @@ mouse_filter = 2
 offset_left = 28.0
 offset_top = 108.0
 text = ">> FF"
+
+[node name="RunEnd" type="CanvasLayer" parent="."]
+layer = 4
+script = ExtResource("run_end")
+
+[node name="Result" type="Label" parent="RunEnd"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -60.0
+offset_right = 260.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 40
+text = "Won  +$20"
+horizontal_alignment = 1
+
+[node name="Continue" type="Button" parent="RunEnd"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -110.0
+offset_top = 8.0
+offset_right = 110.0
+offset_bottom = 56.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "Round 2"

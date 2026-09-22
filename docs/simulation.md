@@ -2,9 +2,10 @@
 
 Run `main.tscn` with F6 to play the sample teams, or start from the buy screen
 with F5 and hand it a team you signed. A match started from the shop takes both
-teams from `BaseballSession`; opened on its own it uses the sample teams in
-`match.tscn`. The 1920x1080 viewport scales to fill the window, so a bigger
-window shows the same framing larger, not more field.
+teams from `BaseballSession`, pays $20 into the run when it finishes, takes a life
+for a loss, and offers the way back to the shop; opened on its own it uses the
+sample teams in `match.tscn` and banks nothing. The 1920x1080 viewport scales to
+fill the window, so a bigger window shows the same framing larger, not more field.
 
 | Key | Action |
 | --- | --- |
@@ -348,7 +349,9 @@ player movement, or general 3D pathfinding. Dugout routes are explicit waypoints
 - `game/presentation/`: 3D field/player views, camera, box-score panel and sound scene.
 - `game/shop/`: buy-screen buyables, drop targets, drag handling and the rolls that
   stock it. See [buy_screen.md](buy_screen.md).
-- `game/session.gd`: the teams the buy screen hands to the next match.
+- `game/session.gd`: the run — money, lives, the round, and the teams the buy screen
+  hands to the next match.
+- `game/run_end.gd`: banks a finished match into the run and offers the way back.
 - `assets/audio/`: placeholder WAVs and editable Bfxr presets.
 - `data/`: Resource types, the kinds of player in `data/types/`, and sample teams.
 - `assets/field/`: generated field GLB, layout Resource and JSON control snapshot.

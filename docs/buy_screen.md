@@ -4,25 +4,31 @@ Run `game/buy_screen.tscn` with F6. It uses `game/field/ballpark.tscn` and the
 procedural `game/presentation/shop_field_3d.gd` preview without dugouts. The match
 inherits that park in `match_ballpark.tscn`, adds dugouts and applies the exported
 Blender layout. Match rendering uses `field_3d.gd` and the Blender mesh.
-The project starts here: F5 opens the buy screen, and Start game hands the team
-you signed to `main.tscn` to play.
+The project starts here. A run is a loop: buy a team, play a match, come back with
+the purse and one fewer life if you lost. It opens with $30 and five lives, every
+finished match pays $20 whoever won, a loss costs a life, and the run is over when
+the last one goes. `BaseballSession` holds all of it, so the money and the team
+survive the scene change either way.
 
 | Input | Action |
 | --- | --- |
 | Left-drag | Pick a player up and drop them on a roster slot or the sell spot. |
 | Right-click while dragging | Cancel and send the player back where they started. |
 | Batting order / Fielding | Toggle between the fielding layout and the lineup. |
-| Refresh | Roll a new player onto every podium. |
+| Refresh $N | Roll a new player onto every podium. Each one costs a dollar more. |
 | Start game | Play the signed team against a rolled opponent. |
 
 Everybody is a kind of player, and a kind sets the stats a level one is bought
 with and owns a passive that grows with every level. The only kind written so far
-is the Baseball Player, whose passive is +2 strength and +2 dexterity a level.
+is the Baseball Player, whose passive is +2/+2 on level up.
 
 Three players stand on podiums behind home plate, each podium showing what the
-player on it costs. The shop rolls its own stock, one level one of a random kind
-per podium, priced off the stats that kind starts with. Refresh rolls a new shelf,
-including podiums that have already been sold.
+player on it costs. The shop rolls its own stock, one level one per podium, priced
+off the stats that kind starts with. What it can roll comes from a
+`BaseballPlayerPool`: every kind names the round it starts turning up in, so a run
+opens up better players the further it gets. Refresh rolls a new shelf, sold
+podiums included, and costs a dollar the first time in a visit and a dollar more
+every time after.
 Nine roster slots stand out on the field, each one where that fielder plays: the
 shop reads the positions out of its roster Resource, so the
 slots sit where the match would put the players. The park and the slots are both
@@ -98,9 +104,14 @@ Listings on podiums cannot be sold; only signed players can.
 - `BaseballRecruit` (`game/shop/recruit.gd`): rolls players and whole teams. A
   rolled player is a level one of a random kind; a rolled team is levelled up
   until it is worth about what it will face.
-- `BaseballSession` (`game/session.gd`): static holder for the two teams a match
-  is about to play. Static rather than an autoload, so a match run on its own
-  still compiles and falls back to its own sample teams.
+- `BaseballPlayerPool` (`data/player_pool.gd`): what the shop can stock, and when.
+  `available(round)` hands back the kinds a run has reached. `data/pools/` holds
+  them; adding a kind is a Resource and a `from_round`, not code.
+- `BaseballSession` (`game/session.gd`): the run. Money, lives, the round, and the
+  two teams a match is about to play. Static rather than an autoload, so a scene
+  run on its own still compiles and falls back to its own sample teams.
+- `BaseballRunEnd` (`game/run_end.gd`): banks a finished match into the run once,
+  says what it paid, and offers the way back to the shop.
 - `ShopPodium` (`game/shop/podium.gd`): the stand a listing is sold from. It shows
   what the player on it costs and reads sold once they are bought, so the price
   stays put while the player is carried off. `stock()` puts a rolled listing on it
@@ -142,18 +153,18 @@ were given in the scene.
 
 ## Limits
 
-Only one kind of player is written, so every listing is a Baseball Player and any
-two of them can merge. That also means two players of the same level can no longer
-be swapped: the drop merges them instead. There is no way back: the match has no
-button to return to the shop, so a run is one visit and one game. Refresh
-is free, and what it rolls pays no attention to what is left in the wallet. The
-lineup view shows and rearranges the batting order, but moving a player there
-changes their fielding position too, so the two cannot be set apart from each
-other. A sold player is gone rather than back on their podium, there is no buyable
-other than a player, and there is no way to earn funds.
+Only one kind of player is written, so every listing is a Baseball Player, any two
+of them can merge, and a pool has nothing to open up yet. That also means two
+players of the same level can no longer be swapped: the drop merges them instead.
+A run only ends by losing the last life, and nothing keeps score of how far it
+got. Refresh escalates within a visit and starts back at a dollar each round, and
+what it rolls pays no attention to what is left in the wallet. The lineup view
+shows and rearranges the batting order, but moving a player there changes their
+fielding position too, so the two cannot be set apart from each other. A sold
+player is gone rather than back on their podium, and there is no buyable other
+than a player.
 
 ## Checks
-
 ```sh
 godot --headless --path . --editor --quit
 godot --headless --path . --fixed-fps 60 --script tests/shop_test.gd
@@ -166,18 +177,21 @@ and roster entry, and that the sell spot refuses an unsigned listing; checks tha
 names stay hidden until the cursor is on a listing or a slot while the two numbers
 and the level badge stay readable without it, that the card names the kind and its
 passive, and that carrying a player puts the cards away while the slot under them
-still lights up; merges
-and the badge followed, that one level
+still lights up; merges two listings into a level two and checks the passive was
+paid and the badge followed, that one level
 below only counts half and the second finishes it, and that a player at the cap
 refuses another; merges two signed players and checks the slot left behind is
 empty and free; refreshes the shelf from the button and checks every podium came
-back with a new player priced on their stats; rolls an opponent and checks it
-fields as many players for about the same money, with a pitcher and a catcher
-among them, and that the session carries the pair; toggles the lineup view and
-checks the numbering, the grid rows and columns, the even spacing, the cleared
-diamond, that no two spots crowd each other, and the slides back and forth; moves
-a signed player to an open spot and swaps two of them, checking the roster and
-that neither costs anything; sweeps a carried player left and right and checks
-they hang from the cursor and tilt away from the yank before settling upright;
-then fills every slot and checks the roster passes
-`BaseballTeamData.validation_error()`.
+back with a new player priced on their stats; buys refreshes and checks each one
+costs a dollar more than the last, that the button prices and disables itself, and
+that one without the money behind it is refused; checks a pool holds kinds back
+until the round they open up in; banks wins and losses and checks the purse, the
+lives and the round; rolls an opponent and checks it fields as many players for
+about the same money, with a pitcher and a catcher among them, and that the
+session carries the pair; toggles the lineup view and checks the numbering, the
+grid rows and columns, the even spacing, the cleared diamond, that no two spots
+crowd each other, and the slides back and forth; moves a signed player to an open
+spot and swaps two of them, checking the roster and that neither costs anything;
+sweeps a carried player left and right and checks they hang from the cursor and
+tilt away from the yank before settling upright; then fills every slot and checks
+the roster passes `BaseballTeamData.validation_error()`.

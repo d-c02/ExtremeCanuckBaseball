@@ -61,6 +61,8 @@ func drag(buyable: Buyable, target: Node3D) -> void:
 
 
 func run() -> void:
+	# Start every run of the suite from a fresh purse and an empty roster.
+	BaseballSession.begin()
 	var screen: Node = load("res://game/buy_screen.tscn").instantiate()
 	root.add_child(screen)
 	shop = screen
@@ -81,7 +83,10 @@ func run() -> void:
 	await check_quiet_drag()
 	await check_refresh()
 	await check_roster_ready()
+	await check_refresh_cost()
+	await check_pool()
 	await check_opponent()
+	await check_run_banking()
 	quit(1 if failures > 0 else 0)
 
 
@@ -320,6 +325,7 @@ func check_refresh() -> void:
 	for podium in shop.podiums():
 		var sold := podium.listing as PlayerSlot
 		before.append(sold.player if sold != null else null)
+	shop.funds = 99
 	var button: Button = shop.get_node("HUD/Refresh")
 	button.pressed.emit()
 	await settle()
@@ -448,3 +454,59 @@ func check_quiet_drag() -> void:
 	check(slot.highlight.visible, "A slot stopped lighting up under a carried player")
 	cancel_drag()
 	await settle()
+
+
+## Every refresh costs a dollar more than the last, and the shop will not sell one
+## it cannot be paid for.
+func check_refresh_cost() -> void:
+	shop.refreshes = 0
+	shop.funds = 10
+	check(shop.refresh_cost() == 1, "The first refresh of a visit was not a dollar")
+	check(shop.buy_refresh(), "A refresh the shop could pay for was refused")
+	check(shop.funds == 9, "The first refresh did not cost a dollar")
+	check(shop.refresh_cost() == 2, "The second refresh cost the same as the first")
+	check(shop.buy_refresh(), "The second refresh was refused")
+	check(shop.funds == 7, "The second refresh did not cost two dollars")
+	await settle()
+	var button: Button = shop.get_node("HUD/Refresh")
+	check(button.text == "Refresh  $3", "The button did not price the next refresh")
+	shop.funds = 2
+	shop._update_hud()
+	check(button.disabled, "The button stayed live with the price out of reach")
+	check(not shop.buy_refresh(), "A refresh went through without the money for it")
+	check(shop.funds == 2, "A refused refresh still took money")
+
+
+## A pool only offers kinds the run has reached.
+func check_pool() -> void:
+	var opened := shop.pool.available(1).size()
+	var later := BaseballPlayerType.new()
+	later.type_name = "Ace"
+	later.from_round = 3
+	shop.pool.types.append(later)
+	check(shop.pool.available(1).size() == opened, "A later kind turned up in round one")
+	check(shop.pool.available(3).size() == opened + 1, "A kind never opened up")
+	check(shop._stock_types().size() == opened, "The shop stocked ahead of the round")
+	BaseballSession.round_number = 3
+	check(shop._stock_types().size() == opened + 1, "The shop missed a kind that opened up")
+	BaseballSession.round_number = 1
+	shop.pool.types.remove_at(shop.pool.types.size() - 1)
+
+
+## Finishing a match pays the purse either way, and a loss costs a life.
+func check_run_banking() -> void:
+	BaseballSession.begin()
+	check(BaseballSession.funds == 30, "A run did not start with thirty dollars")
+	check(BaseballSession.lives == 5, "A run did not start with five lives")
+	check(BaseballSession.round_number == 1, "A run did not start at round one")
+	BaseballSession.finish_match(true)
+	check(BaseballSession.funds == 50, "Winning did not pay the purse")
+	check(BaseballSession.lives == 5, "Winning cost a life")
+	check(BaseballSession.round_number == 2, "Winning did not move the run on")
+	BaseballSession.finish_match(false)
+	check(BaseballSession.funds == 70, "Losing did not pay the purse")
+	check(BaseballSession.lives == 4, "Losing did not cost a life")
+	for loss in 4:
+		BaseballSession.finish_match(false)
+	check(BaseballSession.over(), "A run with no lives left was not over")
+	BaseballSession.begin()

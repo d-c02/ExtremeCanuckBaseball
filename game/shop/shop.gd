@@ -21,16 +21,28 @@ const LISTING := preload("res://game/shop/player_slot.tscn")
 const MATCH_SCENE := "res://main.tscn"
 ## Where a listing stands on its podium.
 const PODIUM_TOP := 1.2
+## What the first refresh of a visit costs.
+const FIRST_REFRESH := 1
 
-## Roster the shop starts from. It is duplicated, so trading never edits the file.
+## Roster the shop starts a run from. It is duplicated, so trading never edits the
+## file, and a run in progress keeps the team it has already signed instead.
 @export var team: BaseballTeamData
-@export var funds: int = 12
+## What the shop can stock, and from which round.
+@export var pool: BaseballPlayerPool
 ## How far the drawn park and the fielding spots pull in toward home plate. The
 ## roster keeps its real match positions; only the buy screen is condensed.
 @export_range(0.3, 1.0) var park_scale: float = 0.6
 ## Seed for the players the shop rolls. Zero rolls a different shop every run.
 @export var random_seed: int = 0
 
+## The run's money, kept on the session so it lives across the scene change.
+var funds: int:
+	get:
+		return BaseballSession.funds
+	set(value):
+		BaseballSession.funds = value
+## Refreshes bought this visit. Each one costs a dollar more than the last.
+var refreshes: int = 0
 var roster: BaseballTeamData
 var rng := RandomNumberGenerator.new()
 ## Whether the slots are lined up in batting order instead of out on the field.
@@ -45,7 +57,10 @@ var _hover_allowed: bool = false
 
 
 func _ready() -> void:
-	roster = team.duplicate(true) if team != null else BaseballTeamData.new()
+	roster = BaseballSession.roster
+	if roster == null:
+		roster = team.duplicate(true) if team != null else BaseballTeamData.new()
+		BaseballSession.roster = roster
 	if random_seed == 0:
 		rng.randomize()
 	else:
@@ -58,12 +73,10 @@ func _ready() -> void:
 	_layout_slots(false)
 	_update_order_button()
 	_connect_button("Order", _toggle_view)
-	_connect_button("Refresh", refresh_stock)
+	_connect_button("Refresh", buy_refresh)
 	_connect_button("Start", start_game)
 	refresh_stock()
 	_update_hud()
-
-
 func _connect_button(name: String, handler: Callable) -> void:
 	var button := get_node_or_null("HUD/" + name) as Button
 	if button != null:
@@ -233,6 +246,13 @@ func _update_hud() -> void:
 	var label := get_node_or_null("HUD/Funds") as Label
 	if label != null:
 		label.text = "Funds  $%d" % funds
+	var run := get_node_or_null("HUD/Run") as Label
+	if run != null:
+		run.text = "Round %d    Lives %d" % [BaseballSession.round_number, BaseballSession.lives]
+	var refresh := get_node_or_null("HUD/Refresh") as Button
+	if refresh != null:
+		refresh.text = "Refresh  $%d" % refresh_cost()
+		refresh.disabled = refresh_cost() > funds
 
 
 ## Draw the ballpark the shop stands on, when the scene has one.
@@ -302,13 +322,35 @@ func _show_park_markings(on: bool) -> void:
 		view.markings.visible = on
 
 
+## What the next refresh costs. The first is a dollar and each one after is a dollar
+## more, so a shop picked clean gets dearer to pick over again.
+func refresh_cost() -> int:
+	return FIRST_REFRESH + refreshes
+
+
+## Pay for a refresh and roll a new shelf. Refused when the money is not there.
+func buy_refresh() -> bool:
+	var price := refresh_cost()
+	if price > funds:
+		return false
+	funds -= price
+	refreshes += 1
+	refresh_stock()
+	funds_changed.emit(funds)
+	_update_hud()
+	return true
+
+
 ## Roll a fresh player onto every podium. Sold podiums fill back up too, so a
 ## refresh is what puts the shop back in business.
 func refresh_stock() -> void:
 	var taken := PackedStringArray()
 	for podium in podiums():
 		var listing: PlayerSlot = LISTING.instantiate()
-		listing.player = BaseballRecruit.roll(rng, taken)
+		var rolled := BaseballRecruit.roll(rng, _stock_types(), taken)
+		if rolled == null:
+			continue
+		listing.player = rolled
 		taken.append(listing.player.player_name)
 		listing.cost = listing.player.value()
 		listing.position = Vector3(0.0, PODIUM_TOP, 0.0)
@@ -318,7 +360,7 @@ func refresh_stock() -> void:
 ## Roll the team this roster will face. It is worth about what the signed players
 ## are, so a shop spent down to nothing plays a team with nothing either.
 func build_opponent() -> BaseballTeamData:
-	return BaseballRecruit.roll_opponent(rng, roster)
+	return BaseballRecruit.roll_opponent(rng, roster, _stock_types())
 
 
 ## Hand the signed team and a fresh opponent to the match, and go and play it.
@@ -333,3 +375,10 @@ func podiums() -> Array[ShopPodium]:
 	for node in find_children("*", "ShopPodium", true, false):
 		found.append(node)
 	return found
+
+
+## The kinds of player on offer this round. A shop with no pool sells nothing.
+func _stock_types() -> Array[BaseballPlayerType]:
+	if pool == null:
+		return []
+	return pool.available(BaseballSession.round_number)
