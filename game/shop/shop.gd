@@ -17,6 +17,12 @@ const BATTING_CORNER := Vector3(-7.0, 0.0, -3.0)
 const BATTING_COLUMN_STEP := 7.0
 const BATTING_ROW_STEP := 6.0
 const LAYOUT_TIME := 0.3
+const LISTING := preload("res://game/shop/player_slot.tscn")
+const MATCH_SCENE := "res://main.tscn"
+## Where a listing stands on its podium, and what the shop keeps when it buys a
+## player back.
+const PODIUM_TOP := 1.2
+const SELL_LOSS := 2
 
 ## Roster the shop starts from. It is duplicated, so trading never edits the file.
 @export var team: BaseballTeamData
@@ -24,8 +30,11 @@ const LAYOUT_TIME := 0.3
 ## How far the drawn park and the fielding spots pull in toward home plate. The
 ## roster keeps its real match positions; only the buy screen is condensed.
 @export_range(0.3, 1.0) var park_scale: float = 0.6
+## Seed for the players the shop rolls. Zero rolls a different shop every run.
+@export var random_seed: int = 0
 
 var roster: BaseballTeamData
+var rng := RandomNumberGenerator.new()
 ## Whether the slots are lined up in batting order instead of out on the field.
 var batting_view: bool = false
 var park: BaseballBallpark
@@ -39,6 +48,10 @@ var _hover_allowed: bool = false
 
 func _ready() -> void:
 	roster = team.duplicate(true) if team != null else BaseballTeamData.new()
+	if random_seed == 0:
+		rng.randomize()
+	else:
+		rng.seed = random_seed
 	park = get_node_or_null("Field") as BaseballBallpark
 	_build_park()
 	for target in _targets():
@@ -46,10 +59,17 @@ func _ready() -> void:
 		target.refresh()
 	_layout_slots(false)
 	_update_order_button()
-	var button := get_node_or_null("HUD/Order") as Button
-	if button != null:
-		button.pressed.connect(_toggle_view)
+	_connect_button("Order", _toggle_view)
+	_connect_button("Refresh", refresh_stock)
+	_connect_button("Start", start_game)
+	refresh_stock()
 	_update_hud()
+
+
+func _connect_button(name: String, handler: Callable) -> void:
+	var button := get_node_or_null("HUD/" + name) as Button
+	if button != null:
+		button.pressed.connect(handler)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -277,3 +297,39 @@ func _show_park_markings(on: bool) -> void:
 	var view := get_node_or_null("FieldView") as BaseballShopFieldView
 	if view != null and view.markings != null:
 		view.markings.visible = on
+
+
+## Roll a fresh player onto every podium. Sold podiums fill back up too, so a
+## refresh is what puts the shop back in business.
+func refresh_stock() -> void:
+	var taken := PackedStringArray()
+	for podium in podiums():
+		var listing: PlayerSlot = LISTING.instantiate()
+		listing.player = BaseballRecruit.roll(
+			rng, rng.randi_range(BaseballPlayerData.MIN_VALUE, BaseballPlayerData.MAX_VALUE), taken
+		)
+		taken.append(listing.player.player_name)
+		listing.cost = listing.player.value()
+		listing.sell_value = maxi(1, listing.cost - SELL_LOSS)
+		listing.position = Vector3(0.0, PODIUM_TOP, 0.0)
+		podium.stock(listing)
+
+
+## Roll the team this roster will face. It is worth about what the signed players
+## are, so a shop spent down to nothing plays a team with nothing either.
+func build_opponent() -> BaseballTeamData:
+	return BaseballRecruit.roll_opponent(rng, roster)
+
+
+## Hand the signed team and a fresh opponent to the match, and go and play it.
+func start_game() -> void:
+	BaseballSession.carry(roster, build_opponent())
+	get_tree().change_scene_to_file(MATCH_SCENE)
+
+
+## Every podium the shop sells from, left to right.
+func podiums() -> Array[ShopPodium]:
+	var found: Array[ShopPodium] = []
+	for node in find_children("*", "ShopPodium", true, false):
+		found.append(node)
+	return found

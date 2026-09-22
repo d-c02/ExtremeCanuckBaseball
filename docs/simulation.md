@@ -1,8 +1,10 @@
 # Baseball simulation
 
-Run `main.tscn` with F6, or the project with F5. The window starts maximized; the
-1280x720 viewport scales to fill it, so a bigger window shows the same framing
-larger, not more field.
+Run `main.tscn` with F6 to play the sample teams, or start from the buy screen
+with F5 and hand it a team you signed. A match started from the shop takes both
+teams from `BaseballSession`; opened on its own it uses the sample teams in
+`match.tscn`. The 1920x1080 viewport scales to fill the window, so a bigger
+window shows the same framing larger, not more field.
 
 | Key | Action |
 | --- | --- |
@@ -332,7 +334,9 @@ player movement, or general 3D pathfinding. Dugout routes are explicit waypoints
 - `game/actors/`: player, ball and bat simulation nodes and movement scripts.
 - `game/field/`: simulation markers, dugout seats and outfield collision boundary.
 - `game/presentation/`: 3D field/player views, camera, box-score panel and sound scene.
-- `game/shop/`: buy-screen buyables, drop targets and drag handling. See [buy_screen.md](buy_screen.md).
+- `game/shop/`: buy-screen buyables, drop targets, drag handling and the rolls that
+  stock it. See [buy_screen.md](buy_screen.md).
+- `game/session.gd`: the teams the buy screen hands to the next match.
 - `assets/audio/`: placeholder WAVs and editable Bfxr presets.
 - `data/`: Resource types and sample teams.
 - `assets/field/`: generated field GLB, layout Resource and JSON control snapshot.

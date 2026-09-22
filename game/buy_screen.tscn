@@ -2,8 +2,6 @@
 
 [ext_resource type="PackedScene" path="res://game/field/ballpark.tscn" id="ballpark"]
 [ext_resource type="Script" path="res://game/presentation/shop_field_3d.gd" id="field_view"]
-[ext_resource type="Script" uid="uid://bbitykktl6wj5" path="res://data/player_data.gd" id="player"]
-[ext_resource type="PackedScene" uid="uid://bg7exhrafepul" path="res://game/shop/player_slot.tscn" id="player_slot"]
 [ext_resource type="PackedScene" path="res://game/shop/podium.tscn" id="podium"]
 [ext_resource type="Resource" path="res://data/teams/shop_roster.tres" id="roster"]
 [ext_resource type="PackedScene" path="res://game/shop/sell_spot.tscn" id="sell_spot"]
@@ -16,25 +14,6 @@ background_color = Color(0.53, 0.68, 0.74, 1)
 ambient_light_source = 3
 ambient_light_color = Color(0.82, 0.87, 0.94, 1)
 ambient_light_energy = 0.7
-
-[sub_resource type="Resource" id="prospect_jack"]
-script = ExtResource("player")
-player_name = "Jack"
-strength = 84
-dexterity = 30
-
-[sub_resource type="Resource" id="prospect_arthur"]
-script = ExtResource("player")
-player_name = "Arthur"
-strength = 44
-dexterity = 78
-
-[sub_resource type="Resource" id="prospect_harrhy"]
-script = ExtResource("player")
-player_name = "Harrhy"
-strength = 66
-dexterity = 85
-anticipation = 0.85
 
 [node name="BuyScreen" type="Node3D" unique_id=1857475372]
 script = ExtResource("shop")
@@ -65,27 +44,11 @@ environment = SubResource("environment")
 [node name="Podium1" parent="Podiums" unique_id=649220510 instance=ExtResource("podium")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0, 14.8)
 
-[node name="Jack" parent="Podiums/Podium1" unique_id=611048777 instance=ExtResource("player_slot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-player = SubResource("prospect_jack")
-sell_value = 3
-cost = 5
-
 [node name="Podium2" parent="Podiums" unique_id=1375774532 instance=ExtResource("podium")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.8)
 
-[node name="Arthur" parent="Podiums/Podium2" unique_id=1139999321 instance=ExtResource("player_slot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-player = SubResource("prospect_arthur")
-cost = 4
-
 [node name="Podium3" parent="Podiums" unique_id=1380415886 instance=ExtResource("podium")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 14.8)
-
-[node name="Harrhy" parent="Podiums/Podium3" unique_id=1465614845 instance=ExtResource("player_slot")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
-player = SubResource("prospect_harrhy")
-cost = 4
 
 [node name="SellSpot" parent="." unique_id=2030476259 instance=ExtResource("sell_spot")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 7)
@@ -169,3 +132,30 @@ offset_bottom = 56.0
 grow_horizontal = 0
 theme_override_font_sizes/font_size = 20
 text = "Batting order"
+
+[node name="Refresh" type="Button" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -210.0
+offset_top = 64.0
+offset_right = -24.0
+offset_bottom = 102.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 20
+text = "Refresh"
+
+[node name="Start" type="Button" parent="HUD"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -210.0
+offset_top = -78.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 24
+text = "Start game"

@@ -86,6 +86,9 @@ var forfeit_side: int = -1
 
 
 func _ready() -> void:
+	if BaseballSession.ready_to_play():
+		visiting_team = BaseballSession.opponent
+		home_team = BaseballSession.roster
 	teams = [visiting_team, home_team]
 	for team in teams:
 		if team == null:

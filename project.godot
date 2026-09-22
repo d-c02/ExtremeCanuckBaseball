@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Extreme Canuck Baseball"
-run/main_scene="uid://dar4rg8x7fywr"
+run/main_scene="uid://b6ou6cfu8g8c"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 

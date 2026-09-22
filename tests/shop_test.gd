@@ -38,11 +38,10 @@ func motion_at(screen: Vector2) -> InputEventMouseMotion:
 	return motion
 
 
-## Find a listing by name, wherever its podium stands.
-func listing(display_name: String) -> PlayerSlot:
-	return shop.find_child(display_name, true, false) as PlayerSlot
-
-
+## The listing on one podium, left to right. The shop rolls its stock, so the tests
+## ask for a spot rather than a name.
+func listing(index: int) -> PlayerSlot:
+	return shop.podiums()[index].listing as PlayerSlot
 func click(screen: Vector2, pressed: bool) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
@@ -65,6 +64,9 @@ func run() -> void:
 	var screen: Node = load("res://game/buy_screen.tscn").instantiate()
 	root.add_child(screen)
 	shop = screen
+	# Roll the stock from a fixed seed so a failure can be repeated.
+	shop.rng.seed = 9
+	shop.refresh_stock()
 	await settle()
 	await check_signing()
 	await check_refused_drops()
@@ -74,12 +76,14 @@ func run() -> void:
 	await check_batting_view()
 	await check_hover_names()
 	await check_dangle()
+	await check_refresh()
 	await check_roster_ready()
+	await check_opponent()
 	quit(1 if failures > 0 else 0)
 
 
 func check_signing() -> void:
-	var jack: PlayerSlot = listing("Jack")
+	var jack := listing(0)
 	var pitcher: TeamSlot = shop.get_node("Roster/Slot1")
 	var funds := shop.funds
 	paid = jack.cost
@@ -96,13 +100,13 @@ func check_signing() -> void:
 
 
 func check_refused_drops() -> void:
-	var arthur: PlayerSlot = listing("Arthur")
+	var arthur := listing(1)
 	var filled: TeamSlot = shop.get_node("Roster/Slot1")
 	var open: TeamSlot = shop.get_node("Roster/Slot2")
 	var rest := arthur.global_position
 	var funds := shop.funds
 	await drag(arthur, filled)
-	check(filled.player.player_name != "Arthur", "A taken slot took a second player")
+	check(filled.player != arthur.player, "A taken slot took a second player")
 	check(shop.funds == funds, "A refused drop still charged the shop")
 	check(arthur.global_position.is_equal_approx(rest), "A refused drop stranded a player")
 	shop.funds = arthur.cost - 1
@@ -127,7 +131,7 @@ func check_selling() -> void:
 
 
 func check_refused_sales() -> void:
-	var arthur: PlayerSlot = listing("Arthur")
+	var arthur := listing(1)
 	var open: TeamSlot = shop.get_node("Roster/Slot3")
 	var sell: SellSpot = shop.get_node("SellSpot")
 	var rest := arthur.global_position
@@ -159,7 +163,7 @@ func check_roster_ready() -> void:
 
 ## Names are clutter on a full field, so they only show under the cursor.
 func check_hover_names() -> void:
-	var harrhy := listing("Harrhy")
+	var harrhy := listing(2)
 	var slot: TeamSlot = shop.get_node("Roster/Slot5")
 	check(not harrhy.name_label.visible, "A listing named itself before being hovered")
 	check(not slot.name_label.visible, "A roster slot named itself before being hovered")
@@ -199,7 +203,7 @@ func sweep(from: Vector2, step: Vector2, steps: int) -> Vector2:
 
 ## A carried player hangs from the cursor by the head and trails behind a yank.
 func check_dangle() -> void:
-	var harrhy := listing("Harrhy")
+	var harrhy := listing(2)
 	var grip := harrhy.grip_height()
 	check(grip > 1.0, "A carried player has no head to hang from")
 	var at := screen_point(harrhy)
@@ -291,3 +295,57 @@ func check_batting_view() -> void:
 	check(first.position.is_equal_approx(fielding), "Leaving the lineup stranded a slot")
 	check(not first.order_label.visible, "A batting number stayed after leaving the lineup")
 	check(view.markings.visible, "The diamond did not come back with the fielders")
+
+
+## Refreshing rolls a whole new shelf, priced by the stats the players were given.
+func check_refresh() -> void:
+	var before: Array[BaseballPlayerData] = []
+	for podium in shop.podiums():
+		var sold := podium.listing as PlayerSlot
+		before.append(sold.player if sold != null else null)
+	var button: Button = shop.get_node("HUD/Refresh")
+	button.pressed.emit()
+	await settle()
+	for index in shop.podiums().size():
+		var rolled := listing(index)
+		check(rolled != null, "A podium came back from a refresh empty")
+		check(rolled.player != before[index], "A refresh kept the same player on a podium")
+		check(rolled.cost == rolled.player.value(), "A rolled player was not priced on stats")
+		check(rolled.sell_value < rolled.cost, "A rolled player sold for the asking price")
+
+
+## The team rolled to play against the shop roster is worth about the same, and
+## always has somebody to pitch and somebody to catch.
+func check_opponent() -> void:
+	var signed := 0
+	var worth := 0
+	for index in shop.roster.field_roles.size():
+		var player := shop.roster.player_at(index)
+		if player != null:
+			signed += 1
+			worth += player.value()
+	check(signed > 0, "The roster was empty, so there was nothing to match")
+	var enemy := shop.build_opponent()
+	check(
+		enemy.validation_error().is_empty(),
+		"The rolled opponent was rejected: " + enemy.validation_error()
+	)
+	check(enemy.has_role("P"), "The rolled opponent had nobody to pitch")
+	check(enemy.has_role("C"), "The rolled opponent had nobody to catch")
+	var enemy_worth := 0
+	var enemy_signed := 0
+	for index in enemy.field_roles.size():
+		var player := enemy.player_at(index)
+		if player != null:
+			enemy_signed += 1
+			enemy_worth += player.value()
+	check(enemy_signed == signed, "The rolled opponent did not field as many players")
+	check(
+		absi(enemy_worth - worth) <= enemy_signed,
+		"The rolled opponent was worth %d against %d" % [enemy_worth, worth]
+	)
+	BaseballSession.carry(shop.roster, enemy)
+	check(BaseballSession.ready_to_play(), "The session did not take the teams to the match")
+	var start: Button = shop.get_node("HUD/Start")
+	check(not start.pressed.get_connections().is_empty(), "The start button went nowhere")
+	BaseballSession.clear()

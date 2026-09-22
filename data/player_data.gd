@@ -10,6 +10,9 @@ enum IdleBehavior { STILL, PACE }
 
 ## Both stats run from 0 to this cap.
 const MAX_STAT: int = 99
+## What the cheapest and the dearest player cost in the shop.
+const MIN_VALUE: int = 2
+const MAX_VALUE: int = 9
 
 @export var player_name: String = "Player"
 ## Batting power, pitching stamina and throwing speed.
@@ -52,6 +55,13 @@ func strength_fraction() -> float:
 
 func dexterity_fraction() -> float:
 	return clampf(float(dexterity) / float(MAX_STAT), 0.0, 1.0)
+
+
+## Shop price for this pair of stats. Worth is what ties the shop, the sell spot and
+## a rolled opponent together, so it lives with the stats it is read from.
+func value() -> int:
+	var average := (strength_fraction() + dexterity_fraction()) / 2.0
+	return int(roundf(lerpf(MIN_VALUE, MAX_VALUE, average)))
 
 
 ## The two numbers a player is bought on, worded as the labels beside them read:

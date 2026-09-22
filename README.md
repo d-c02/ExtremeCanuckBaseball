@@ -1,9 +1,10 @@
 # Extreme Canuck Baseball
 
 A 3D baseball auto-battler with billboard players, built with Godot 4.7.
-Open the project in Godot, press F5, then Space to start a game. See [simulation.md](docs/simulation.md) for
-controls, rules and simulation checks. Run `game/buy_screen.tscn` with F6 to sign
-players onto a roster and sell them back; see [buy_screen.md](docs/buy_screen.md).
+Open the project in Godot and press F5. It starts on the buy screen: sign a team,
+then Start game to play it against a rolled opponent. See
+[buy_screen.md](docs/buy_screen.md) for the shop and
+[simulation.md](docs/simulation.md) for controls, rules and simulation checks.
 
 ## Optional development tools
 
