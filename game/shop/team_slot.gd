@@ -93,7 +93,7 @@ func set_hovered(on: bool) -> void:
 func refresh() -> void:
 	if name_label == null:
 		return
-	name_label.text = player.stat_line() if player != null else "open"
+	name_label.text = player.player_name if player != null else "open"
 	if occupant != null:
 		occupant.refresh()
 

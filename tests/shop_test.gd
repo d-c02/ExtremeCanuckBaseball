@@ -176,8 +176,8 @@ func check_hover_names() -> void:
 	# The two numbers a player is bought on stay readable without the cursor.
 	check(
 		(
-			harrhy.stat_labels[0].text == "STR %d" % harrhy.player.strength
-			and harrhy.stat_labels[1].text == "DEX %d" % harrhy.player.dexterity
+			harrhy.stat_labels[0].text == "%d" % harrhy.player.strength
+			and harrhy.stat_labels[1].text == "%d" % harrhy.player.dexterity
 			and harrhy.stat_labels[0].visible
 		),
 		"A listing hid the STR and DEX it is bought on"

@@ -19,9 +19,11 @@ func configure(actor: BaseballPlayer, color: Color, match_scene: BaseballMatch) 
 	player = actor
 	game = match_scene
 	sprite.modulate = color
-	# Bought stats stand at the player's feet, STR on the left and DEX on the right.
-	strength_label.text = "STR %d" % player.data.strength
-	dexterity_label.text = "DEX %d" % player.data.dexterity
+	# Bought stats stand at the player's feet, strength on the left and dexterity on
+	# the right, worded by the data so the match and the buy screen always agree.
+	var stats := player.data.stat_texts()
+	strength_label.text = stats[0]
+	dexterity_label.text = stats[1]
 
 
 func _physics_process(delta: float) -> void:

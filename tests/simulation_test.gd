@@ -617,8 +617,8 @@ func check_camera() -> void:
 	var first_view: BaseballPlayerView = world.player_views[0]
 	check(
 		(
-			first_view.strength_label.text == "STR %d" % first_view.player.data.strength
-			and first_view.dexterity_label.text == "DEX %d" % first_view.player.data.dexterity
+			first_view.strength_label.text == "%d" % first_view.player.data.strength
+			and first_view.dexterity_label.text == "%d" % first_view.player.data.dexterity
 		),
 		"A player on the field stopped showing their STR and DEX"
 	)

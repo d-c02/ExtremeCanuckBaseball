@@ -266,8 +266,10 @@ All nine roster players remain visible; positions are standing placeholders.
 Player art is a replaceable `Sprite3D` in `game/presentation/player_3d.tscn`, using
 `assets/sprites/player.svg`. Players stay upright and face the camera around the
 vertical axis. They use team colors, short labels, a simple movement bob and a
-separate persistent box-mesh bat. Their bought stats stand at their feet, STR on
-the left in orange and DEX on the right in blue, straight off the roster Resource.
+separate persistent box-mesh bat. Their bought stats stand at their feet as bare
+numbers, strength on the left in orange and dexterity on the right in blue,
+worded by `BaseballPlayerData.stat_texts()` so the match and the buy screen read
+the same.
 A player inside their dugout hides both, because nine benched labels overlap into
 one another; the pitcher's live strength is on the HUD rather than the field.
 Each view has a downward RayCast3D that samples the exported field during physics

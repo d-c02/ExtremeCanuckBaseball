@@ -24,10 +24,14 @@ fielder plays: the shop reads the positions out of its roster Resource, so the
 slots sit where the match would put the players. The park and the slots are both
 drawn pulled in toward home by the shop's `park_scale`, so the whole field reads at
 a glance; the roster itself keeps the real match positions. Every player, on a
-podium or in a slot, carries the two stats they are bought on at their feet: STR
-on the left in orange, DEX on the right in blue, the same labels the match shows.
+podium or in a slot, carries the two stats they are bought on at their feet: the
+strength number on the left in orange, the dexterity number on the right in blue.
+They read as bare numbers, because the colour and the side already say which is
+which. The match stands the same two numbers at a player's feet, worded by
+`BaseballPlayerData.stat_texts()` on both screens so they cannot drift apart.
 Nothing labels the positions, and no name shows until the cursor is on something:
-hover a listing or a slot to read who is there.
+hover a listing or a slot to read the name, which is all the card carries: the two
+numbers are already at the feet.
 Dropping a player on an open slot signs them: the shop charges the asking price,
 the player stands in the slot, and the podium reads sold.
 A slot that already has a player, or a price above the current funds, lights up red

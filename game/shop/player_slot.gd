@@ -45,5 +45,5 @@ func refresh() -> void:
 		return
 	if player != null:
 		display_name = player.player_name
-	name_label.text = player.stat_line() if player != null else display_name
+	name_label.text = player.player_name if player != null else display_name
 	show_stats(player)

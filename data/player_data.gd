@@ -64,13 +64,8 @@ func value() -> int:
 	return int(roundf(lerpf(MIN_VALUE, MAX_VALUE, average)))
 
 
-## The two numbers a player is bought on, worded as the labels beside them read:
-## STR first, DEX second.
+## The two numbers a player is bought on, strength first, dexterity second. They
+## read bare: the labels beside a player are coloured and placed to say which is
+## which, so spelling it out again only adds clutter.
 func stat_texts() -> PackedStringArray:
-	return PackedStringArray(["STR %d" % strength, "DEX %d" % dexterity])
-
-
-## Hover caption for the buy screen: the name above the same two numbers.
-func stat_line() -> String:
-	var texts := stat_texts()
-	return "%s\n%s  %s" % [player_name, texts[0], texts[1]]
+	return PackedStringArray(["%d" % strength, "%d" % dexterity])
