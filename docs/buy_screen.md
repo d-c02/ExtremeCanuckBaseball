@@ -22,13 +22,21 @@ Everybody is a kind of player, and a kind sets the stats a level one is bought
 with and owns a passive that grows with every level. The only kind written so far
 is the Baseball Player, whose passive is +2/+2 on level up.
 
-Three players stand on podiums behind home plate, each podium showing what the
-player on it costs. The shop rolls its own stock, one level one per podium, priced
-off the stats that kind starts with. What it can roll comes from a
+Six podiums stand behind home plate, each showing what the thing on it costs. Four
+sell players and two sell snacks, and a podium only ever stocks its own kind,
+refresh included. The shop rolls its own stock, one level one per player podium,
+priced off the stats that kind starts with. What it can roll comes from a
 `BaseballPlayerPool`: every kind names the round it starts turning up in, so a run
 opens up better players the further it gets. Refresh rolls a new shelf, sold
 podiums included, and costs a dollar the first time in a visit and a dollar more
 every time after.
+
+A snack is bought like a player and dropped on one to be eaten: a hot dog is +1
+strength, peanuts are +1 dexterity, and the point goes on for good. An empty slot
+has nobody to eat it and refuses the drop. The gain stands on the snack in the
+colour of the stat it feeds, the same orange and blue as the numbers at a player's
+feet.
+
 Nine roster slots stand out on the field, each one where that fielder plays: the
 shop reads the positions out of its roster Resource, so the
 slots sit where the match would put the players. The park and the slots are both
@@ -104,6 +112,11 @@ Listings on podiums cannot be sold; only signed players can.
 - `BaseballRecruit` (`game/shop/recruit.gd`): rolls players and whole teams. A
   rolled player is a level one of a random kind; a rolled team is levelled up
   until it is worth about what it will face.
+- `BaseballFoodType` (`data/food_type.gd`): a snack. It names itself, what it
+  feeds and what it costs, and `data/foods/` holds them. Adding one is a Resource
+  dropped into the shop's `foods`, not code.
+- `Food` (`game/shop/food.gd`): a snack on a podium. It fits a slot with somebody
+  in it, feeds them their point and is gone; an empty slot refuses it.
 - `BaseballPlayerPool` (`data/player_pool.gd`): what the shop can stock, and when.
   `available(round)` hands back the kinds a run has reached. `data/pools/` holds
   them; adding a kind is a Resource and a `from_round`, not code.
@@ -113,9 +126,9 @@ Listings on podiums cannot be sold; only signed players can.
 - `BaseballRunEnd` (`game/run_end.gd`): banks a finished match into the run once,
   says what it paid, and offers the way back to the shop.
 - `ShopPodium` (`game/shop/podium.gd`): the stand a listing is sold from. It shows
-  what the player on it costs and reads sold once they are bought, so the price
-  stays put while the player is carried off. `stock()` puts a rolled listing on it
-  and clears off whatever was there.
+  what the thing on it costs and reads sold once it is bought, so the price stays
+  put while the thing is carried off. `sells` says which kind it deals in, and
+  `stock()` puts a rolled listing on it, clearing off whatever was there.
 - `PlayerSlot` (`game/shop/player_slot.gd`): a buyable player on a podium. It fits
   an empty team slot, where it signs a copy of its `BaseballPlayerData`, and a
   slot holding the same kind, where it merges into them instead. The copy is
@@ -131,7 +144,8 @@ Listings on podiums cannot be sold; only signed players can.
 - `TeamSlot` (`game/shop/team_slot.gd`): one roster spot. Its `slot_index` is the
   batting order and its `role` is the fielding position its place on the field
   already shows. Empty slots take player buyables and stand a `SignedPlayer` in
-  the slot, and `swap_with()` trades players with another slot. A filled slot is
+  the slot, `swap_with()` trades players with another slot, and `feed()` puts a
+  snack into the player standing there. A filled slot is
   also the target for buyables aimed at a single
   player; a buyable aimed at a whole team subclasses `BuyTarget` instead.
 - `SellSpot` (`game/shop/sell_spot.gd`): the target that pays out. The buyable names
@@ -161,8 +175,8 @@ got. Refresh escalates within a visit and starts back at a dollar each round, an
 what it rolls pays no attention to what is left in the wallet. The lineup view
 shows and rearranges the batting order, but moving a player there changes their
 fielding position too, so the two cannot be set apart from each other. A sold
-player is gone rather than back on their podium, and there is no buyable other
-than a player.
+player is gone rather than back on their podium. The split between player and
+snack podiums is fixed in the scene: four and two, whatever the round.
 
 ## Checks
 ```sh
@@ -182,16 +196,19 @@ paid and the badge followed, that one level
 below only counts half and the second finishes it, and that a player at the cap
 refuses another; merges two signed players and checks the slot left behind is
 empty and free; refreshes the shelf from the button and checks every podium came
-back with a new player priced on their stats; buys refreshes and checks each one
-costs a dollar more than the last, that the button prices and disables itself, and
-that one without the money behind it is refused; checks a pool holds kinds back
-until the round they open up in; banks wins and losses and checks the purse, the
-lives and the round; rolls an opponent and checks it fields as many players for
-about the same money, with a pitcher and a catcher among them, and that the
-session carries the pair; toggles the lineup view and checks the numbering, the
-grid rows and columns, the even spacing, the cleared diamond, that no two spots
-crowd each other, and the slides back and forth; moves a signed player to an open
-spot and swaps two of them, checking the roster and that neither costs anything;
-sweeps a carried player left and right and checks they hang from the cursor and
-tilt away from the yank before settling upright; then fills every slot and checks
-the roster passes `BaseballTeamData.validation_error()`.
+back with something of its own kind and a rolled player priced on their stats;
+refreshes again and again and checks no podium ever stocks the other kind; feeds a
+snack to a player and checks the point went on, the roster saw it, the snack was
+paid for and gone, and that a slot with nobody in it refuses one; buys refreshes
+and checks each one costs a dollar more than the last, that the button prices and
+disables itself, and that one without the money behind it is refused; checks a
+pool holds kinds back until the round they open up in; banks wins and losses and
+checks the purse, the lives and the round; rolls an opponent and checks it fields
+as many players for about the same money, with a pitcher and a catcher among them,
+and that the session carries the pair; toggles the lineup view and checks the
+numbering, the grid rows and columns, the even spacing, the cleared diamond, that
+no two spots crowd each other, and the slides back and forth; moves a signed
+player to an open spot and swaps two of them, checking the roster and that neither
+costs anything; sweeps a carried player left and right and checks they hang from
+the cursor and tilt away from the yank before settling upright; then fills every
+slot and checks the roster passes `BaseballTeamData.validation_error()`.

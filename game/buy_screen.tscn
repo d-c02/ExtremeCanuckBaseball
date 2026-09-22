@@ -5,6 +5,9 @@
 [ext_resource type="PackedScene" path="res://game/shop/podium.tscn" id="podium"]
 [ext_resource type="Resource" path="res://data/teams/shop_roster.tres" id="roster"]
 [ext_resource type="Resource" path="res://data/pools/shop_pool.tres" id="pool"]
+[ext_resource type="Resource" path="res://data/foods/hot_dog.tres" id="hot_dog"]
+[ext_resource type="Resource" path="res://data/foods/peanuts.tres" id="peanuts"]
+[ext_resource type="Script" path="res://data/food_type.gd" id="food_script"]
 [ext_resource type="PackedScene" path="res://game/shop/sell_spot.tscn" id="sell_spot"]
 [ext_resource type="Script" uid="uid://dwchvn0sa0sw0" path="res://game/shop/shop.gd" id="shop"]
 [ext_resource type="PackedScene" path="res://game/shop/team_slot.tscn" id="team_slot"]
@@ -20,6 +23,7 @@ ambient_light_energy = 0.7
 script = ExtResource("shop")
 team = ExtResource("roster")
 pool = ExtResource("pool")
+foods = Array[ExtResource("food_script")]([ExtResource("hot_dog"), ExtResource("peanuts")])
 
 [node name="Field" parent="." unique_id=721208164 instance=ExtResource("ballpark")]
 
@@ -41,16 +45,27 @@ shadow_enabled = true
 [node name="Environment" type="WorldEnvironment" parent="." unique_id=1696639636]
 environment = SubResource("environment")
 
-[node name="Podiums" type="Node3D" parent="." unique_id=846621964]
+[node name="Podiums" type="Node3D" parent="."]
 
-[node name="Podium1" parent="Podiums" unique_id=649220510 instance=ExtResource("podium")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0, 14.8)
+[node name="Podium1" parent="Podiums" instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 0, 14.8)
 
-[node name="Podium2" parent="Podiums" unique_id=1375774532 instance=ExtResource("podium")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.8)
+[node name="Podium2" parent="Podiums" instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.7, 0, 14.8)
 
-[node name="Podium3" parent="Podiums" unique_id=1380415886 instance=ExtResource("podium")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 14.8)
+[node name="Podium3" parent="Podiums" instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9, 0, 14.8)
+
+[node name="Podium4" parent="Podiums" instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9, 0, 14.8)
+
+[node name="Snack1" parent="Podiums" instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.7, 0, 14.8)
+sells = 1
+
+[node name="Snack2" parent="Podiums" instance=ExtResource("podium")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0, 14.8)
+sells = 1
 
 [node name="SellSpot" parent="." unique_id=2030476259 instance=ExtResource("sell_spot")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 7)

@@ -12,7 +12,6 @@ var ground_initialized: bool = false
 
 @onready var ground_ray: RayCast3D = $GroundRay
 @onready var sprite: Sprite3D = $Sprite
-@onready var label: Label3D = $Label
 @onready var strength_label: Label3D = $Strength
 @onready var dexterity_label: Label3D = $Dexterity
 @onready var strength_tint: Color = strength_label.modulate
@@ -52,7 +51,6 @@ func sync(delta: float) -> void:
 	position.y = ground_height
 	stride += player.velocity.length() * delta * 0.12
 	sprite.position.y = standing_height + (absf(sin(stride)) * 0.1 if player.moving else 0.0)
-	label.text = player.display_label
 	_show_strength()
 	# A benched squad stands shoulder to shoulder, so the stats wait outside.
 	var benched: bool = game.dugouts[player.team_index].contains(player.position)

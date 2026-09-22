@@ -150,7 +150,6 @@ func reset_game(replay: bool = false) -> void:
 			player.stop("In dugout")
 			player.swing_visible = false
 			player.refresh_strength()
-			player.set_label(str(player.roster_index + 1))
 	fielders = squads[1]
 	batter = null if squads[0].is_empty() else squads[0][0]
 	ball_return = null
@@ -230,14 +229,12 @@ func _prepare_pitch() -> void:
 	for player in fielders:
 		var index := player.roster_index
 		player.role = teams[1 - batting_side].field_roles[index]
-		player.set_label(player.role)
 		player.move_via(
 			dugouts[player.team_index].route_out(player.position, field_position(player)),
 			"Taking field position"
 		)
 	for player in squads[batting_side]:
 		player.swing_visible = false
-		player.set_label("%d %s" % [player.roster_index + 1, player.data.player_name])
 		var run := runner_for(player)
 		if run != null:
 			player.move_to(base_positions[run.reached - 1] + Vector2(10, 9), "Holding base")
@@ -393,7 +390,6 @@ func fielder_for(role: String) -> BaseballPlayer:
 
 func _send_to_dugout(player: BaseballPlayer) -> void:
 	player.swing_visible = false
-	player.set_label(str(player.roster_index + 1))
 	player.move_via(
 		dugouts[player.team_index].route_in(player.position, player.roster_index),
 		"Returning to dugout"
@@ -401,7 +397,6 @@ func _send_to_dugout(player: BaseballPlayer) -> void:
 
 
 func _send_on_deck(player: BaseballPlayer) -> void:
-	player.set_label("%d next" % (player.roster_index + 1))
 	player.move_via(
 		equipment.batting_route(player, dugouts[player.team_index].on_deck_position()), "On deck"
 	)

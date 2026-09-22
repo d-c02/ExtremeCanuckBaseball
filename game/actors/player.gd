@@ -17,14 +17,12 @@ var lineup_index: int = 0
 ## the Resource keeps the value the player was bought with.
 var pitch_strength: int = 0
 
-var display_label: String = ""
 var swing_visible: bool = false
 var swing_progress: float = 0.0
 
 
 func configure(player_data: BaseballPlayerData) -> void:
 	data = player_data
-	display_label = data.player_name
 	target = position
 	refresh_strength()
 
@@ -58,10 +56,6 @@ func stop(action: String = "Waiting") -> void:
 func brake(action: String = "Settling") -> void:
 	var stopping_distance := velocity.length_squared() / (2.0 * data.acceleration)
 	move_to(position + velocity.normalized() * stopping_distance, action)
-
-
-func set_label(label: String) -> void:
-	display_label = label
 
 
 func step(delta: float) -> void:

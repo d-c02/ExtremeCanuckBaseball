@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BaseballFoodType" format=3]
+
+[ext_resource type="Script" path="res://data/food_type.gd" id="food"]
+
+[resource]
+script = ExtResource("food")
+food_name = "Peanuts"
+strength_gain = 0
+dexterity_gain = 1
+price = 2
+color = Color(0.85, 0.72, 0.45, 1)

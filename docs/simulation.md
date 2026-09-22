@@ -19,10 +19,10 @@ fill the window, so a bigger window shows the same framing larger, not more fiel
 
 ## Game loop
 
-Each team has up to nine persistent players. They start in numbered dugout seats; a
-label shows the current batting-order position. Players walk onto the field,
-the batter heads to home, and the ball returns to the pitcher. The opening walk
-runs at normal speed. Pitching starts once everyone is ready, the batter has their
+Each team has up to nine persistent players. They start in numbered dugout seats.
+Players walk onto the field, the batter heads to home, and the ball returns to
+the pitcher. The opening walk runs at normal speed. Pitching starts once everyone
+is ready, the batter has their
 bat, and the pitcher has received the ball. A 1.5-second set/windup precedes each
 release, followed by the 0.85-second pitch flight. These are compressed game timings,
 not regulation pitch speeds. One pitch settles a plate appearance. A pitch the hitter
@@ -33,9 +33,9 @@ Shift+R replays it. Set `random_seed` to a nonzero value for repeatable developm
 runs. The seed controls baseball decisions, not the field camera.
 
 Players brake when a play ends and wait through a 2.2-second result beat at normal
-speed. Retired players keep an OUT label during this time. Then safe runners stay
-on base, out or scored players return to the dugout, and defenders return to
-position. The on-deck hitter heads to home after the result beat. After three
+speed. Then safe runners stay on base, out or scored players return to the dugout,
+and defenders return to position. The on-deck hitter heads to home after the
+result beat. After three
 outs, the incoming defense heads straight to its field positions while the outgoing
 defense returns to its dugout. The next batter and on-deck hitter collect their bats from the dugout before
 heading to their spots. A hitter already carrying a bat can go directly to home. The next pitch waits until everyone has
@@ -273,8 +273,8 @@ All nine roster players remain visible; positions are standing placeholders.
 
 Player art is a replaceable `Sprite3D` in `game/presentation/player_3d.tscn`, using
 `assets/sprites/player.svg`. Players stay upright and face the camera around the
-vertical axis. They use team colors, short labels, a simple movement bob and a
-separate persistent box-mesh bat. Their stats stand at their feet as bare
+vertical axis. They use team colors, a simple movement bob and a separate
+persistent box-mesh bat. Their stats stand at their feet as bare
 numbers, strength on the left in orange and dexterity on the right in blue,
 worded by `BaseballPlayerData.stat_text()` so the match and the buy screen read
 the same. The pitcher's left-hand number is their live strength: it counts down
@@ -282,7 +282,8 @@ by the hitter's strength on every strikeout and fades toward red as the arm
 empties, then snaps back to what they were bought with on contact. The same
 player shows their bought strength again once they come up to bat, because
 hitting spends nothing. A player inside their dugout hides both numbers, because
-nine benched labels overlap into one another.
+nine benched pairs overlap into one another. Nothing else is written over a
+player: the stats at their feet are all a match shows.
 Each view has a downward RayCast3D that samples the exported field during physics
 ticks. Only the view's height changes; the simulation retains
 its planar coordinates. Small stair height changes are smoothed, while stationary
@@ -353,7 +354,8 @@ player movement, or general 3D pathfinding. Dugout routes are explicit waypoints
   hands to the next match.
 - `game/run_end.gd`: banks a finished match into the run and offers the way back.
 - `assets/audio/`: placeholder WAVs and editable Bfxr presets.
-- `data/`: Resource types, the kinds of player in `data/types/`, and sample teams.
+- `data/`: Resource types, the kinds of player in `data/types/`, the snacks in
+  `data/foods/`, the spawn pools in `data/pools/`, and sample teams.
 - `assets/field/`: generated field GLB, layout Resource and JSON control snapshot.
 
 `BaseballMatch.step(delta)` advances the simulation. Godot calls it from

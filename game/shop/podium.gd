@@ -1,8 +1,14 @@
 class_name ShopPodium
 extends Node3D
 
-## The stand a listing is sold from. It shows what the player on it costs, and keeps
-## showing it while that player is carried off to a roster slot.
+## The stand a listing is sold from. Each one deals in a single kind of thing,
+## refresh included. It shows what the thing on it costs, and keeps showing that
+## while the thing is carried off to a slot.
+
+## What this podium deals in. It never stocks anything else.
+enum Sells { PLAYER, FOOD }
+
+@export var sells: Sells = Sells.PLAYER
 
 var listing: Buyable
 var label: Label3D

@@ -82,6 +82,8 @@ func run() -> void:
 	await check_dangle()
 	await check_quiet_drag()
 	await check_refresh()
+	await check_podium_kinds()
+	await check_food()
 	await check_roster_ready()
 	await check_refresh_cost()
 	await check_pool()
@@ -230,10 +232,10 @@ func check_dangle() -> void:
 	check(grip > 1.0, "A carried player has no head to hang from")
 	var at := screen_point(harrhy)
 	click(at, true)
-	at = await sweep(at, Vector2(45, 0), 8)
+	at = await sweep(at, Vector2(55, 0), 12)
 	var head := harrhy.global_position.y + grip
 	check(harrhy.swing < -0.05, "Sweeping right did not trail the body left")
-	at = await sweep(at, Vector2(-45, 0), 8)
+	at = await sweep(at, Vector2(-55, 0), 12)
 	check(harrhy.swing > 0.05, "Sweeping left did not trail the body right")
 	for frame in 60:
 		await process_frame
@@ -319,20 +321,22 @@ func check_batting_view() -> void:
 	check(view.markings.visible, "The diamond did not come back with the fielders")
 
 
-## Refreshing rolls a whole new shelf, priced by the stats the players were given.
+## Refreshing rolls a whole new shelf: every podium comes back with something of its
+## own kind, and a rolled player is priced by the stats they were given.
 func check_refresh() -> void:
-	var before: Array[BaseballPlayerData] = []
+	var before: Array[Buyable] = []
 	for podium in shop.podiums():
-		var sold := podium.listing as PlayerSlot
-		before.append(sold.player if sold != null else null)
+		before.append(podium.listing)
 	shop.funds = 99
 	var button: Button = shop.get_node("HUD/Refresh")
 	button.pressed.emit()
 	await settle()
-	for index in shop.podiums().size():
-		var rolled := listing(index)
-		check(rolled != null, "A podium came back from a refresh empty")
-		check(rolled.player != before[index], "A refresh kept the same player on a podium")
+	for podium in shop.podiums():
+		check(podium.listing != null, "A podium came back from a refresh empty")
+		check(not before.has(podium.listing), "A refresh left the same thing on a podium")
+		var rolled := podium.listing as PlayerSlot
+		if rolled == null:
+			continue
 		check(rolled.cost == rolled.player.value(), "A rolled player was not priced on stats")
 		check(
 			rolled.player.sell_price() < rolled.cost, "A rolled player sold for the asking price"
@@ -510,3 +514,70 @@ func check_run_banking() -> void:
 		BaseballSession.finish_match(false)
 	check(BaseballSession.over(), "A run with no lives left was not over")
 	BaseballSession.begin()
+
+
+## A snack is bought like a player and eaten by one: the point goes on for good and
+## the snack is gone. Nobody to eat it means no sale.
+func check_food() -> void:
+	shop.refresh_stock()
+	await settle()
+	var slot: TeamSlot = null
+	var empty: TeamSlot = null
+	for target in shop._targets():
+		var candidate := target as TeamSlot
+		if candidate == null:
+			continue
+		if slot == null and not candidate.is_empty():
+			slot = candidate
+		if empty == null and candidate.is_empty():
+			empty = candidate
+	check(slot != null, "Nobody was signed to eat a snack")
+	check(empty != null, "Every slot was taken, so nothing could refuse a snack")
+	var snack: Food = null
+	for podium in shop.podiums():
+		if podium.sells == ShopPodium.Sells.FOOD:
+			snack = podium.listing as Food
+			break
+	check(snack != null, "No podium was selling snacks")
+	shop.funds = 20
+	var strength := slot.player.strength
+	var dexterity := slot.player.dexterity
+	# The snack frees itself once eaten, so read what it does while it is still here.
+	var gains := Vector2i(snack.food.strength_gain, snack.food.dexterity_gain)
+	var price := snack.food.price
+	var rest := snack.global_position
+	await drag(snack, empty)
+	check(shop.funds == 20, "An empty slot bought a snack with nobody to eat it")
+	check(snack.global_position.is_equal_approx(rest), "A refused snack was stranded")
+	await drag(snack, slot)
+	check(
+		slot.player.strength == strength + gains.x and slot.player.dexterity == dexterity + gains.y,
+		"A snack was eaten without feeding the player"
+	)
+	check(shop.funds == 20 - price, "A snack did not cost its price")
+	check(not is_instance_valid(snack), "An eaten snack stayed on its podium")
+	check(
+		shop.roster.player_at(slot.slot_index).strength == slot.player.strength,
+		"The roster missed what a snack fed"
+	)
+
+
+## A podium deals in one kind of thing and keeps to it, refresh after refresh.
+func check_podium_kinds() -> void:
+	var players := 0
+	var snacks := 0
+	for podium in shop.podiums():
+		if podium.sells == ShopPodium.Sells.FOOD:
+			snacks += 1
+		else:
+			players += 1
+	check(players == 4, "The shop was not selling players from four podiums")
+	check(snacks == 2, "The shop was not selling snacks from two podiums")
+	for attempt in 4:
+		shop.refresh_stock()
+		await settle()
+		for podium in shop.podiums():
+			if podium.sells == ShopPodium.Sells.FOOD:
+				check(podium.listing is Food, "A snack podium stocked something else")
+			else:
+				check(podium.listing is PlayerSlot, "A player podium stocked something else")

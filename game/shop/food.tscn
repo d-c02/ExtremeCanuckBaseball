@@ -1,0 +1,43 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://game/shop/food.gd" id="script"]
+
+[sub_resource type="BoxShape3D" id="grab_shape"]
+size = Vector3(1.1, 1.1, 1.1)
+
+[sub_resource type="BoxMesh" id="snack_mesh"]
+size = Vector3(0.95, 0.45, 0.45)
+
+[node name="Food" type="Area3D"]
+script = ExtResource("script")
+display_name = "Snack"
+cost = 2
+
+[node name="Grab" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+shape = SubResource("grab_shape")
+
+[node name="Hang" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Hang"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.55, 0)
+cast_shadow = 0
+mesh = SubResource("snack_mesh")
+
+[node name="Gain" type="Label3D" parent="Hang"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+pixel_size = 0.012
+font_size = 44
+outline_size = 10
+billboard = 1
+text = "+1"
+
+[node name="Name" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+visible = false
+pixel_size = 0.01
+font_size = 40
+outline_size = 10
+billboard = 1
+text = "Snack"

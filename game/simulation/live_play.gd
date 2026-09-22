@@ -168,7 +168,6 @@ func _record_strikeout() -> void:
 	game.strikeout_called.emit()
 	game.box_score.teams[holder.team_index].players[holder.lineup_index].PO += 1
 	game.outs += 1
-	game.batter.set_label("%d OUT" % (game.batter.roster_index + 1))
 	game.out_recorded.emit(game.batter)
 	_end("Strikeout: pitcher down to %d STR" % game.fielder_for("P").pitch_strength)
 
@@ -467,7 +466,6 @@ func retire_runner(run: BaseballBaseRunning, force_out: bool) -> void:
 	run.retired = true
 	run.active = false
 	run.runner.brake("Out")
-	run.runner.set_label("%d OUT" % (run.runner.roster_index + 1))
 	game.outs += 1
 	game.out_recorded.emit(run.runner)
 	if game.outs >= 3:

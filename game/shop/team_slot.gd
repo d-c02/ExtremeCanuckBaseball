@@ -43,6 +43,17 @@ func fill(new_player: BaseballPlayerData) -> void:
 	filled.emit(new_player)
 
 
+## Feed the player standing here, for good. Returns false when nobody is home.
+func feed(food: BaseballFoodType) -> bool:
+	if player == null or food == null:
+		return false
+	player.strength = mini(player.strength + food.strength_gain, BaseballPlayerData.MAX_STAT)
+	player.dexterity = mini(player.dexterity + food.dexterity_gain, BaseballPlayerData.MAX_STAT)
+	_write_roster()
+	refresh()
+	return true
+
+
 ## Merge a player into the one standing here, levelling them up when enough of
 ## their kind have gone in. Returns false when they are no match.
 func absorb(incoming: BaseballPlayerData) -> bool:

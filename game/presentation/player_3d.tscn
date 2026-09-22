@@ -26,13 +26,6 @@ shaded = false
 position = Vector3(0, 0.025, 0)
 mesh = SubResource("shadow_mesh")
 cast_shadow = 0
-[node name="Label" type="Label3D" parent="."]
-position = Vector3(0, 2.8, 0)
-pixel_size = 0.013
-font_size = 48
-outline_size = 10
-billboard = 1
-modulate = Color(1, 1, 1, 1)
 [node name="Strength" type="Label3D" parent="."]
 position = Vector3(-1.5, 0.36, 0)
 pixel_size = 0.01

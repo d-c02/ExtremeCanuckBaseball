@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BaseballFoodType" format=3]
+
+[ext_resource type="Script" path="res://data/food_type.gd" id="food"]
+
+[resource]
+script = ExtResource("food")
+food_name = "Hot dog"
+strength_gain = 1
+dexterity_gain = 0
+price = 2
+color = Color(0.78, 0.44, 0.26, 1)

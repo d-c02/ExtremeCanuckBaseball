@@ -27,7 +27,6 @@ func configure(match_scene: BaseballMatch) -> void:
 		add_child(attendant)
 		attendant.configure(BaseballPlayerData.new())
 		attendant.team_index = side
-		attendant.set_label("KIT")
 		attendants.append(attendant)
 	game.ball.outfield = game.outfield
 	balls.append(game.ball)

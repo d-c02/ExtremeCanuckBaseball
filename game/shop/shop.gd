@@ -18,6 +18,7 @@ const BATTING_COLUMN_STEP := 7.0
 const BATTING_ROW_STEP := 6.0
 const LAYOUT_TIME := 0.3
 const LISTING := preload("res://game/shop/player_slot.tscn")
+const SNACK := preload("res://game/shop/food.tscn")
 const MATCH_SCENE := "res://main.tscn"
 ## Where a listing stands on its podium.
 const PODIUM_TOP := 1.2
@@ -29,6 +30,8 @@ const FIRST_REFRESH := 1
 @export var team: BaseballTeamData
 ## What the shop can stock, and from which round.
 @export var pool: BaseballPlayerPool
+## Snacks the shop sells, for the podiums that deal in them.
+@export var foods: Array[BaseballFoodType] = []
 ## How far the drawn park and the fielding spots pull in toward home plate. The
 ## roster keeps its real match positions; only the buy screen is condensed.
 @export_range(0.3, 1.0) var park_scale: float = 0.6
@@ -341,20 +344,34 @@ func buy_refresh() -> bool:
 	return true
 
 
-## Roll a fresh player onto every podium. Sold podiums fill back up too, so a
-## refresh is what puts the shop back in business.
+## Roll a fresh listing onto every podium. Sold podiums fill back up too, so a
+## refresh is what puts the shop back in business, and each podium rolls its own
+## kind of thing.
 func refresh_stock() -> void:
 	var taken := PackedStringArray()
 	for podium in podiums():
-		var listing: PlayerSlot = LISTING.instantiate()
-		var rolled := BaseballRecruit.roll(rng, _stock_types(), taken)
-		if rolled == null:
-			continue
-		listing.player = rolled
-		taken.append(listing.player.player_name)
-		listing.cost = listing.player.value()
-		listing.position = Vector3(0.0, PODIUM_TOP, 0.0)
-		podium.stock(listing)
+		podium.stock(_roll_listing(podium, taken))
+
+
+## What goes on one podium. Returns null when the shop has nothing of that kind.
+func _roll_listing(podium: ShopPodium, taken: PackedStringArray) -> Buyable:
+	if podium.sells == ShopPodium.Sells.FOOD:
+		if foods.is_empty():
+			return null
+		var snack: Food = SNACK.instantiate()
+		snack.food = foods[rng.randi() % foods.size()]
+		snack.cost = snack.food.price
+		snack.position = Vector3(0.0, PODIUM_TOP, 0.0)
+		return snack
+	var rolled := BaseballRecruit.roll(rng, _stock_types(), taken)
+	if rolled == null:
+		return null
+	taken.append(rolled.player_name)
+	var listing: PlayerSlot = LISTING.instantiate()
+	listing.player = rolled
+	listing.cost = rolled.value()
+	listing.position = Vector3(0.0, PODIUM_TOP, 0.0)
+	return listing
 
 
 ## Roll the team this roster will face. It is worth about what the signed players
