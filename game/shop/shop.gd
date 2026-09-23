@@ -374,10 +374,27 @@ func _roll_listing(podium: ShopPodium, taken: PackedStringArray) -> Buyable:
 	return listing
 
 
-## Roll the team this roster will face. It is worth about what the signed players
-## are, so a shop spent down to nothing plays a team with nothing either.
+## Roll the team this roster will face. It is given what the run has paid the player
+## so far and shops the same shelf the player does, so both sides have had the same
+## money and the same podiums to spend it on.
 func build_opponent() -> BaseballTeamData:
-	return BaseballRecruit.roll_opponent(rng, roster, _stock_types())
+	return BaseballRecruit.roll_opponent(rng, roster, _shelf(), BaseballSession.income())
+
+
+## The shop as a rolled team shops it: the kinds and snacks on offer, and as many
+## podiums of each as this scene puts out.
+func _shelf() -> BaseballShelf:
+	var shelf := BaseballShelf.new()
+	shelf.types = _stock_types()
+	shelf.foods = foods
+	shelf.player_podiums = 0
+	shelf.snack_podiums = 0
+	for podium in podiums():
+		if podium.sells == ShopPodium.Sells.FOOD:
+			shelf.snack_podiums += 1
+		else:
+			shelf.player_podiums += 1
+	return shelf
 
 
 ## Hand the signed team and a fresh opponent to the match, and go and play it.

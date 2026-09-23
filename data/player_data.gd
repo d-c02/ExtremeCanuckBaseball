@@ -109,6 +109,12 @@ func absorb(other: BaseballPlayerData) -> bool:
 	return gain_level()
 
 
+## Eat a snack: the point goes on for good.
+func eat(food: BaseballFoodType) -> void:
+	strength = mini(strength + food.strength_gain, MAX_STAT)
+	dexterity = mini(dexterity + food.dexterity_gain, MAX_STAT)
+
+
 ## Take a level with nobody merged in, for rolling a team that already has some.
 func gain_level() -> bool:
 	if level >= MAX_LEVEL or type == null:

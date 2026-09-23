@@ -29,6 +29,12 @@ const NAMES: PackedStringArray = [
 const TEAM_NAMES: PackedStringArray = [
 	"Moose Jaw Mallets", "Red Deer Ramblers", "Sudbury Shovels", "Flin Flon Foxes"
 ]
+## How many shop actions a rolled team tries before it gives up on its money.
+const SPEND_ATTEMPTS: int = 400
+## The battery a rolled team signs before it merges anybody, and how often it puts
+## a bought player into somebody rather than an open spot.
+const BATTERY: int = 2
+const MERGE_CHANCE: float = 0.4
 ## Kit colours the rolled teams wear, as hex the roll turns into a [Color].
 const TEAM_COLORS: PackedStringArray = ["2f6fbb", "d9a227", "4c9a5a", "8a4fbe"]
 
@@ -53,61 +59,113 @@ static func roll_name(rng: RandomNumberGenerator, taken: PackedStringArray) -> S
 	return NAMES[rng.randi() % NAMES.size()]
 
 
-## Roll a team worth about as much as [param roster] and laid out on the same spots.
-## A pitcher and a catcher are always signed; the rest of the spots go to as many
-## other players as the roster it will face has filled. Everybody starts at level
-## one, then the roll merges them up until the two teams are worth about the same.
+## Roll a team by shopping with [param budget]: the money the run has paid the
+## player by now. It works its own shelf, buying whatever it can use and paying the
+## rising price of a fresh one once the shelf holds nothing for it. Rerolls are what
+## it takes to keep spending, not a habit copied off the player. A pitcher and a
+## catcher are signed before anybody is merged, so a match always has a battery.
 static func roll_opponent(
-	rng: RandomNumberGenerator, roster: BaseballTeamData, types: Array[BaseballPlayerType]
+	rng: RandomNumberGenerator, roster: BaseballTeamData, shelf: BaseballShelf, budget: int
 ) -> BaseballTeamData:
 	var team := BaseballTeamData.new()
 	team.team_name = TEAM_NAMES[rng.randi() % TEAM_NAMES.size()]
 	team.color = Color(TEAM_COLORS[rng.randi() % TEAM_COLORS.size()])
 	team.field_positions = roster.field_positions.duplicate()
 	team.field_roles = roster.field_roles.duplicate()
-	var budget := 0
-	var signed := 0
-	for index in roster.field_roles.size():
-		var player := roster.player_at(index)
-		if player != null:
-			budget += player.value()
-			signed += 1
-	var spots := _spots(rng, team.field_roles, maxi(signed, 2))
-	var taken := PackedStringArray()
-	var rolled: Array[BaseballPlayerData] = []
 	team.players.resize(team.field_roles.size())
-	for spot in spots:
-		var player := roll(rng, types, taken)
-		if player == null:
+	if shelf.types.is_empty():
+		return team
+	var order := _spots(rng, team.field_roles, team.field_roles.size())
+	var taken := PackedStringArray()
+	var signed: Array[BaseballPlayerData] = []
+	var left := budget
+	var refreshes := 0
+	shelf.restock(rng, taken)
+	for attempt in SPEND_ATTEMPTS:
+		var spent := _buy_from(rng, shelf, team, order, signed, left)
+		if spent > 0:
+			left -= spent
 			continue
-		taken.append(player.player_name)
-		team.players[spot] = player
-		rolled.append(player)
-	_level_up_to(rng, rolled, budget)
+		refreshes += 1
+		if refreshes > left:
+			break
+		left -= refreshes
+		shelf.restock(rng, taken)
 	return team
 
 
-## Level rolled players up one at a time, while doing so leaves the team nearer
-## [param budget] than leaving it alone would.
-static func _level_up_to(
-	rng: RandomNumberGenerator, rolled: Array[BaseballPlayerData], budget: int
-) -> void:
-	for attempt in rolled.size() * BaseballPlayerData.MAX_LEVEL:
-		var worth := 0
-		var candidates: Array[BaseballPlayerData] = []
-		for player in rolled:
-			worth += player.value()
-			if player.level < BaseballPlayerData.MAX_LEVEL:
-				candidates.append(player)
-		if candidates.is_empty():
-			return
-		var pick: BaseballPlayerData = candidates[rng.randi() % candidates.size()]
-		var probe: BaseballPlayerData = pick.duplicate()
-		probe.gain_level()
-		var after := worth - pick.value() + probe.value()
-		if absi(after - budget) >= absi(worth - budget):
-			return
-		pick.gain_level()
+## Take one thing off the shelf and put it to work. Returns what it cost, or nothing
+## when the shelf holds nothing this team can use for the money it has left.
+static func _buy_from(
+	rng: RandomNumberGenerator,
+	shelf: BaseballShelf,
+	team: BaseballTeamData,
+	order: Array[int],
+	signed: Array[BaseballPlayerData],
+	left: int
+) -> int:
+	var player_picks: Array[int] = []
+	for index in shelf.players.size():
+		var candidate := shelf.players[index]
+		if candidate.value() > left:
+			continue
+		if signed.size() < order.size() or _host_for(rng, candidate, signed) != null:
+			player_picks.append(index)
+	var snack_picks: Array[int] = []
+	if not signed.is_empty():
+		for index in shelf.snacks.size():
+			if shelf.snacks[index].price <= left:
+				snack_picks.append(index)
+	var choices := player_picks.size() + snack_picks.size()
+	if choices == 0:
+		return 0
+	var choice := rng.randi() % choices
+	if choice < player_picks.size():
+		var player: BaseballPlayerData = shelf.players[player_picks[choice]]
+		shelf.players.remove_at(player_picks[choice])
+		return _take(rng, player, team, order, signed)
+	var index: int = snack_picks[choice - player_picks.size()]
+	var snack: BaseballFoodType = shelf.snacks[index]
+	shelf.snacks.remove_at(index)
+	signed[rng.randi() % signed.size()].eat(snack)
+	return snack.price
+
+
+## Sign a bought player, or merge them into one of their kind. The battery is signed
+## first whatever else is on offer, and after that a merge is a coin toss against an
+## open spot.
+static func _take(
+	rng: RandomNumberGenerator,
+	player: BaseballPlayerData,
+	team: BaseballTeamData,
+	order: Array[int],
+	signed: Array[BaseballPlayerData]
+) -> int:
+	var price := player.value()
+	var open := signed.size() < order.size()
+	var host := _host_for(rng, player, signed)
+	if host != null and (not open or (signed.size() >= BATTERY and rng.randf() < MERGE_CHANCE)):
+		host.absorb(player)
+		return price
+	if not open:
+		return 0
+	team.players[order[signed.size()]] = player
+	signed.append(player)
+	return price
+
+
+## Somebody already signed who could take [param player] in, picked at random from
+## everybody who could.
+static func _host_for(
+	rng: RandomNumberGenerator, player: BaseballPlayerData, signed: Array[BaseballPlayerData]
+) -> BaseballPlayerData:
+	var hosts: Array[BaseballPlayerData] = []
+	for host in signed:
+		if host.can_absorb(player):
+			hosts.append(host)
+	if hosts.is_empty():
+		return null
+	return hosts[rng.randi() % hosts.size()]
 
 
 ## Pick which spots to fill: the pitcher and the catcher first, then a random spread

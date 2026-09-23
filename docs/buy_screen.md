@@ -61,13 +61,18 @@ level below counts half, so two level ones take a level two up to three. Levels
 stop at three. A slot holding another kind of player, a player already at the cap,
 or a price above the current funds lights up red and refuses the drop.
 
-Start game rolls the other team and goes to the match. The opponent is worth about
-what the signed players are: the shop adds up what it sold you, rolls the same
-number of level ones, and merges them up one at a time while that leaves the two
-teams closer in worth. A pitcher and a catcher are always among them, so a match
-always has the two players it cannot do without. `BaseballSession` carries both
-teams across the scene change; `main.tscn` opened on its own finds nothing there
-and uses the sample teams in `match.tscn` instead.
+Start game rolls the other team and goes to the match. The opponent is given what
+the run has paid you by this round — the $30 it opened with plus a purse for every
+round already played, so $50 in round two — and shops for itself. It works a shelf
+of its own, the same four player podiums and two snack podiums this scene puts
+out: it buys what it can use, signs or merges each player it takes, feeds the
+snacks to somebody, and pays the rising price of a fresh shelf only once the one
+it has holds nothing for it. Rerolling is what it takes to keep spending, not a
+habit copied off you, so the money ends up on the field. A pitcher and a catcher
+are signed before anybody is merged, so a match always has the two players it
+cannot do without. `BaseballSession` carries both teams across the scene change;
+`main.tscn` opened on its own finds nothing there and uses the sample teams in
+`match.tscn` instead.
 
 The button in the top right swaps the two layouts. The lineup view clears the
 diamond, the lines and the wall off the grass and stands the nine spots on it in a
@@ -110,8 +115,13 @@ Listings on podiums cannot be sold; only signed players can.
   that passive adds per level. Types are shared, never copied, which is how two
   players are told to be the same kind. `data/types/` holds them.
 - `BaseballRecruit` (`game/shop/recruit.gd`): rolls players and whole teams. A
-  rolled player is a level one of a random kind; a rolled team is levelled up
-  until it is worth about what it will face.
+  rolled player is a level one of a random kind; a rolled team is a budget shopped
+  through a `BaseballShelf`, `SPEND_ATTEMPTS` buys at most.
+- `BaseballShelf` (`game/shop/shelf.gd`): what a shop visit puts out — the kinds
+  and snacks on offer and how many podiums of each — and what is on those podiums
+  right now. The kinds come from the pool at the round the run is on, so a rolled
+  team can only sign what the player could have signed. `restock()` fills the
+  podiums again, which is what a reroll buys.
 - `BaseballFoodType` (`data/food_type.gd`): a snack. It names itself, what it
   feeds and what it costs, and `data/foods/` holds them. Adding one is a Resource
   dropped into the shop's `foods`, not code.
@@ -121,8 +131,9 @@ Listings on podiums cannot be sold; only signed players can.
   `available(round)` hands back the kinds a run has reached. `data/pools/` holds
   them; adding a kind is a Resource and a `from_round`, not code.
 - `BaseballSession` (`game/session.gd`): the run. Money, lives, the round, and the
-  two teams a match is about to play. Static rather than an autoload, so a scene
-  run on its own still compiles and falls back to its own sample teams.
+  two teams a match is about to play, and `income()`, everything the run has paid
+  out so far. Static rather than an autoload, so a scene run on its own still
+  compiles and falls back to its own sample teams.
 - `BaseballRunEnd` (`game/run_end.gd`): banks a finished match into the run once,
   says what it paid, and offers the way back to the shop.
 - `ShopPodium` (`game/shop/podium.gd`): the stand a listing is sold from. It shows
@@ -203,9 +214,12 @@ paid for and gone, and that a slot with nobody in it refuses one; buys refreshes
 and checks each one costs a dollar more than the last, that the button prices and
 disables itself, and that one without the money behind it is refused; checks a
 pool holds kinds back until the round they open up in; banks wins and losses and
-checks the purse, the lives and the round; rolls an opponent and checks it fields
-as many players for about the same money, with a pitcher and a catcher among them,
-and that the session carries the pair; toggles the lineup view and checks the
+checks the purse, the lives and the round; checks the income for a round, that the
+opponent it rolls is valid with a pitcher and a catcher among them, that it never
+spends past its budget, that a rich one fills the field and puts the money into
+merges and snacks rather than rerolls, that it never signs a kind the round has
+not opened up, and that a richer run fields at least as
+many; and that the session carries the pair; toggles the lineup view and checks the
 numbering, the grid rows and columns, the even spacing, the cleared diamond, that
 no two spots crowd each other, and the slides back and forth; moves a signed
 player to an open spot and swaps two of them, checking the roster and that neither

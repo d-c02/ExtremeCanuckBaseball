@@ -88,6 +88,8 @@ func run() -> void:
 	await check_refresh_cost()
 	await check_pool()
 	await check_opponent()
+	await check_opponent_spends()
+	await check_opponent_pool()
 	await check_run_banking()
 	quit(1 if failures > 0 else 0)
 
@@ -343,17 +345,12 @@ func check_refresh() -> void:
 		)
 
 
-## The team rolled to play against the shop roster is worth about the same, and
+## The rolled opponent spends what the run has paid the player by this round, and
 ## always has somebody to pitch and somebody to catch.
 func check_opponent() -> void:
-	var signed := 0
-	var worth := 0
-	for index in shop.roster.field_roles.size():
-		var player := shop.roster.player_at(index)
-		if player != null:
-			signed += 1
-			worth += player.value()
-	check(signed > 0, "The roster was empty, so there was nothing to match")
+	BaseballSession.round_number = 2
+	check(BaseballSession.income() == 50, "Round two was not the purse on top of the start")
+	var budget := BaseballSession.income()
 	var enemy := shop.build_opponent()
 	check(
 		enemy.validation_error().is_empty(),
@@ -361,105 +358,29 @@ func check_opponent() -> void:
 	)
 	check(enemy.has_role("P"), "The rolled opponent had nobody to pitch")
 	check(enemy.has_role("C"), "The rolled opponent had nobody to catch")
-	var enemy_worth := 0
-	var enemy_signed := 0
+	var worth := 0
+	var signed := 0
 	for index in enemy.field_roles.size():
 		var player := enemy.player_at(index)
 		if player != null:
-			enemy_signed += 1
-			enemy_worth += player.value()
-	check(enemy_signed == signed, "The rolled opponent did not field as many players")
-	check(
-		absi(enemy_worth - worth) <= enemy_signed,
-		"The rolled opponent was worth %d against %d" % [enemy_worth, worth]
-	)
+			signed += 1
+			worth += player.value()
+	check(signed >= 2, "The rolled opponent could not field a battery")
+	check(worth <= budget, "The rolled opponent spent $%d of $%d" % [worth, budget])
+	# A run that has paid out more fields at least as much team.
+	BaseballSession.round_number = 8
+	var rich := shop.build_opponent()
+	var rich_signed := 0
+	for index in rich.field_roles.size():
+		if rich.player_at(index) != null:
+			rich_signed += 1
+	check(rich_signed >= signed, "A richer run did not field at least as many players")
+	BaseballSession.round_number = 1
 	BaseballSession.carry(shop.roster, enemy)
 	check(BaseballSession.ready_to_play(), "The session did not take the teams to the match")
 	var start: Button = shop.get_node("HUD/Start")
 	check(not start.pressed.get_connections().is_empty(), "The start button went nowhere")
 	BaseballSession.clear()
-
-
-## Two of a kind merge rather than crowd a slot: the same level is a level up on
-## its own, and a level below counts half, so the second one finishes the job.
-func check_merging() -> void:
-	var slot: TeamSlot = shop.get_node("Roster/Slot8")
-	shop.refresh_stock()
-	await settle()
-	shop.funds = 99
-	await drag(listing(0), slot)
-	check(slot.player.level == 1, "A signing did not start at level one")
-	var strength := slot.player.strength
-	shop.refresh_stock()
-	await settle()
-	var second := listing(0)
-	await drag(second, slot)
-	check(slot.player.level == 2, "Two of a level did not merge into the next one")
-	check(slot.player.strength == strength + 2, "The level up did not pay the passive")
-	check(slot.occupant.level_label.text == "Lv 2", "The badge missed the level up")
-	check(not is_instance_valid(second), "A merged listing stayed on its podium")
-	shop.refresh_stock()
-	await settle()
-	await drag(listing(0), slot)
-	check(slot.player.level == 2, "One level below levelled a player on its own")
-	check(slot.player.steps == 1, "A half merge was not remembered")
-	check(
-		slot.occupant.level_label.text == "Lv 2½", "The badge did not show the half merge"
-	)
-	shop.refresh_stock()
-	await settle()
-	await drag(listing(0), slot)
-	check(slot.player.level == 3, "The second half merge did not finish the level up")
-	shop.refresh_stock()
-	await settle()
-	var spare := listing(0)
-	var rest := spare.global_position
-	await drag(spare, slot)
-	check(slot.player.level == 3, "A player at the cap took another merge")
-	check(spare.global_position.is_equal_approx(rest), "A refused merge stranded a player")
-
-
-## Players already signed merge the same way, and the slot the carried one left
-## stands empty afterwards.
-func check_signed_merging() -> void:
-	var keeper: TeamSlot = shop.get_node("Roster/Slot4")
-	var giver: TeamSlot = shop.get_node("Roster/Slot7")
-	shop.refresh_stock()
-	await settle()
-	shop.funds = 99
-	await drag(listing(0), keeper)
-	shop.refresh_stock()
-	await settle()
-	await drag(listing(0), giver)
-	var carried := giver.occupant
-	var funds := shop.funds
-	await drag(carried, keeper)
-	check(keeper.player.level == 2, "Two signed players of a kind did not merge")
-	check(giver.is_empty(), "A merged player was left behind in their old slot")
-	check(shop.roster.player_at(giver.slot_index) == null, "The roster kept the merged player")
-	check(shop.funds == funds, "Merging two signed players cost money")
-	check(not is_instance_valid(carried), "The merged player stayed on the field")
-
-
-## Nothing is named while a player is being carried: the cards would only get in
-## the way of seeing where they are going.
-func check_quiet_drag() -> void:
-	shop.refresh_stock()
-	await settle()
-	var carried := listing(0)
-	var slot: TeamSlot = shop.get_node("Roster/Slot9")
-	shop._unhandled_input(motion_at(screen_point(carried)))
-	check(carried.name_label.visible, "A listing under the cursor did not name itself")
-	click(screen_point(carried), true)
-	shop._unhandled_input(motion_at(screen_point(slot)))
-	await process_frame
-	check(not carried.name_label.visible, "A carried player kept their card up")
-	check(not slot.name_label.visible, "A slot named itself under a carried player")
-	check(slot.highlight.visible, "A slot stopped lighting up under a carried player")
-	cancel_drag()
-	await settle()
-
-
 ## Every refresh costs a dollar more than the last, and the shop will not sell one
 ## it cannot be paid for.
 func check_refresh_cost() -> void:
@@ -581,3 +502,134 @@ func check_podium_kinds() -> void:
 				check(podium.listing is Food, "A snack podium stocked something else")
 			else:
 				check(podium.listing is PlayerSlot, "A player podium stocked something else")
+
+
+## Two of a kind merge rather than crowd a slot: the same level is a level up on
+## its own, and a level below counts half, so the second one finishes the job.
+func check_merging() -> void:
+	var slot: TeamSlot = shop.get_node("Roster/Slot8")
+	shop.refresh_stock()
+	await settle()
+	shop.funds = 99
+	await drag(listing(0), slot)
+	check(slot.player.level == 1, "A signing did not start at level one")
+	var strength := slot.player.strength
+	shop.refresh_stock()
+	await settle()
+	var second := listing(0)
+	await drag(second, slot)
+	check(slot.player.level == 2, "Two of a level did not merge into the next one")
+	check(slot.player.strength == strength + 2, "The level up did not pay the passive")
+	check(slot.occupant.level_label.text == "Lv 2", "The badge missed the level up")
+	check(not is_instance_valid(second), "A merged listing stayed on its podium")
+	shop.refresh_stock()
+	await settle()
+	await drag(listing(0), slot)
+	check(slot.player.level == 2, "One level below levelled a player on its own")
+	check(slot.player.steps == 1, "A half merge was not remembered")
+	check(
+		slot.occupant.level_label.text == "Lv 2½", "The badge did not show the half merge"
+	)
+	shop.refresh_stock()
+	await settle()
+	await drag(listing(0), slot)
+	check(slot.player.level == 3, "The second half merge did not finish the level up")
+	shop.refresh_stock()
+	await settle()
+	var spare := listing(0)
+	var rest := spare.global_position
+	await drag(spare, slot)
+	check(slot.player.level == 3, "A player at the cap took another merge")
+	check(spare.global_position.is_equal_approx(rest), "A refused merge stranded a player")
+
+
+## Players already signed merge the same way, and the slot the carried one left
+## stands empty afterwards.
+func check_signed_merging() -> void:
+	var keeper: TeamSlot = shop.get_node("Roster/Slot4")
+	var giver: TeamSlot = shop.get_node("Roster/Slot7")
+	shop.refresh_stock()
+	await settle()
+	shop.funds = 99
+	await drag(listing(0), keeper)
+	shop.refresh_stock()
+	await settle()
+	await drag(listing(0), giver)
+	var carried := giver.occupant
+	var funds := shop.funds
+	await drag(carried, keeper)
+	check(keeper.player.level == 2, "Two signed players of a kind did not merge")
+	check(giver.is_empty(), "A merged player was left behind in their old slot")
+	check(shop.roster.player_at(giver.slot_index) == null, "The roster kept the merged player")
+	check(shop.funds == funds, "Merging two signed players cost money")
+	check(not is_instance_valid(carried), "The merged player stayed on the field")
+
+
+## Nothing is named while a player is being carried: the cards would only get in
+## the way of seeing where they are going.
+func check_quiet_drag() -> void:
+	shop.refresh_stock()
+	await settle()
+	var carried := listing(0)
+	var slot: TeamSlot = shop.get_node("Roster/Slot9")
+	shop._unhandled_input(motion_at(screen_point(carried)))
+	check(carried.name_label.visible, "A listing under the cursor did not name itself")
+	click(screen_point(carried), true)
+	shop._unhandled_input(motion_at(screen_point(slot)))
+	await process_frame
+	check(not carried.name_label.visible, "A carried player kept their card up")
+	check(not slot.name_label.visible, "A slot named itself under a carried player")
+	check(slot.highlight.visible, "A slot stopped lighting up under a carried player")
+	cancel_drag()
+	await settle()
+
+
+## A rolled team spends its money on itself. It only pays for a new shelf once the
+## one it has holds nothing it can use, so the money ends up on the field.
+func check_opponent_spends() -> void:
+	BaseballSession.round_number = 5
+	var budget := BaseballSession.income()
+	var worth := 0
+	var signed := 0
+	var enemy := shop.build_opponent()
+	for index in enemy.field_roles.size():
+		var player := enemy.player_at(index)
+		if player != null:
+			signed += 1
+			worth += player.value()
+	check(signed == 9, "A run this rich did not fill the field")
+	# Nine level ones would be worth 18; anything above that is money that went
+	# into merges and snacks rather than into rerolls.
+	check(worth > 18, "A rolled team put its money into rerolls instead of its team")
+	check(worth <= budget, "A rolled team spent $%d of $%d" % [worth, budget])
+	BaseballSession.round_number = 1
+
+
+## A rolled team shops the same shelf the player does, so a kind the run has not
+## reached cannot turn out for it either.
+func check_opponent_pool() -> void:
+	var kinds := shop.pool.types.duplicate()
+	var later := BaseballPlayerType.new()
+	later.type_name = "Ace"
+	later.from_round = 3
+	shop.pool.types.append(later)
+	BaseballSession.round_number = 1
+	var early := shop.build_opponent()
+	for index in early.field_roles.size():
+		var player := early.player_at(index)
+		if player != null:
+			check(player.type != later, "A rolled team signed a kind the round had not opened")
+	# With the later kind the only one open, everybody it signs has to be one.
+	var only: Array[BaseballPlayerType] = [later]
+	shop.pool.types = only
+	BaseballSession.round_number = 3
+	var late := shop.build_opponent()
+	var signed := 0
+	for index in late.field_roles.size():
+		var player := late.player_at(index)
+		if player != null:
+			signed += 1
+			check(player.type == later, "A rolled team signed a kind that was not on the shelf")
+	check(signed > 0, "A rolled team signed nobody from the only kind on offer")
+	shop.pool.types = kinds
+	BaseballSession.round_number = 1

@@ -47,8 +47,7 @@ func fill(new_player: BaseballPlayerData) -> void:
 func feed(food: BaseballFoodType) -> bool:
 	if player == null or food == null:
 		return false
-	player.strength = mini(player.strength + food.strength_gain, BaseballPlayerData.MAX_STAT)
-	player.dexterity = mini(player.dexterity + food.dexterity_gain, BaseballPlayerData.MAX_STAT)
+	player.eat(food)
 	_write_roster()
 	refresh()
 	return true

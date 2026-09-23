@@ -32,6 +32,13 @@ static func carry(signed: BaseballTeamData, enemy: BaseballTeamData) -> void:
 	opponent = enemy
 
 
+## Everything the run has paid out by the round it is on: what it started with, plus
+## a purse for every round already played. It is what a rolled opponent is given to
+## spend, so the two sides have had the same money through the same shop.
+static func income() -> int:
+	return STARTING_FUNDS + (round_number - 1) * MATCH_PURSE
+
+
 static func ready_to_play() -> bool:
 	return roster != null and opponent != null
 
