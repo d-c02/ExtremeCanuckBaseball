@@ -38,6 +38,15 @@ func motion_at(screen: Vector2) -> InputEventMouseMotion:
 	return motion
 
 
+## Hold the shop to a single kind and hand back what it was stocking, so a check
+## that needs two of a kind can count on the shelf having them.
+func pin_one_kind() -> Array[BaseballPlayerType]:
+	var kinds := shop.pool.types.duplicate()
+	var single: Array[BaseballPlayerType] = [kinds[0]]
+	shop.pool.types = single
+	return kinds
+
+
 ## The listing on one podium, left to right. The shop rolls its stock, so the tests
 ## ask for a spot rather than a name.
 func listing(index: int) -> PlayerSlot:
@@ -84,6 +93,9 @@ func run() -> void:
 	await check_refresh()
 	await check_podium_kinds()
 	await check_food()
+	await check_level_growth()
+	await check_food_passives()
+	await check_coaching()
 	await check_roster_ready()
 	await check_refresh_cost()
 	await check_pool()
@@ -461,6 +473,9 @@ func check_food() -> void:
 			break
 	check(snack != null, "No podium was selling snacks")
 	shop.funds = 20
+	# This check is about the sale, not the passives: the kinds that make more of a
+	# snack are checked on their own, so the eater here is the plain sort.
+	slot.player.type = shop.pool.types[0]
 	var strength := slot.player.strength
 	var dexterity := slot.player.dexterity
 	# The snack frees itself once eaten, so read what it does while it is still here.
@@ -507,6 +522,7 @@ func check_podium_kinds() -> void:
 ## Two of a kind merge rather than crowd a slot: the same level is a level up on
 ## its own, and a level below counts half, so the second one finishes the job.
 func check_merging() -> void:
+	var kinds := pin_one_kind()
 	var slot: TeamSlot = shop.get_node("Roster/Slot8")
 	shop.refresh_stock()
 	await settle()
@@ -541,11 +557,13 @@ func check_merging() -> void:
 	await drag(spare, slot)
 	check(slot.player.level == 3, "A player at the cap took another merge")
 	check(spare.global_position.is_equal_approx(rest), "A refused merge stranded a player")
+	shop.pool.types = kinds
 
 
 ## Players already signed merge the same way, and the slot the carried one left
 ## stands empty afterwards.
 func check_signed_merging() -> void:
+	var kinds := pin_one_kind()
 	var keeper: TeamSlot = shop.get_node("Roster/Slot4")
 	var giver: TeamSlot = shop.get_node("Roster/Slot7")
 	shop.refresh_stock()
@@ -563,6 +581,7 @@ func check_signed_merging() -> void:
 	check(shop.roster.player_at(giver.slot_index) == null, "The roster kept the merged player")
 	check(shop.funds == funds, "Merging two signed players cost money")
 	check(not is_instance_valid(carried), "The merged player stayed on the field")
+	shop.pool.types = kinds
 
 
 ## Nothing is named while a player is being carried: the cards would only get in
@@ -633,3 +652,137 @@ func check_opponent_pool() -> void:
 	check(signed > 0, "A rolled team signed nobody from the only kind on offer")
 	shop.pool.types = kinds
 	BaseballSession.round_number = 1
+
+
+## Every level up puts on a point of each stat. A kind with growth in it puts on
+## that much again for every level it has taken, so the plain player is +2/+2 to
+## level two and +3/+3 to level three.
+func check_level_growth() -> void:
+	var plain: BaseballPlayerType = load("res://data/types/baseball_player.tres")
+	var lifter: BaseballPlayerType = load("res://data/types/bodybuilder.tres")
+	var dog: BaseballPlayerType = load("res://data/types/dog.tres")
+	check(lifter.recruit().strength == 3, "A bodybuilder did not start at three strength")
+	check(lifter.recruit().dexterity == 1, "A bodybuilder did not start at one dexterity")
+	check(dog.recruit().strength == 1, "A dog did not start at one strength")
+	check(dog.recruit().dexterity == 3, "A dog did not start at three dexterity")
+	var grown := plain.recruit()
+	var start := Vector2i(grown.strength, grown.dexterity)
+	grown.gain_level()
+	check(
+		Vector2i(grown.strength, grown.dexterity) - start == Vector2i(2, 2),
+		"A plain player did not gain +2/+2 to level two"
+	)
+	start = Vector2i(grown.strength, grown.dexterity)
+	grown.gain_level()
+	check(
+		Vector2i(grown.strength, grown.dexterity) - start == Vector2i(3, 3),
+		"A plain player did not gain +3/+3 to level three"
+	)
+	var others: Array[BaseballPlayerType] = [lifter, dog]
+	for type in others:
+		var other := type.recruit()
+		start = Vector2i(other.strength, other.dexterity)
+		other.gain_level()
+		check(
+			Vector2i(other.strength, other.dexterity) - start == Vector2i(1, 1),
+			"%s did not take the level everybody gets" % type.type_name
+		)
+
+
+## A kind whose passive is making the most of a snack adds a point of it for every
+## level it has, and nothing at all to the other sort.
+func check_food_passives() -> void:
+	var hot_dog: BaseballFoodType = load("res://data/foods/hot_dog.tres")
+	var peanuts: BaseballFoodType = load("res://data/foods/peanuts.tres")
+	var plain: BaseballPlayerType = load("res://data/types/baseball_player.tres")
+	var lifter: BaseballPlayerType = load("res://data/types/bodybuilder.tres")
+	var dog: BaseballPlayerType = load("res://data/types/dog.tres")
+	for level in [1, 2, 3]:
+		check(
+			_fed(plain, hot_dog, level).x == hot_dog.strength_gain,
+			"A plain player got more than a hot dog feeds at level %d" % level
+		)
+		check(
+			_fed(lifter, hot_dog, level).x == hot_dog.strength_gain + level,
+			"A bodybuilder did not add a level to a hot dog at level %d" % level
+		)
+		check(
+			_fed(dog, peanuts, level).y == peanuts.dexterity_gain + level,
+			"A dog did not add a level to peanuts at level %d" % level
+		)
+	check(
+		_fed(lifter, peanuts, 3).y == peanuts.dexterity_gain,
+		"A bodybuilder made something of peanuts as well as hot dogs"
+	)
+	check(
+		_fed(dog, hot_dog, 3).x == hot_dog.strength_gain,
+		"A dog made something of hot dogs as well as peanuts"
+	)
+	check(
+		_fed(lifter, hot_dog, 1).y == 0, "A hot dog fed a bodybuilder dexterity as well"
+	)
+
+
+## What one of [param type], levelled to [param level], puts on after eating
+## [param food], as strength by dexterity.
+func _fed(type: BaseballPlayerType, food: BaseballFoodType, level: int) -> Vector2i:
+	var eater := type.recruit()
+	for step in level - 1:
+		eater.gain_level()
+	var before := Vector2i(eater.strength, eater.dexterity)
+	eater.eat(food)
+	return Vector2i(eater.strength, eater.dexterity) - before
+
+
+## A coach hands every teammate their own level in both stats as the shop closes,
+## keeps nothing back for themselves, and two of them both put their work in.
+func check_coaching() -> void:
+	var coach: BaseballPlayerType = load("res://data/types/coach.tres")
+	var plain: BaseballPlayerType = load("res://data/types/baseball_player.tres")
+	var one := _lineup([coach, plain, plain], [1, 1, 1])
+	var before := _stats(one)
+	one.finish_shopping()
+	var after := _stats(one)
+	check(after[0] == before[0], "A coach coached themselves")
+	check(after[1] - before[1] == Vector2i(1, 1), "A level one coach did not give +1/+1")
+	check(after[2] - before[2] == Vector2i(1, 1), "A coach left a teammate out")
+	var senior := _lineup([coach, plain], [3, 1])
+	before = _stats(senior)
+	senior.finish_shopping()
+	check(
+		_stats(senior)[1] - before[1] == Vector2i(3, 3), "A level three coach did not give +3/+3"
+	)
+	var pair := _lineup([coach, coach, plain], [1, 2, 1])
+	before = _stats(pair)
+	pair.finish_shopping()
+	after = _stats(pair)
+	check(after[2] - before[2] == Vector2i(3, 3), "Two coaches did not both put their work in")
+	check(after[0] - before[0] == Vector2i(2, 2), "A coach was not coached by the other one")
+	check(after[1] - before[1] == Vector2i(1, 1), "A coach was not coached by the other one")
+	var none := _lineup([plain, plain], [1, 1])
+	before = _stats(none)
+	none.finish_shopping()
+	check(_stats(none) == before, "A team with no coach came out of the shop changed")
+
+
+## A roster of the given kinds at the given levels, in batting order.
+func _lineup(types: Array[BaseballPlayerType], levels: Array[int]) -> BaseballTeamData:
+	var team := BaseballTeamData.new()
+	team.field_roles = PackedStringArray(["P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF"])
+	team.players.resize(9)
+	for index in types.size():
+		var player := types[index].recruit()
+		for step in levels[index] - 1:
+			player.gain_level()
+		team.players[index] = player
+	return team
+
+
+## Every player's stats, in batting order, for comparing before and after.
+func _stats(team: BaseballTeamData) -> Array[Vector2i]:
+	var stats: Array[Vector2i] = []
+	for index in team.players.size():
+		var player := team.player_at(index)
+		if player != null:
+			stats.append(Vector2i(player.strength, player.dexterity))
+	return stats

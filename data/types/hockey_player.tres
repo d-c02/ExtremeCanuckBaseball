@@ -4,12 +4,15 @@
 
 [resource]
 script = ExtResource("type")
-type_name = "Baseball Player"
+type_name = "Hockey Player"
 from_round = 1
 base_strength = 1
 base_dexterity = 1
-passive = "+2/+2 to level 2, +3/+3 to level 3"
-strength_growth = 1
-dexterity_growth = 1
+passive = "Skates a freeze off: +0.5x speed per level"
+strength_growth = 0
+dexterity_growth = 0
 strength_per_food_level = 0
 dexterity_per_food_level = 0
+coaching = 0
+freeze_per_level = 0.0
+frozen_speed_per_level = 0.5

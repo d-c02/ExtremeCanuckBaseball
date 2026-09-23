@@ -19,8 +19,44 @@ survive the scene change either way.
 | Start game | Play the signed team against a rolled opponent. |
 
 Everybody is a kind of player, and a kind sets the stats a level one is bought
-with and owns a passive that grows with every level. The only kind written so far
-is the Baseball Player, whose passive is +2/+2 on level up.
+with and owns the passive that separates it from the rest. Every level up puts on
++1/+1 whatever the kind; a passive either quickens that, makes more of a snack,
+works on the rest of the team, or reaches the other team once the ball is in play.
+Six are written:
+
+| Kind | Starts | Passive |
+| --- | --- | --- |
+| Baseball Player | 1/1 | +2/+2 to level 2, +3/+3 to level 3 |
+| Bodybuilder | 3/1 | strength snacks feed a point more per level |
+| Dog | 1/3 | dexterity snacks feed a point more per level |
+| Coach | 1/1 | +1/+1 to every teammate per level, end of shop |
+| Snowman | 1/1 | Freezes fielders 0.25s per level on a hit |
+| Hockey Player | 1/1 | Skates a freeze off: +0.5x speed per level |
+
+A hot dog is worth +2 strength to a level one Bodybuilder, +3 at level two and +4
+at level three; peanuts do the same for a Dog. Neither makes anything of the other
+sort of snack.
+
+A Coach works on the team rather than on themselves. Start game closes the shop,
+and every Coach on the roster takes their teammates through a session first,
+handing each of the others their own level in both stats. A Coach never coaches
+themselves, two of them both put their work in, and a rolled opponent closes its
+own shop the same way. The session is worked into the players for good, so a Coach
+signed early is paid for again at the end of every round they stay signed.
+
+A Snowman is the first kind whose passive is spent in the match rather than the
+shop. Every time they put the ball in play, every fielder on the other team stands
+still for a quarter second per Snowman level before they can act on the read they
+made: a quarter second at level one, three quarters at level three, which is long
+enough for a ball that would have been caught to drop and for runners to take the
+extra base.
+
+A Hockey Player is at home on the ice a Snowman makes. Rather than standing still
+they skate: for as long as the freeze would have held them, their top speed is
+multiplied by 1.5 at level one, 2 at level two and 2.5 at level three, and the
+defence ranks its chase on the speed they are actually covering ground at. The two
+only meet on opposite teams, so a Snowman on your roster is what arms the other
+side's Hockey Player.
 
 Six podiums stand behind home plate, each showing what the thing on it costs. Four
 sell players and two sell snacks, and a podium only ever stocks its own kind,
@@ -111,9 +147,10 @@ Listings on podiums cannot be sold; only signed players can.
   buyable in place after a trade, and `spent_on()` says whether a drop uses the
   buyable up at all, so a move can slide it to its new home instead.
 - `BaseballPlayerType` (`data/player_type.gd`): a kind of player. It holds the
-  stats a level one starts with, the words its passive is described in, and what
-  that passive adds per level. Types are shared, never copied, which is how two
-  players are told to be the same kind. `data/types/` holds them.
+  stats a level one starts with, what levelling adds, what a snack is worth to
+  this kind, and the words its passives are described in. Types are shared, never
+  copied, which is how two players are told to be the same kind. `data/types/`
+  holds them.
 - `BaseballRecruit` (`game/shop/recruit.gd`): rolls players and whole teams. A
   rolled player is a level one of a random kind; a rolled team is a budget shopped
   through a `BaseballShelf`, `SPEND_ATTEMPTS` buys at most.
@@ -178,16 +215,19 @@ were given in the scene.
 
 ## Limits
 
-Only one kind of player is written, so every listing is a Baseball Player, any two
-of them can merge, and a pool has nothing to open up yet. That also means two
-players of the same level can no longer be swapped: the drop merges them instead.
-A run only ends by losing the last life, and nothing keeps score of how far it
-got. Refresh escalates within a visit and starts back at a dollar each round, and
-what it rolls pays no attention to what is left in the wallet. The lineup view
-shows and rearranges the batting order, but moving a player there changes their
-fielding position too, so the two cannot be set apart from each other. A sold
-player is gone rather than back on their podium. The split between player and
-snack podiums is fixed in the scene: four and two, whatever the round.
+Six kinds are written and all six turn up from round one, so the pool has
+nothing held back to open up yet. A Coach's session lands on the roster for good,
+so keeping one signed compounds it round after round rather than buffing the team
+for one match. Nothing on a podium says which kind a player is
+without hovering them. Two players of a kind and level can no longer be swapped
+either: the drop merges them instead. A run only ends by losing the last life, and
+nothing keeps score of how far it got. Refresh escalates within a visit and starts
+back at a dollar each round, and what it rolls pays no attention to what is left
+in the wallet. The lineup view shows and rearranges the batting order, but moving
+a player there changes their fielding position too, so the two cannot be set apart
+from each other. A sold player is gone rather than back on their podium. The split
+between player and snack podiums is fixed in the scene: four and two, whatever the
+round.
 
 ## Checks
 ```sh
@@ -210,8 +250,13 @@ empty and free; refreshes the shelf from the button and checks every podium came
 back with something of its own kind and a rolled player priced on their stats;
 refreshes again and again and checks no podium ever stocks the other kind; feeds a
 snack to a player and checks the point went on, the roster saw it, the snack was
-paid for and gone, and that a slot with nobody in it refuses one; buys refreshes
-and checks each one costs a dollar more than the last, that the button prices and
+paid for and gone, that a slot with nobody in it refuses one, and that a
+Bodybuilder adds a level to a hot dog and a Dog adds one to peanuts while neither
+makes anything of the other's; checks every level up puts on +1/+1 and that the
+plain kind quickens that to +2/+2 and +3/+3; closes the shop on a roster and checks
+a Coach handed every teammate their level in both stats and themselves nothing, that
+two of them stack on each other and on the rest, and that a team without one comes
+out unchanged; buys refreshes
 disables itself, and that one without the money behind it is refused; checks a
 pool holds kinds back until the round they open up in; banks wins and losses and
 checks the purse, the lives and the round; checks the income for a round, that the

@@ -4,12 +4,12 @@
 
 [resource]
 script = ExtResource("type")
-type_name = "Baseball Player"
+type_name = "Bodybuilder"
 from_round = 1
-base_strength = 1
+base_strength = 3
 base_dexterity = 1
-passive = "+2/+2 to level 2, +3/+3 to level 3"
-strength_growth = 1
-dexterity_growth = 1
-strength_per_food_level = 0
+passive = "Strength snacks feed a point more per level"
+strength_growth = 0
+dexterity_growth = 0
+strength_per_food_level = 1
 dexterity_per_food_level = 0

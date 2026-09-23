@@ -127,6 +127,7 @@ func run() -> void:
 	await check_contact_and_retreat()
 	await check_scoring()
 	check_pitching()
+	check_freezing()
 	await check_grounding()
 	await check_camera()
 	await _check_transition_effect()
@@ -890,4 +891,68 @@ func check_tiring_arm() -> void:
 		),
 		"A drained pitcher took their bat up showing a pitching total"
 	)
+	game.reset_game()
+
+
+## A Snowman puts the ball in play and the whole defence stands and stares: every
+## fielder carries a quarter second per level on top of the reaction they would
+## have had, and cannot act on the read they made until it runs out. A Hockey
+## Player takes the ice as speed instead.
+func check_freezing() -> void:
+	var snowman: BaseballPlayerType = load("res://data/types/snowman.tres")
+	contact()
+	var batter := game.batter
+	var original := batter.data.type
+	var original_level := batter.data.level
+	for fielder in game.fielders:
+		check(
+			is_equal_approx(fielder.reaction_remaining, fielder.data.reaction_time),
+			"A fielder froze for a hitter with nothing on them"
+		)
+	batter.data.type = snowman
+	batter.data.level = 1
+	contact()
+	for fielder in game.fielders:
+		check(
+			is_equal_approx(fielder.reaction_remaining, fielder.data.reaction_time + 0.25),
+			"A fielder shrugged off a level one Snowman"
+		)
+	batter.data.level = 3
+	contact()
+	var chaser := game.play.defense.chaser
+	check(
+		is_equal_approx(chaser.reaction_remaining, chaser.data.reaction_time + 0.75),
+		"A Snowman's freeze failed to grow with their level"
+	)
+	var before := chaser.position
+	chaser.step(DELTA)
+	check(chaser.position == before, "A frozen fielder set off after the ball anyway")
+	check(chaser.reaction_remaining < chaser.data.reaction_time + 0.75, "A freeze never thaws")
+	var hockey: BaseballPlayerType = load("res://data/types/hockey_player.tres")
+	var skater_data := game.fielders[0].data
+	var skater_type := skater_data.type
+	var skater_level := skater_data.level
+	skater_data.type = hockey
+	skater_data.level = 2
+	batter.data.level = 1
+	contact()
+	var skater := game.fielders[0]
+	check(
+		is_equal_approx(skater.reaction_remaining, skater.data.reaction_time),
+		"A Hockey Player stood and stared at a frozen field"
+	)
+	check(
+		is_equal_approx(skater.current_speed(), skater.data.speed * 2.0),
+		"A level two Hockey Player did not skate at double speed"
+	)
+	for frame in 20:
+		skater.step(DELTA)
+	check(
+		is_equal_approx(skater.current_speed(), skater.data.speed),
+		"A Hockey Player kept skating after the field thawed"
+	)
+	skater_data.type = skater_type
+	skater_data.level = skater_level
+	batter.data.type = original
+	batter.data.level = original_level
 	game.reset_game()

@@ -2,9 +2,9 @@ class_name BaseballPlayerType
 extends Resource
 
 ## What kind of player somebody is. A type sets the stats a level one is bought
-## with and owns the passive that grows every time players are merged into it. The
-## only passive written so far is a flat stat gain per level, so a type that wants
-## to do something else will need more than the two numbers here.
+## with and owns the passive that grows every time players are merged into it. A
+## passive either quickens the stats a level puts on, makes more of a snack, works on
+## the rest of the team, or reaches the other team once the ball is in play.
 
 @export var type_name: String = "Baseball Player"
 ## The round this kind starts turning up in the shop.
@@ -14,9 +14,23 @@ extends Resource
 @export_range(0, 99) var base_dexterity: int = 1
 ## The passive in words, for the shop to show under the name.
 @export var passive: String = ""
-## What the passive adds to each stat for every level above the first.
-@export_range(0, 20) var strength_per_level: int = 2
-@export_range(0, 20) var dexterity_per_level: int = 2
+## What this kind puts on over and above the level everybody gets, growing by this
+## much for every level it has taken: one of these makes a level two worth +2/+2 and
+## a level three +3/+3.
+@export_range(0, 5) var strength_growth: int = 0
+@export_range(0, 5) var dexterity_growth: int = 0
+## What this kind adds to a snack that feeds this stat: its level, times this. One
+## of these turns a one-point snack into two at level one and three at level two.
+@export_range(0, 3) var strength_per_food_level: int = 0
+@export_range(0, 3) var dexterity_per_food_level: int = 0
+## What this kind hands every teammate when the shop closes: its level, times this.
+@export_range(0, 3) var coaching: int = 0
+## How long the fielders stand and stare when one of these puts the ball in play:
+## its level, times this many seconds.
+@export_range(0.0, 1.0, 0.05) var freeze_per_level: float = 0.0
+## What a frozen field is worth to a kind at home on one. A fielder of one skates
+## instead of standing still, at their top speed times one plus this per level.
+@export_range(0.0, 1.0, 0.05) var frozen_speed_per_level: float = 0.0
 
 
 ## A fresh level one of this type. The type itself is shared, never copied: two

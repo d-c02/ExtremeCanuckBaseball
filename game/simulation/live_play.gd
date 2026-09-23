@@ -155,6 +155,10 @@ func _resolve_swing() -> void:
 	game.runners.append(batter_run)
 	batter_run.advance(game.batter.data.reaction_time)
 	defense.assign()
+	# The defence reads the ball first, so a hitter who freezes them costs them the
+	# jump on a read they have already made rather than the read itself.
+	for fielder in game.fielders:
+		fielder.chill(game.batter.data.freeze_gain())
 	_advance_on_contact()
 	game.phase = game.Phase.FIELDING
 	timer = 0.0
@@ -181,8 +185,11 @@ func _advance_on_contact() -> void:
 	var prediction: Dictionary = game.outfield.forecast(ball, flight)
 	var landing: Vector2 = prediction.point
 	var fielder := defense.nearest(landing, [])
+	# Runners read the hold the defence is actually under, never less than a normal
+	# reaction, so a frozen fielder is a reason to go.
 	var arrival := (
-		fielder.position.distance_to(landing) / fielder.data.speed + fielder.data.reaction_time
+		fielder.position.distance_to(landing) / fielder.current_speed()
+		+ maxf(fielder.reaction_remaining, fielder.data.reaction_time)
 	)
 	var ordered: Array = game.runners.duplicate()
 	ordered.sort_custom(func(a, b): return a.reached > b.reached)
@@ -244,8 +251,10 @@ func is_forced(run: BaseballBaseRunning) -> bool:
 func _worth_advancing(run: BaseballBaseRunning) -> bool:
 	var next_base: Vector2 = game.base_positions[run.reached]
 	var fielder := defense.nearest(game.ball.position, [])
-	var run_time := run.runner.position.distance_to(next_base) / run.runner.data.speed
-	var pickup_time: float = fielder.position.distance_to(game.ball.position) / fielder.data.speed
+	var run_time := run.runner.position.distance_to(next_base) / run.runner.current_speed()
+	var pickup_time: float = (
+		fielder.position.distance_to(game.ball.position) / fielder.current_speed()
+	)
 	var throw_time: float = game.ball.position.distance_to(next_base) / fielder.data.throwing_speed
 	return run_time < pickup_time + throw_time + fielder.data.reaction_time + 0.5
 
@@ -347,10 +356,12 @@ func _choose_throw() -> void:
 	var carry := false
 	for run in candidates:
 		var destination: Vector2 = game.base_positions[_out_base(run) - 1]
-		var run_time: float = run.runner.position.distance_to(destination) / run.runner.data.speed
+		var run_time: float = (
+			run.runner.position.distance_to(destination) / run.runner.current_speed()
+		)
 		var receiver := defense.nearest(destination, [holder])
 		var receiver_time := (
-			receiver.position.distance_to(destination) / receiver.data.speed
+			receiver.position.distance_to(destination) / receiver.current_speed()
 			+ receiver.reaction_remaining
 		)
 		var flight_time := holder.position.distance_to(destination) / holder.data.throwing_speed
@@ -358,13 +369,13 @@ func _choose_throw() -> void:
 		var carry_time: float
 		if _base_out_available(run):
 			carry_time = (
-				maxf(0.0, holder.position.distance_to(destination) - 16.0) / holder.data.speed
+				maxf(0.0, holder.position.distance_to(destination) - 16.0) / holder.current_speed()
 			)
 		else:
 			# Approximate closing speed because the runner keeps moving during a tag chase.
 			carry_time = (
 				maxf(0.0, holder.position.distance_to(run.runner.position) - 21.0)
-				/ maxf(20.0, holder.data.speed - run.runner.data.speed * 0.7)
+				/ maxf(20.0, holder.current_speed() - run.runner.current_speed() * 0.7)
 			)
 		var use_carry := carry_time <= throw_time
 		var out_time := minf(carry_time, throw_time)

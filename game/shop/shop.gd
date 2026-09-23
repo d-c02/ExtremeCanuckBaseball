@@ -399,6 +399,7 @@ func _shelf() -> BaseballShelf:
 
 ## Hand the signed team and a fresh opponent to the match, and go and play it.
 func start_game() -> void:
+	roster.finish_shopping()
 	BaseballSession.carry(roster, build_opponent())
 	get_tree().change_scene_to_file(MATCH_SCENE)
 

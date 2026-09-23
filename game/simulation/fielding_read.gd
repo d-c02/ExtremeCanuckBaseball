@@ -33,7 +33,7 @@ func update(
 		target = game.outfield.clamp_inside(prediction.point + error_direction * uncertainty)
 		playable_in = time
 		var arrival := (
-			player.position.distance_to(target) / player.data.speed + player.reaction_remaining
+			player.position.distance_to(target) / player.current_speed() + player.reaction_remaining
 		)
 		if prediction.home_run or (prediction.height <= 25.0 and arrival <= time):
 			break

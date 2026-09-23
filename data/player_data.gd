@@ -14,6 +14,8 @@ const MAX_STAT: int = 99
 ## one level below counts half, so two of those do it.
 const MAX_LEVEL: int = 3
 const STEPS_PER_LEVEL: int = 2
+## What every level up puts on, whatever kind somebody is.
+const LEVEL_GAIN: int = 1
 ## What the shop keeps when it buys a player back.
 const SELL_LOSS: int = 2
 ## What the cheapest and the dearest player cost in the shop.
@@ -109,20 +111,56 @@ func absorb(other: BaseballPlayerData) -> bool:
 	return gain_level()
 
 
-## Eat a snack: the point goes on for good.
+## Eat a snack: the point goes on for good, and a kind whose passive is making the
+## most of that sort of food adds a point of it for every level it has.
 func eat(food: BaseballFoodType) -> void:
-	strength = mini(strength + food.strength_gain, MAX_STAT)
-	dexterity = mini(dexterity + food.dexterity_gain, MAX_STAT)
+	strength = mini(strength + _bite(food.strength_gain, _food_bonus(true)), MAX_STAT)
+	dexterity = mini(dexterity + _bite(food.dexterity_gain, _food_bonus(false)), MAX_STAT)
+
+
+## What a snack is really worth here. A snack that feeds nothing of a stat feeds
+## nothing extra of it either, whatever the passive.
+func _bite(gain: int, per_level: int) -> int:
+	return (gain + level * per_level) if gain > 0 else 0
+
+
+func _food_bonus(for_strength: bool) -> int:
+	if type == null:
+		return 0
+	return type.strength_per_food_level if for_strength else type.dexterity_per_food_level
 
 
 ## Take a level with nobody merged in, for rolling a team that already has some.
+## Everybody puts on [constant LEVEL_GAIN] of each stat; a kind with growth in it
+## puts on that much more again for every level it has taken.
 func gain_level() -> bool:
-	if level >= MAX_LEVEL or type == null:
+	if level >= MAX_LEVEL:
 		return false
 	level += 1
-	strength = mini(strength + type.strength_per_level, MAX_STAT)
-	dexterity = mini(dexterity + type.dexterity_per_level, MAX_STAT)
+	var taken := level - 1
+	var strength_growth := type.strength_growth if type != null else 0
+	var dexterity_growth := type.dexterity_growth if type != null else 0
+	strength = mini(strength + LEVEL_GAIN + taken * strength_growth, MAX_STAT)
+	dexterity = mini(dexterity + LEVEL_GAIN + taken * dexterity_growth, MAX_STAT)
 	return true
+
+
+## What this player hands each teammate when the shop closes, for a kind whose
+## passive is coaching the rest of them.
+func coaching_gain() -> int:
+	return level * type.coaching if type != null else 0
+
+
+## How long the fielders lose when this player puts the ball in play, for a kind
+## whose passive reaches across the diamond.
+func freeze_gain() -> float:
+	return level * type.freeze_per_level if type != null else 0.0
+
+
+## What a frozen field does for this player instead of holding them: the share of
+## their top speed it adds, nothing at all for a kind with no skates.
+func skating_gain() -> float:
+	return level * type.frozen_speed_per_level if type != null else 0.0
 
 
 ## The badge that stands over a player: what level they are, and a half when they

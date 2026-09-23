@@ -41,10 +41,11 @@ func step(delta: float) -> void:
 
 func pursuit_score(player: BaseballPlayer) -> float:
 	if game.ball.bounced and player.position.distance_to(game.ball.position) <= 20.0:
-		return -1.0 + player.position.distance_to(game.ball.position) / player.data.speed
+		return -1.0 + player.position.distance_to(game.ball.position) / player.current_speed()
 	var read: BaseballFieldingRead = reads[player]
 	var arrival := (
-		player.position.distance_to(read.target) / player.data.speed + player.reaction_remaining
+		player.position.distance_to(read.target) / player.current_speed()
+		+ player.reaction_remaining
 	)
 	var station: Vector2 = game.field_position(player)
 	var departure_cost := minf(maxf(station.distance_to(read.target) - 180.0, 0.0) / 450.0, 1.5)
@@ -70,7 +71,7 @@ func _reassign(initial: bool) -> void:
 	var point := read.target
 	var helper: BaseballPlayer = ranked[1]
 	var arrival := (
-		chaser.position.distance_to(point) / chaser.data.speed + chaser.reaction_remaining
+		chaser.position.distance_to(point) / chaser.current_speed() + chaser.reaction_remaining
 	)
 	var recovering: bool = game.play != null and game.play.catch_retries.get(chaser, 0.0) > 0.0
 	var covered: bool = (
@@ -128,7 +129,7 @@ func nearest(point: Vector2, excluded: Array) -> BaseballPlayer:
 		if player in excluded:
 			continue
 		var arrival := (
-			player.position.distance_to(point) / player.data.speed + player.data.reaction_time
+			player.position.distance_to(point) / player.current_speed() + player.data.reaction_time
 		)
 		if arrival < best_time:
 			selected = player

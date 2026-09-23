@@ -27,3 +27,22 @@ func player_at(index: int) -> BaseballPlayerData:
 func has_role(role: String) -> bool:
 	var index := field_roles.find(role)
 	return index >= 0 and player_at(index) != null
+
+
+## Everything that happens as a team leaves the shop: every coach on it takes their
+## teammates through a session, handing each of them their own level in both stats.
+## A coach does not coach themselves, and two of them both put their work in.
+func finish_shopping() -> void:
+	var coaches: Array[BaseballPlayerData] = []
+	for index in players.size():
+		var player := player_at(index)
+		if player != null and player.coaching_gain() > 0:
+			coaches.append(player)
+	for coach in coaches:
+		var gain := coach.coaching_gain()
+		for index in players.size():
+			var player := player_at(index)
+			if player == null or player == coach:
+				continue
+			player.strength = mini(player.strength + gain, BaseballPlayerData.MAX_STAT)
+			player.dexterity = mini(player.dexterity + gain, BaseballPlayerData.MAX_STAT)

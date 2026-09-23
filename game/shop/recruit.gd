@@ -91,6 +91,7 @@ static func roll_opponent(
 			break
 		left -= refreshes
 		shelf.restock(rng, taken)
+	team.finish_shopping()
 	return team
 
 

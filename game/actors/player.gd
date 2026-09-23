@@ -6,6 +6,10 @@ var target: Vector2
 var waypoints: PackedVector2Array
 var intention: String = "Waiting"
 var reaction_remaining: float = 0.0
+## A frozen field, for the kind that skates on it: what their top speed is
+## multiplied by, and how much of the freeze is left to skate through.
+var speed_multiplier: float = 1.0
+var skating_remaining: float = 0.0
 var moving: bool = false
 var role: String = ""
 var team_index: int = 0
@@ -25,6 +29,12 @@ func configure(player_data: BaseballPlayerData) -> void:
 	data = player_data
 	target = position
 	refresh_strength()
+
+
+## What this player is covering ground at right now: what they were bought with,
+## unless a frozen field is under a pair of skates.
+func current_speed() -> float:
+	return data.speed * speed_multiplier
 
 
 ## Restore the pitching strength bought in the buy phase.
@@ -53,19 +63,39 @@ func stop(action: String = "Waiting") -> void:
 	intention = action
 
 
+## The field ices over for [param seconds]. Most players stand and stare on top of
+## whatever reaction is already running, keeping their assignment but unable to act
+## on it yet; a kind at home on ice skates through it instead and covers ground
+## faster for as long as it lasts.
+func chill(seconds: float) -> void:
+	if seconds <= 0.0:
+		return
+	var skating := data.skating_gain()
+	if skating > 0.0:
+		speed_multiplier = 1.0 + skating
+		skating_remaining = maxf(skating_remaining, seconds)
+		return
+	reaction_remaining += seconds
+	velocity = Vector2.ZERO
+
+
 func brake(action: String = "Settling") -> void:
 	var stopping_distance := velocity.length_squared() / (2.0 * data.acceleration)
 	move_to(position + velocity.normalized() * stopping_distance, action)
 
 
 func step(delta: float) -> void:
+	if skating_remaining > 0.0:
+		skating_remaining = maxf(0.0, skating_remaining - delta)
+		if skating_remaining == 0.0:
+			speed_multiplier = 1.0
 	if not moving:
 		return
 	reaction_remaining = maxf(0.0, reaction_remaining - delta)
 	if reaction_remaining > 0.0:
 		return
 	var offset := target - position
-	var arrival_speed := minf(data.speed, sqrt(2.0 * data.acceleration * offset.length()))
+	var arrival_speed := minf(current_speed(), sqrt(2.0 * data.acceleration * offset.length()))
 	if offset.length() < 2.0:
 		arrival_speed = 0.0
 	velocity = velocity.move_toward(offset.normalized() * arrival_speed, data.acceleration * delta)
