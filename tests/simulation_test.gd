@@ -34,9 +34,9 @@ func run() -> void:
 	root.add_child(world)
 	game = world.game
 	game.set_physics_process(false)
+	check(game.phase == game.Phase.PREPARING, "Match did not start on entry")
 	check_rosters()
 	check_seed_replay()
-	await check_box_score_toggle()
 	var original_stats := roster_stats()
 	var first_trace: Array = []
 	var first_box: Dictionary = {}
@@ -839,28 +839,6 @@ func check_short_handed() -> void:
 	)
 	result = await play_short_handed(short_roster(full, []), short_roster(full, []))
 	check(result.winner() == 0, "Visitors did not win when neither empty team could field")
-
-
-func check_box_score_toggle() -> void:
-	var panel := game.get_node("HUD/BoxScore")
-	var event := InputEventKey.new()
-	event.keycode = KEY_B
-	event.pressed = true
-	game.reset_game()
-	panel._unhandled_key_input(event)
-	await process_frame
-	await process_frame
-	check(panel.visible, "Pre-game box score did not stay open")
-	panel._unhandled_key_input(event)
-	check(not panel.visible, "B did not close the box score")
-	panel._unhandled_key_input(event)
-	game.reset_game()
-	check(not panel.visible, "Reset left the old box score open")
-	panel._unhandled_key_input(event)
-	await process_frame
-	await process_frame
-	check(panel.visible, "Box score could not reopen after reset")
-	game.reset_game()
 
 
 ## The arm on the mound wears down where it can be seen, while the same player

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://dar4rg8x7fywr"]
+[gd_scene load_steps=14 format=3 uid="uid://dar4rg8x7fywr"]
 
 [ext_resource type="Script" path="res://game/presentation/world_3d.gd" id="world"]
 [ext_resource type="PackedScene" path="res://game/match.tscn" id="simulation"]
@@ -37,9 +37,6 @@ top_radius = 0.26
 bottom_radius = 0.26
 height = 0.002
 radial_segments = 16
-[sub_resource type="StyleBoxFlat" id="hud_background"]
-bg_color = Color(0.055, 0.075, 0.085, 0.9)
-
 [node name="Baseball" type="Node3D"]
 script = ExtResource("world")
 [node name="Simulation" parent="." instance=ExtResource("simulation")]
@@ -68,16 +65,6 @@ shadow_enabled = true
 [node name="Environment" type="WorldEnvironment" parent="."]
 environment = SubResource("environment")
 [node name="Sounds" parent="." instance=ExtResource("sounds")]
-[node name="HUDBackground" type="CanvasLayer" parent="."]
-layer = 1
-[node name="Panel" type="Panel" parent="HUDBackground"]
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 94.0
-grow_horizontal = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("hud_background")
-
 [node name="TapeTransition" type="CanvasLayer" parent="."]
 layer = 0
 script = ExtResource("tape")
@@ -101,33 +88,33 @@ script = ExtResource("run_end")
 [node name="Result" type="Label" parent="RunEnd"]
 anchors_preset = 8
 anchor_left = 0.5
-anchor_top = 0.5
+anchor_top = 1.0
 anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -60.0
-offset_right = 260.0
-offset_bottom = -16.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -180.0
+offset_right = 300.0
+offset_bottom = -130.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
 theme_override_font_sizes/font_size = 40
-text = "Won  +$20"
+text = "WIN  +$20"
 horizontal_alignment = 1
 
 [node name="Continue" type="Button" parent="RunEnd"]
 anchors_preset = 8
 anchor_left = 0.5
-anchor_top = 0.5
+anchor_top = 1.0
 anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -110.0
-offset_top = 8.0
-offset_right = 110.0
-offset_bottom = 56.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -116.0
+offset_right = 120.0
+offset_bottom = -60.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 24
-text = "Round 2"
+text = "Next shop"

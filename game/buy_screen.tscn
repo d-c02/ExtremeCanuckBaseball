@@ -127,7 +127,7 @@ offset_bottom = 78.0
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-text = "Drag players onto open spots to sign or move them, onto each other to swap, or onto Sell."
+text = "Drag players to sign, merge, move or sell."
 
 [node name="Order" type="Button" parent="HUD"]
 anchors_preset = 1
@@ -159,7 +159,7 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -210.0
+offset_left = -350.0
 offset_top = -78.0
 offset_right = -24.0
 offset_bottom = -24.0
@@ -178,3 +178,15 @@ theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 22
 text = "Round 1    Lives 5"
+
+[node name="NewRun" type="Button" parent="HUD"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -64.0
+offset_right = 150.0
+offset_bottom = -24.0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 18
+text = "New run"

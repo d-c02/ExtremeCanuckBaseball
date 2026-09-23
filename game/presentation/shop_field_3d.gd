@@ -5,6 +5,6 @@ extends BaseballFieldView
 var markings: Node3D
 
 
-func build_shop(park: BaseballBallpark) -> void:
-	build(park, false, false)
+func build_shop() -> void:
+	build(false)
 	markings = model

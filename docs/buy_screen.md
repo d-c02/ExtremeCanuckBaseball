@@ -16,7 +16,8 @@ survive the scene change either way.
 | Right-click while dragging | Cancel and send the player back where they started. |
 | Batting order / Fielding | Toggle between the fielding layout and the lineup. |
 | Refresh $N | Roll a new player onto every podium. Each one costs a dollar more. |
-| Start game | Play the signed team against a rolled opponent. |
+| Start game | Available after signing a pitcher and catcher; play against a rolled opponent. |
+| New run | Start again with an empty roster, $30 and five lives. |
 
 Everybody is a kind of player, and a kind sets the stats a level one is bought
 with and owns the passive that separates it from the rest. Every level up puts on
@@ -98,7 +99,11 @@ level below counts half, so two level ones take a level two up to three. Levels
 stop at three. A slot holding another kind of player, a player already at the cap,
 or a price above the current funds lights up red and refuses the drop.
 
-Start game rolls the other team and goes to the match. The opponent is given what
+The Start button names either missing role and stays disabled until both a pitcher
+and catcher are signed. A refused start leaves the roster and Coach bonuses alone.
+If the shop runs out of money before they are signed, New run resets the shop and
+the session so the player can try again. Start game then rolls the other team
+and goes to the match. The opponent is given what
 the run has paid you by this round — the $30 it opened with plus a purse for every
 round already played, so $50 in round two — and shops for itself. It works a shelf
 of its own, the same four player podiums and two snack podiums this scene puts
@@ -210,9 +215,9 @@ Match terrain uses layer 3, separate from both shop layers.
 
 `data/teams/shop_roster.tres` starts empty of players but carries the nine fielding
 positions and roles, so any number of signings leaves a roster `BaseballMatch` would
-accept. Open slots stay empty in the match, and a roster without a pitcher or
-catcher loses by forfeit. Slots the roster has no position for keep the spot they
-were given in the scene.
+accept. Open slots stay empty in the match; the shop requires a pitcher and catcher
+before starting. Slots the roster has no position for keep the spot they were given
+in the scene.
 
 ## Limits
 
@@ -236,7 +241,10 @@ godot --headless --path . --editor --quit
 godot --headless --path . --fixed-fps 60 --script tests/shop_test.gd
 ```
 
-The suite drags a player onto an open slot and checks the signing, the charge, the
+The suite checks that Start names the missing pitcher or catcher, stays disabled
+until both are signed, and refuses a scripted start without applying Coach bonuses;
+it also reloads a spent shop through New run and checks the fresh purse, roster
+and stock. It then drags a player onto an open slot and checks the signing, the charge, the
 roster entry and the emptied podium; checks that a taken slot and an unaffordable
 price refuse the drop; sells a signed player and checks the payout, the emptied slot
 and roster entry, and that the sell spot refuses an unsigned listing; checks that

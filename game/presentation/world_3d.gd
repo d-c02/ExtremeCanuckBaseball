@@ -26,7 +26,7 @@ func _ready() -> void:
 	if not game.error_message.is_empty():
 		return
 	game.game_reset.connect(func(): ball_ground.clear())
-	field.build(game.field)
+	field.build()
 	for squad in game.squads:
 		for player in squad:
 			var view: BaseballPlayerView = PLAYER_VIEW.instantiate()
@@ -44,6 +44,7 @@ func _ready() -> void:
 	surface.vertex_color_use_as_albedo = true
 	guides.material_override = surface
 	sync(0.0)
+	game.start_game()
 
 
 func _process(delta: float) -> void:
@@ -57,11 +58,6 @@ func sync(delta: float) -> void:
 	ball.position = ball_position(game.ball)
 	shadow.position = world_position(game.ball.position)
 	shadow.position.y = ball_ground.get(game.ball, 0.0) + 0.002
-	for side in field.dugout_labels.size():
-		var team := game.teams[side]
-		field.dugout_labels[side].text = (
-			"%s · next %d" % [team.team_name, game.next_batter[side] + 1]
-		)
 	_update_guides()
 
 
@@ -83,11 +79,6 @@ func ball_position(actor: BaseballBall) -> Vector3:
 	var point := world_position(actor.position, actor.height)
 	point.y = maxf(point.y, ball_ground.get(actor, 0.0) + ball.mesh.radius)
 	return point
-
-
-func _unhandled_key_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_C:
-		show_guides = not show_guides
 
 
 func _update_guides() -> void:

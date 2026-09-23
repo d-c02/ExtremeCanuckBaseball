@@ -81,6 +81,7 @@ func run() -> void:
 	shop.rng.seed = 9
 	shop.refresh_stock()
 	await settle()
+	check_start_requirements()
 	check_blender_stage()
 	await check_signing()
 	await check_refused_drops()
@@ -106,8 +107,42 @@ func run() -> void:
 	await check_opponent_spends()
 	await check_opponent_pool()
 	await check_run_banking()
+	await check_new_run()
 	print("Shop failures: %d" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+## The shop only starts with a pitcher and catcher, and refusing a start cannot
+## quietly apply end-of-shop bonuses to a roster the player is still building.
+func check_start_requirements() -> void:
+	var button: Button = shop.get_node("HUD/Start")
+	check(button.disabled, "An empty roster could start a match")
+	check(button.text == "Sign pitcher + catcher", "The Start button hid the missing battery")
+	shop.start_game()
+	check(not BaseballSession.ready_to_play(), "An empty roster was carried to a match")
+	var coach := BaseballPlayerType.new()
+	coach.coaching = 1
+	var plain := BaseballPlayerType.new()
+	var original := shop.roster
+	var incomplete := _lineup([coach, plain, plain], [1, 1, 1])
+	shop.roster = incomplete
+	incomplete.players[1] = null
+	var teammate := incomplete.player_at(2)
+	var strength := teammate.strength
+	shop._update_hud()
+	check(button.disabled and button.text == "Sign catcher", "A missing catcher was not shown")
+	shop.start_game()
+	check(teammate.strength == strength, "A refused start applied the Coach bonus")
+	check(not BaseballSession.ready_to_play(), "A roster without a catcher was carried")
+	incomplete.players[0] = null
+	incomplete.players[1] = plain.recruit()
+	shop._update_hud()
+	check(button.disabled and button.text == "Sign pitcher", "A missing pitcher was not shown")
+	incomplete.players[0] = coach.recruit()
+	shop._update_hud()
+	check(not button.disabled and button.text == "Start game", "A ready roster could not start")
+	shop.roster = original
+	shop._update_hud()
 
 
 func check_blender_stage() -> void:
@@ -158,6 +193,8 @@ func check_signing() -> void:
 	check(shop.roster.players[0] == pitcher.player, "The roster missed the signing")
 	check(shop.roster.field_roles[0] == "P", "The roster missed the slot's fielding role")
 	check(not is_instance_valid(jack), "The signed player stayed on the podium")
+	var start: Button = shop.get_node("HUD/Start")
+	check(start.disabled and start.text == "Sign catcher", "Signing P did not update Start")
 
 
 ## A drop is refused when the player standing there is another kind, or when the
@@ -227,6 +264,9 @@ func check_roster_ready() -> void:
 		shop.roster.validation_error().is_empty(),
 		"A full shop roster was rejected: " + shop.roster.validation_error()
 	)
+	shop._update_hud()
+	var start: Button = shop.get_node("HUD/Start")
+	check(not start.disabled and start.text == "Start game", "The filled roster could not play")
 
 
 ## Names are clutter on a full field, so they only show under the cursor.
@@ -486,6 +526,39 @@ func check_run_banking() -> void:
 		BaseballSession.finish_match(false)
 	check(BaseballSession.over(), "A run with no lives left was not over")
 	BaseballSession.begin()
+
+
+## Even an empty wallet and no battery can leave through New run. The new scene
+## should rebuild the roster and shelf from the starting session.
+func check_new_run() -> void:
+	var button: Button = shop.get_node("HUD/NewRun")
+	check(not button.pressed.get_connections().is_empty(), "New run had no action")
+	var sell: SellSpot = shop.get_node("SellSpot")
+	var pitcher: TeamSlot = shop.get_node("Roster/Slot1")
+	var catcher: TeamSlot = shop.get_node("Roster/Slot2")
+	check(shop.trade(pitcher.occupant, sell), "Could not empty the pitcher slot")
+	check(shop.trade(catcher.occupant, sell), "Could not empty the catcher slot")
+	shop.funds = 0
+	shop.refreshes = 3
+	BaseballSession.lives = 2
+	BaseballSession.round_number = 4
+	shop._update_hud()
+	check(shop.get_node("HUD/Start").disabled, "A batteryless team could still start")
+	check(shop.get_node("HUD/Refresh").disabled, "An empty wallet could still refresh")
+	current_scene = shop
+	button.pressed.emit()
+	await settle()
+	var restarted := current_scene as Shop
+	check(restarted != null, "New run did not reload the buy screen")
+	check(BaseballSession.funds == 30, "New run did not restore the starting funds")
+	check(BaseballSession.lives == 5, "New run did not restore five lives")
+	check(BaseballSession.round_number == 1, "New run did not restore round one")
+	check(BaseballSession.opponent == null, "New run kept the old opponent")
+	if restarted != null:
+		check(restarted.refreshes == 0, "New run kept the refresh price")
+		check(restarted.roster == BaseballSession.roster, "New run did not carry a fresh roster")
+		check(not restarted.can_start_game(), "New run kept the previous team")
+		check(restarted.podiums()[0].listing != null, "New run did not restock the shop")
 
 
 ## A snack is bought like a player and eaten by one: the point goes on for good and

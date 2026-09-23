@@ -80,6 +80,7 @@ func _ready() -> void:
 	_connect_button("Order", _toggle_view)
 	_connect_button("Refresh", buy_refresh)
 	_connect_button("Start", start_game)
+	_connect_button("NewRun", new_run)
 	refresh_stock()
 	_update_hud()
 
@@ -127,6 +128,10 @@ func can_trade(buyable: Buyable, target: BuyTarget) -> bool:
 	if not buyable.fits(target) or not target.accepts(buyable):
 		return false
 	return buyable.price(target) <= funds
+
+
+func can_start_game() -> bool:
+	return roster != null and roster.has_role("P") and roster.has_role("C")
 
 
 ## Move a buyable onto a target and settle the money, for tests and scripted trades.
@@ -261,6 +266,19 @@ func _update_hud() -> void:
 	if refresh != null:
 		refresh.text = "Refresh  $%d" % refresh_cost()
 		refresh.disabled = refresh_cost() > funds
+	var start := get_node_or_null("HUD/Start") as Button
+	if start != null:
+		var needs_pitcher := not roster.has_role("P")
+		var needs_catcher := not roster.has_role("C")
+		start.disabled = not can_start_game()
+		if needs_pitcher and needs_catcher:
+			start.text = "Sign pitcher + catcher"
+		elif needs_pitcher:
+			start.text = "Sign pitcher"
+		elif needs_catcher:
+			start.text = "Sign catcher"
+		else:
+			start.text = "Start game"
 
 
 ## Place interactive Godot nodes at the anchors authored in Blender.
@@ -286,7 +304,7 @@ func _build_park() -> void:
 	var view := get_node_or_null("FieldView") as BaseballShopFieldView
 	if park == null or view == null:
 		return
-	view.build_shop(park)
+	view.build_shop()
 	# Use the same transform as the Blender shop preview.
 	view.scale = Vector3.ONE * park_scale
 	view.position = SHOP_STAGE.field_position
@@ -419,9 +437,16 @@ func _shelf() -> BaseballShelf:
 
 ## Hand the signed team and a fresh opponent to the match, and go and play it.
 func start_game() -> void:
+	if not can_start_game():
+		return
 	roster.finish_shopping()
 	BaseballSession.carry(roster, build_opponent())
 	get_tree().change_scene_to_file(MATCH_SCENE)
+
+
+func new_run() -> void:
+	BaseballSession.begin()
+	get_tree().reload_current_scene()
 
 
 ## Every podium the shop sells from, left to right.

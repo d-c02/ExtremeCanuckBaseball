@@ -1,13 +1,12 @@
 class_name BaseballRunEnd
 extends CanvasLayer
 
-## Banks a finished match into the run and offers the way back. The purse and the
-## life are settled once, the moment the match calls it, so a replay of the same
-## scene cannot bank it twice.
+## Banks a finished match once and offers the way back to the shop.
 
 const SHOP_SCENE := "res://game/buy_screen.tscn"
 
 var banked: bool = false
+var session_match: bool = false
 
 @onready var game: BaseballMatch = get_node_or_null("../Simulation")
 @onready var label: Label = $Result
@@ -16,30 +15,40 @@ var banked: bool = false
 
 func _ready() -> void:
 	visible = false
+	session_match = BaseballSession.ready_to_play()
 	button.pressed.connect(_leave)
 	if game != null:
+		game.game_reset.connect(_on_game_reset)
 		game.game_finished.connect(_on_game_finished)
 
 
-## The player bats second, so the home score is theirs.
-func _on_game_finished(scores: Array[int]) -> void:
-	if banked or not BaseballSession.ready_to_play():
+func _on_game_finished(_scores: Array[int]) -> void:
+	if not session_match:
 		return
-	banked = true
-	var won := scores[1] > scores[0]
-	BaseballSession.finish_match(won)
+	var won := game.winner() == 1
+	var replayed := banked
+	if not replayed:
+		banked = true
+		BaseballSession.finish_match(won)
 	visible = true
-	var purse := "+$%d" % BaseballSession.MATCH_PURSE
 	if BaseballSession.over():
-		label.text = "Beaten, and out of lives"
+		label.text = "RUN OVER"
 		button.text = "New run"
-		return
-	label.text = "%s  %s%s" % [
-		"Won" if won else "Lost",
-		purse,
-		"" if won else ", and a life with it"
-	]
-	button.text = "Round %d" % BaseballSession.round_number
+	elif replayed:
+		label.text = "%s  REPLAY" % ("WIN" if won else "LOSS")
+		button.text = "Next shop"
+	else:
+		label.text = (
+			"%s  +$%d%s"
+			% ["WIN" if won else "LOSS", BaseballSession.MATCH_PURSE, "" if won else "  -1 LIFE"]
+		)
+		button.text = "Next shop"
+	button.grab_focus()
+
+
+func _on_game_reset() -> void:
+	visible = false
+	button.release_focus()
 
 
 func _leave() -> void:
