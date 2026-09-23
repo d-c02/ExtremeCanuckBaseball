@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def export():
+    initial_scene = bpy.context.window.scene
+    bpy.context.window.scene = bpy.data.scenes["Baseball Field"]
     field = bpy.context.scene.objects.get("Baseball Field")
     if field is None:
         raise RuntimeError("Open the Baseball Field scene before exporting")
@@ -181,6 +183,84 @@ def export():
         for obj in selected:
             obj.select_set(True)
         bpy.context.view_layer.objects.active = active
+    export_shop(output)
+    bpy.context.window.scene = initial_scene
+
+
+def export_shop(output):
+    """Bake optional shop art and its interactive placement from the same blend."""
+    scene = bpy.data.scenes["Buy Screen Preview"]
+    previous_scene = bpy.context.window.scene
+    bpy.context.window.scene = scene
+    bpy.context.view_layer.update()
+    selected = list(bpy.context.selected_objects)
+    active = bpy.context.view_layer.objects.active
+
+    def bake(name, filename):
+        source = bpy.data.objects[name]
+        mesh = bpy.data.meshes.new_from_object(
+            source.evaluated_get(bpy.context.evaluated_depsgraph_get())
+        )
+        if not mesh.vertices or not mesh.polygons:
+            raise RuntimeError(f"{name} evaluated to an empty mesh")
+        baked = bpy.data.objects.new(name + " Export", mesh)
+        scene.collection.objects.link(baked)
+        try:
+            bpy.ops.object.select_all(action="DESELECT")
+            baked.select_set(True)
+            bpy.context.view_layer.objects.active = baked
+            bpy.ops.export_scene.gltf(
+                filepath=str(output / filename),
+                export_format="GLB",
+                use_selection=True,
+                use_active_scene=True,
+                export_yup=True,
+            )
+        finally:
+            bpy.data.objects.remove(baked, do_unlink=True)
+            bpy.data.meshes.remove(mesh)
+
+    def components(name):
+        point = bpy.data.objects[name].matrix_world.translation
+        return f"{point.x:.5f}, {point.z:.5f}, {-point.y:.5f}"
+
+    def world_point(name):
+        return f"Vector3({components(name)})"
+
+    try:
+        preview = bpy.data.objects["Shop Field Preview"]
+        if any(abs(axis - preview.scale.x) > 0.0001 for axis in preview.scale):
+            raise ValueError("Keep the shop field preview uniformly scaled")
+        if any(abs(axis) > 0.0001 for axis in preview.rotation_euler):
+            raise ValueError("Keep the shop field preview unrotated")
+        bake("Shop Fixtures", "shop_fixtures.glb")
+        bake("Lineup Ground", "shop_lineup_ground.glb")
+        camera = bpy.data.objects["Shop Camera"]
+        scale = preview.scale.x
+        resource = [
+            '[gd_resource type="Resource" script_class="BaseballShopStage" load_steps=2 format=3]',
+            '[ext_resource type="Script" path="res://data/shop_stage.gd" id="stage"]',
+            '[resource]',
+            'script = ExtResource("stage")',
+            f"field_scale = {scale:.5f}",
+            f"field_position = {world_point('Shop Field Preview')}",
+            "podium_positions = PackedVector3Array("
+            + ", ".join(components(f"Podium {index}") for index in range(1, 7))
+            + ")",
+            f"sell_position = {world_point('Sell Spot')}",
+            "field_positions = PackedVector3Array("
+            + ", ".join(components(f"Roster {index}") for index in range(1, 10))
+            + ")",
+            f"camera_position = {world_point('Shop Camera')}",
+            f"camera_target = {world_point('Camera Target')}",
+            f"camera_fov = {camera.data.angle * 180 / 3.141592653589793:.5f}",
+        ]
+        (output / "shop_stage.tres").write_text("\n".join(resource) + "\n")
+    finally:
+        for obj in selected:
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = active
+        bpy.context.window.scene = previous_scene
 
 
 if __name__ == "__main__":

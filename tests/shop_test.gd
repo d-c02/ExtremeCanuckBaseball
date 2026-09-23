@@ -51,6 +51,8 @@ func pin_one_kind() -> Array[BaseballPlayerType]:
 ## ask for a spot rather than a name.
 func listing(index: int) -> PlayerSlot:
 	return shop.podiums()[index].listing as PlayerSlot
+
+
 func click(screen: Vector2, pressed: bool) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
@@ -79,6 +81,7 @@ func run() -> void:
 	shop.rng.seed = 9
 	shop.refresh_stock()
 	await settle()
+	check_blender_stage()
 	await check_signing()
 	await check_refused_drops()
 	await check_selling()
@@ -103,7 +106,41 @@ func run() -> void:
 	await check_opponent_spends()
 	await check_opponent_pool()
 	await check_run_banking()
+	print("Shop failures: %d" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+func check_blender_stage() -> void:
+	var stage: BaseballShopStage = load("res://assets/field/shop_stage.tres")
+	var view: BaseballShopFieldView = shop.get_node("FieldView")
+	check(shop.park.use_exported_layout, "The shop did not apply the Blender field layout")
+	check(
+		view.model.scene_file_path == "res://assets/field/baseball_field.glb",
+		"The shop did not instantiate the match's field GLB"
+	)
+	check(
+		view.position.is_equal_approx(stage.field_position),
+		"The shop field missed its Blender anchor"
+	)
+	check(
+		view.scale.is_equal_approx(Vector3.ONE * stage.field_scale),
+		"The shop field missed its Blender scale"
+	)
+	check(stage.field_positions.size() == 9, "The Blender stage needs nine roster anchors")
+	var stands := shop.podiums()
+	check(
+		stands.size() == stage.podium_positions.size(), "The podium anchors do not match the shop"
+	)
+	for index in mini(stands.size(), stage.podium_positions.size()):
+		check(
+			stands[index].position.is_equal_approx(stage.podium_positions[index]),
+			"A podium missed its Blender anchor"
+		)
+	check(
+		shop.get_node("SellSpot").position.is_equal_approx(stage.sell_position),
+		"The sell target missed its Blender anchor"
+	)
+	check(shop.get_node("ShopFixtures").get_child_count() > 0, "The Blender fixtures are absent")
 
 
 func check_signing() -> void:
@@ -309,6 +346,7 @@ func check_batting_view() -> void:
 	check(not first.position.is_equal_approx(fielding), "The lineup left a slot on the field")
 	var view: BaseballShopFieldView = shop.get_node("FieldView")
 	check(not view.markings.visible, "The diamond stayed under the batting order")
+	check(shop.get_node("LineupGround").visible, "The Blender lineup floor did not appear")
 	var camera := shop.get_viewport().get_camera_3d()
 	var spots: Array[Vector3] = []
 	var screens: Array[Vector2] = []
@@ -333,6 +371,7 @@ func check_batting_view() -> void:
 	check(first.position.is_equal_approx(fielding), "Leaving the lineup stranded a slot")
 	check(not first.order_label.visible, "A batting number stayed after leaving the lineup")
 	check(view.markings.visible, "The diamond did not come back with the fielders")
+	check(not shop.get_node("LineupGround").visible, "The lineup floor stayed under the field")
 
 
 ## Refreshing rolls a whole new shelf: every podium comes back with something of its
@@ -352,9 +391,7 @@ func check_refresh() -> void:
 		if rolled == null:
 			continue
 		check(rolled.cost == rolled.player.value(), "A rolled player was not priced on stats")
-		check(
-			rolled.player.sell_price() < rolled.cost, "A rolled player sold for the asking price"
-		)
+		check(rolled.player.sell_price() < rolled.cost, "A rolled player sold for the asking price")
 
 
 ## The rolled opponent spends what the run has paid the player by this round, and
@@ -393,6 +430,8 @@ func check_opponent() -> void:
 	var start: Button = shop.get_node("HUD/Start")
 	check(not start.pressed.get_connections().is_empty(), "The start button went nowhere")
 	BaseballSession.clear()
+
+
 ## Every refresh costs a dollar more than the last, and the shop will not sell one
 ## it cannot be paid for.
 func check_refresh_cost() -> void:
@@ -543,9 +582,7 @@ func check_merging() -> void:
 	await drag(listing(0), slot)
 	check(slot.player.level == 2, "One level below levelled a player on its own")
 	check(slot.player.steps == 1, "A half merge was not remembered")
-	check(
-		slot.occupant.level_label.text == "Lv 2½", "The badge did not show the half merge"
-	)
+	check(slot.occupant.level_label.text == "Lv 2½", "The badge did not show the half merge")
 	shop.refresh_stock()
 	await settle()
 	await drag(listing(0), slot)
@@ -718,9 +755,7 @@ func check_food_passives() -> void:
 		_fed(dog, hot_dog, 3).x == hot_dog.strength_gain,
 		"A dog made something of hot dogs as well as peanuts"
 	)
-	check(
-		_fed(lifter, hot_dog, 1).y == 0, "A hot dog fed a bodybuilder dexterity as well"
-	)
+	check(_fed(lifter, hot_dog, 1).y == 0, "A hot dog fed a bodybuilder dexterity as well")
 
 
 ## What one of [param type], levelled to [param level], puts on after eating
@@ -749,9 +784,7 @@ func check_coaching() -> void:
 	var senior := _lineup([coach, plain], [3, 1])
 	before = _stats(senior)
 	senior.finish_shopping()
-	check(
-		_stats(senior)[1] - before[1] == Vector2i(3, 3), "A level three coach did not give +3/+3"
-	)
+	check(_stats(senior)[1] - before[1] == Vector2i(3, 3), "A level three coach did not give +3/+3")
 	var pair := _lineup([coach, coach, plain], [1, 2, 1])
 	before = _stats(pair)
 	pair.finish_shopping()

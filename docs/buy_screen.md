@@ -1,9 +1,9 @@
 # Buy screen
 
-Run `game/buy_screen.tscn` with F6. It uses `game/field/ballpark.tscn` and the
-procedural `game/presentation/shop_field_3d.gd` preview without dugouts. The match
-inherits that park in `match_ballpark.tscn`, adds dugouts and applies the exported
-Blender layout. Match rendering uses `field_3d.gd` and the Blender mesh.
+Run `game/buy_screen.tscn` with F6. It and the match both use
+`game/field/match_ballpark.tscn`, the exported Blender layout and the same field
+GLB. The shop scales the field around home and adds Blender-authored podium and
+sell meshes. See [Blender setup and export](blender.md) for placement and export.
 The project starts here. A run is a loop: buy a team, play a match, come back with
 the purse and one fewer life if you lost. It opens with $30 and five lives, every
 finished match pays $20 whoever won, a loss costs a life, and the run is over when
@@ -73,11 +73,12 @@ has nobody to eat it and refuses the drop. The gain stands on the snack in the
 colour of the stat it feeds, the same orange and blue as the numbers at a player's
 feet.
 
-Nine roster slots stand out on the field, each one where that fielder plays: the
-shop reads the positions out of its roster Resource, so the
-slots sit where the match would put the players. The park and the slots are both
-drawn pulled in toward home by the shop's `park_scale`, so the whole field reads at
-a glance; the roster itself keeps the real match positions. Every player, on a
+Nine roster slots stand out on the field at the `Roster 1` through `Roster 9`
+markers in Blender's **Buy Screen Preview** scene. Those markers start at the
+match's condensed fielding positions and can be placed visually for the shop.
+`shop_stage.tres` carries their exported positions, the podiums, sell spot and
+camera. The Blender shop preview also sets the field's scale and translation;
+the roster Resource keeps its real match positions. Every player, on a
 podium or in a slot, carries the two stats they are bought on at their feet: the
 strength number on the left in orange, the dexterity number on the right in blue.
 They read as bare numbers, because the colour and the side already say which is
@@ -110,8 +111,8 @@ cannot do without. `BaseballSession` carries both teams across the scene change;
 `main.tscn` opened on its own finds nothing there and uses the sample teams in
 `match.tscn` instead.
 
-The button in the top right swaps the two layouts. The lineup view clears the
-diamond, the lines and the wall off the grass and stands the nine spots on it in a
+The button in the top right swaps the two layouts. The lineup view hides the
+shared field mesh, shows a Blender-authored plain floor and stands the nine spots in a
 three by three grid, first hitter top left and reading across, each one numbered
 with where it bats; the fielding view paints the park back in and sends them out
 to their positions. Grid rows and columns are an even distance apart on the
@@ -199,9 +200,9 @@ Listings on podiums cannot be sold; only signed players can.
 - `SellSpot` (`game/shop/sell_spot.gd`): the target that pays out. The buyable names
   its own sell price, so the spot only shows what the drop would pay.
 - `Shop` (`game/shop/shop.gd`): the scene root. It duplicates its `team` Resource so
-  trading never edits the file on disk, draws the ballpark, stands each slot at its
-  `field_positions` entry scaled in by `park_scale`, hands the roster copy to every
-  target it owns, holds the funds, and runs the drag.
+  trading never edits the file on disk, loads the shared field and exported shop
+  stage, places interactive nodes at Blender anchors, hands the roster copy to
+  every target it owns, holds the funds, and runs the drag.
 
 Buyables sit on 3D physics layer 1 and targets on layer 2. The shop raycasts each
 layer separately, so the held buyable never hides the target under the cursor.

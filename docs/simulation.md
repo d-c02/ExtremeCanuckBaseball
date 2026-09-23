@@ -242,9 +242,10 @@ races that happen within the same physics step.
 ## Field and presentation
 
 The field comes from the Blender Geometry Nodes source. See
-[Blender setup and export](blender.md). Exporting writes the mesh and a
-`BaseballFieldLayout` Resource together into `assets/field/`. The match applies
-that layout through `Field` before its child nodes build collision walls and spawn players.
+[Blender setup and export](blender.md). Exporting writes the shared field mesh and a
+`BaseballFieldLayout` Resource together into `assets/field/`. The buy screen and
+match instantiate that same GLB and apply that layout. The match then builds its
+collision walls and spawns players.
 
 `main.tscn` is a 3D scene. Its hidden `Simulation` child runs the original 2D
 movement and ball-height rules. `BaseballWorld.world_position()` maps simulation
@@ -253,8 +254,9 @@ Rendering, camera movement and sound do not advance the rules or consume randomn
 
 `game/field/match_ballpark.tscn` inherits the shared `ballpark.tscn` and adds
 dugouts under `Field/Dugouts`. Its exported-layout option applies the Blender
-layout before the park initializes. The shop uses the bare park with its authored
-markers and a separate procedural preview renderer.
+layout before the park initializes. Both screens use it. The shop scales the
+same field mesh for its overview and adds separate Blender-authored fixtures;
+only the match gives the field mesh 3D terrain collision.
 
 `game/presentation/field_3d.gd` loads the exported GLB and builds StaticBody3D
 triangle collision on the Walkable field layer (3D layer 3). The matching layout Resource

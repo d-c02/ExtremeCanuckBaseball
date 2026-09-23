@@ -6,6 +6,18 @@ The editable source is [baseball_field.blend](../art/blender/baseball_field.blen
 Open the **Baseball Field** scene, select **Baseball Field**, then edit the
 **Field Controls** Geometry Nodes modifier. The Geometry Nodes workspace exposes
 `GN_BaseballField_v04`; labeled frames separate each part of the field.
+The same file has a **Buy Screen Preview** scene. Its field is a scaled instance
+of the **Field** collection, so field edits appear in both Blender views. Switch
+Blender scenes to inspect the match field or the buy-screen arrangement.
+
+In **Buy Screen Preview**, move the named `Podium 1` through `Podium 6`, `Sell
+Spot` and `Roster 1` through `Roster 9` empties to place the shop. The podium and
+sell meshes follow those empties through `GN_ShopFixtures_v01`. The roster discs
+are preview geometry only; Godot draws and moves its interactive slots. Move
+`Shop Camera` and `Camera Target` to frame the shop. `Shop Field Preview` owns
+the field's shop scale and translation. `Lineup Ground` is hidden in this Blender
+scene but exported for the batting-order view. Player sprites, prices, highlights
+and drag targets remain Godot nodes because they change during play.
 
 ## Controls
 
@@ -129,14 +141,16 @@ blender --background art/blender/baseball_field.blend --python tools/blender/exp
 ```
 
 This writes `assets/field/baseball_field.glb`, `baseball_field.tres` and
-`baseball_field.layout.json`. Godot imports the mesh; the match loads the layout
-Resource through `match_ballpark.tscn` before constructing its simulation.
-The standalone shop retains its authored procedural field preview. Restart the game after exporting.
-The exporter evaluates the modifier into a temporary mesh, exports only that mesh
-from the active scene, and leaves the source modifier intact. The JSON records
+`baseball_field.layout.json`, plus `shop_fixtures.glb`,
+`shop_lineup_ground.glb` and `shop_stage.tres`. Both screens import the same
+field GLB and layout through `match_ballpark.tscn`. The shop adds its fixture GLB
+and places interactive nodes from the exported stage Resource. Restart the game
+after exporting. The exporter evaluates the field and shop modifiers into
+temporary meshes without applying them to the Blender source. The JSON records
 all field controls and the coordinate convention. The `.tres` converts positions,
 dimensions and rotations into simulation units. glTF converts the model to Y up
-for Godot. The default blockout has 504 evaluated vertices and 306 polygons, including
+for Godot; the shop stage exports Blender empties as Godot 3D positions. The
+default field blockout has 504 evaluated vertices and 306 polygons, including
 18 barrier panels. `GN_FieldBarrier_v01` creates the guard panels and marks
 their faces with the boolean `field_barrier` attribute. Export reads their actual
 evaluated ground endpoints and heights into the layout Resource, so rotated or
@@ -149,6 +163,8 @@ so the old rectangular side walls do not survive as invisible obstacles.
 `art/.gdignore` keeps Blender source files outside Godot's import scan. Generated
 files in `assets/field/` are committed together. Do not edit only the mesh or only
 the `.tres`: they describe the same bases, fence, dugout openings and stair routes.
+Likewise, move shop fixtures and their anchors in Blender and re-export rather
+than adjusting copies of their positions in Godot.
 The old `art/exports/` staging location is no longer used.
 
 Keep marker Z coordinates and the field object's transform at zero/identity.
@@ -177,7 +193,9 @@ The saved source uses v04; normal edits only need modifier changes and export.
 
 `tools/blender/build_field.py` creates a fresh field scene, including the perimeter. It refuses to overwrite
 the source unless `-- --overwrite` is supplied. Rebuilding discards saved field
-edits; normally edit the modifier instead.
+and shop edits; normally edit the modifiers and anchors instead. If building a new
+source from scratch, finish the field passes first, then run
+`tools/blender/add_shop_stage.py` once to add the shop preview.
 
 ```sh
 blender --background --python tools/blender/build_field.py -- --overwrite
