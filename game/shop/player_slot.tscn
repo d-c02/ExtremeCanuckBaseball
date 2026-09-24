@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dc3mw11wuuyix" path="res://game/shop/player_slot.gd" id="script"]
 [ext_resource type="Texture2D" uid="uid://crjwx14qeq6jo" path="res://assets/sprites/player.svg" id="sprite"]
+[ext_resource type="FontFile" path="res://assets/fonts/Drybrush.ttf" id="drybrush"]
 
 [sub_resource type="BoxShape3D" id="grab_shape"]
 size = Vector3(1.2, 2.4, 1.2)
@@ -28,6 +29,7 @@ texture = ExtResource("sprite")
 
 [node name="Strength" type="Label3D" parent="Hang"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -2.01, 0)
+font = ExtResource("drybrush")
 pixel_size = 0.01
 font_size = 44
 outline_size = 10
@@ -37,6 +39,7 @@ text = "STR 0"
 
 [node name="Dexterity" type="Label3D" parent="Hang"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -2.01, 0)
+font = ExtResource("drybrush")
 pixel_size = 0.01
 font_size = 44
 outline_size = 10
@@ -47,6 +50,7 @@ text = "DEX 0"
 [node name="Name" type="Label3D" parent="." unique_id=669512955]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.3, 0)
 visible = false
+font = ExtResource("drybrush")
 pixel_size = 0.01
 billboard = 1
 text = "Prospect"
@@ -54,6 +58,7 @@ font_size = 40
 
 [node name="Level" type="Label3D" parent="Hang"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+font = ExtResource("drybrush")
 pixel_size = 0.012
 font_size = 44
 outline_size = 10

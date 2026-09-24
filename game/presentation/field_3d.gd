@@ -3,21 +3,14 @@ extends Node3D
 
 const FIELD_SCENE = preload("res://assets/field/baseball_field.glb")
 const GROUND_LAYER: int = 4
-var dugout_labels: Array[Label3D] = []
+var model: Node3D
 
 
-func build(park: BaseballBallpark) -> void:
-	var model := FIELD_SCENE.instantiate()
+func build(with_collision: bool = true) -> void:
+	model = FIELD_SCENE.instantiate()
 	add_child(model)
-	_add_ground_collision(model)
-	for side in 2:
-		var label := Label3D.new()
-		label.position = BaseballWorld.world_position(park.dugouts[side].position, 70)
-		label.font_size = 40
-		label.pixel_size = 0.013
-		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		add_child(label)
-		dugout_labels.append(label)
+	if with_collision:
+		_add_ground_collision(model)
 
 
 func _add_ground_collision(node: Node) -> void:

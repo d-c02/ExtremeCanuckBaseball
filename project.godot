@@ -26,6 +26,10 @@ window/stretch/aspect="expand"
 
 movie_writer/movie_file="tmp/movie.ogv"
 
+[gui]
+
+theme/custom="res://assets/ui/extreme_canuck_theme.tres"
+
 [layer_names]
 
 2d_physics/layer_1="Players"

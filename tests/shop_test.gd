@@ -51,6 +51,8 @@ func pin_one_kind() -> Array[BaseballPlayerType]:
 ## ask for a spot rather than a name.
 func listing(index: int) -> PlayerSlot:
 	return shop.podiums()[index].listing as PlayerSlot
+
+
 func click(screen: Vector2, pressed: bool) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
@@ -79,6 +81,8 @@ func run() -> void:
 	shop.rng.seed = 9
 	shop.refresh_stock()
 	await settle()
+	check_start_requirements()
+	check_blender_stage()
 	await check_signing()
 	await check_refused_drops()
 	await check_selling()
@@ -104,7 +108,75 @@ func run() -> void:
 	await check_opponent_spends()
 	await check_opponent_pool()
 	await check_run_banking()
+	await check_new_run()
+	print("Shop failures: %d" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+## The shop only starts with a pitcher and catcher, and refusing a start cannot
+## quietly apply end-of-shop bonuses to a roster the player is still building.
+func check_start_requirements() -> void:
+	var button: Button = shop.get_node("HUD/Start")
+	check(button.disabled, "An empty roster could start a match")
+	check(button.text == "Sign pitcher + catcher", "The Start button hid the missing battery")
+	shop.start_game()
+	check(not BaseballSession.ready_to_play(), "An empty roster was carried to a match")
+	var coach := BaseballPlayerType.new()
+	coach.coaching = 1
+	var plain := BaseballPlayerType.new()
+	var original := shop.roster
+	var incomplete := _lineup([coach, plain, plain], [1, 1, 1])
+	shop.roster = incomplete
+	incomplete.players[1] = null
+	var teammate := incomplete.player_at(2)
+	var strength := teammate.strength
+	shop._update_hud()
+	check(button.disabled and button.text == "Sign catcher", "A missing catcher was not shown")
+	shop.start_game()
+	check(teammate.strength == strength, "A refused start applied the Coach bonus")
+	check(not BaseballSession.ready_to_play(), "A roster without a catcher was carried")
+	incomplete.players[0] = null
+	incomplete.players[1] = plain.recruit()
+	shop._update_hud()
+	check(button.disabled and button.text == "Sign pitcher", "A missing pitcher was not shown")
+	incomplete.players[0] = coach.recruit()
+	shop._update_hud()
+	check(not button.disabled and button.text == "Play ball", "A ready roster could not start")
+	shop.roster = original
+	shop._update_hud()
+
+
+func check_blender_stage() -> void:
+	var stage: BaseballShopStage = load("res://assets/field/shop_stage.tres")
+	var view: BaseballShopFieldView = shop.get_node("FieldView")
+	check(shop.park.use_exported_layout, "The shop did not apply the Blender field layout")
+	check(
+		view.model.scene_file_path == "res://assets/field/baseball_field.glb",
+		"The shop did not instantiate the match's field GLB"
+	)
+	check(
+		view.position.is_equal_approx(stage.field_position),
+		"The shop field missed its Blender anchor"
+	)
+	check(
+		view.scale.is_equal_approx(Vector3.ONE * stage.field_scale),
+		"The shop field missed its Blender scale"
+	)
+	check(stage.field_positions.size() == 9, "The Blender stage needs nine roster anchors")
+	var stands := shop.podiums()
+	check(
+		stands.size() == stage.podium_positions.size(), "The podium anchors do not match the shop"
+	)
+	for index in mini(stands.size(), stage.podium_positions.size()):
+		check(
+			stands[index].position.is_equal_approx(stage.podium_positions[index]),
+			"A podium missed its Blender anchor"
+		)
+	check(
+		shop.get_node("SellSpot").position.is_equal_approx(stage.sell_position),
+		"The sell target missed its Blender anchor"
+	)
+	check(shop.get_node("ShopFixtures").get_child_count() > 0, "The Blender fixtures are absent")
 
 
 func check_signing() -> void:
@@ -122,6 +194,8 @@ func check_signing() -> void:
 	check(shop.roster.players[0] == pitcher.player, "The roster missed the signing")
 	check(shop.roster.field_roles[0] == "P", "The roster missed the slot's fielding role")
 	check(not is_instance_valid(jack), "The signed player stayed on the podium")
+	var start: Button = shop.get_node("HUD/Start")
+	check(start.disabled and start.text == "Sign catcher", "Signing P did not update Start")
 
 
 ## A drop is refused when the player standing there is another kind, or when the
@@ -191,6 +265,9 @@ func check_roster_ready() -> void:
 		shop.roster.validation_error().is_empty(),
 		"A full shop roster was rejected: " + shop.roster.validation_error()
 	)
+	shop._update_hud()
+	var start: Button = shop.get_node("HUD/Start")
+	check(not start.disabled and start.text == "Play ball", "The filled roster could not play")
 
 
 ## Names are clutter on a full field, so they only show under the cursor.
@@ -213,7 +290,15 @@ func check_hover_names() -> void:
 	shop._unhandled_input(motion_at(screen_point(slot)))
 	check(not harrhy.name_label.visible, "A listing kept its name after the cursor left")
 	check(slot.name_label.visible, "Hovering a roster slot did not show its name")
-	check(not slot.highlight.visible, "A roster slot lit up with nothing being dragged")
+	check(slot.highlight == null, "A roster slot kept a second highlight ring")
+	check(slot.ring.visible, "Hovering a roster slot did not show its ring")
+	var tint := slot.ring_material.albedo_color
+	check(
+		tint.is_equal_approx(
+			Color(slot.accept_color.r, slot.accept_color.g, slot.accept_color.b, tint.a)
+		),
+		"Hovering a roster slot did not turn its ring gold"
+	)
 	# The two numbers a player is bought on stay readable without the cursor.
 	check(
 		(
@@ -312,6 +397,7 @@ func check_batting_view() -> void:
 	check(not first.position.is_equal_approx(fielding), "The lineup left a slot on the field")
 	var view: BaseballShopFieldView = shop.get_node("FieldView")
 	check(not view.markings.visible, "The diamond stayed under the batting order")
+	check(shop.get_node("LineupGround").visible, "The Blender lineup floor did not appear")
 	var camera := shop.get_viewport().get_camera_3d()
 	var spots: Array[Vector3] = []
 	var screens: Array[Vector2] = []
@@ -336,6 +422,7 @@ func check_batting_view() -> void:
 	check(first.position.is_equal_approx(fielding), "Leaving the lineup stranded a slot")
 	check(not first.order_label.visible, "A batting number stayed after leaving the lineup")
 	check(view.markings.visible, "The diamond did not come back with the fielders")
+	check(not shop.get_node("LineupGround").visible, "The lineup floor stayed under the field")
 
 
 ## Refreshing rolls a whole new shelf: every podium comes back with something of its
@@ -355,9 +442,7 @@ func check_refresh() -> void:
 		if rolled == null:
 			continue
 		check(rolled.cost == rolled.player.value(), "A rolled player was not priced on stats")
-		check(
-			rolled.player.sell_price() < rolled.cost, "A rolled player sold for the asking price"
-		)
+		check(rolled.player.sell_price() < rolled.cost, "A rolled player sold for the asking price")
 
 
 ## The rolled opponent spends what the run has paid the player by this round, and
@@ -396,6 +481,8 @@ func check_opponent() -> void:
 	var start: Button = shop.get_node("HUD/Start")
 	check(not start.pressed.get_connections().is_empty(), "The start button went nowhere")
 	BaseballSession.clear()
+
+
 ## Every refresh costs a dollar more than the last, and the shop will not sell one
 ## it cannot be paid for.
 func check_refresh_cost() -> void:
@@ -409,7 +496,7 @@ func check_refresh_cost() -> void:
 	check(shop.funds == 7, "The second refresh did not cost two dollars")
 	await settle()
 	var button: Button = shop.get_node("HUD/Refresh")
-	check(button.text == "Refresh  $3", "The button did not price the next refresh")
+	check(button.text == "Reroll  $3", "The button did not price the next refresh")
 	shop.funds = 2
 	shop._update_hud()
 	check(button.disabled, "The button stayed live with the price out of reach")
@@ -450,6 +537,37 @@ func check_run_banking() -> void:
 		BaseballSession.finish_match(false)
 	check(BaseballSession.over(), "A run with no lives left was not over")
 	BaseballSession.begin()
+
+
+## A future menu can reset even an empty wallet and no battery. The new scene
+## should rebuild the roster and shelf from the starting session.
+func check_new_run() -> void:
+	var sell: SellSpot = shop.get_node("SellSpot")
+	var pitcher: TeamSlot = shop.get_node("Roster/Slot1")
+	var catcher: TeamSlot = shop.get_node("Roster/Slot2")
+	check(shop.trade(pitcher.occupant, sell), "Could not empty the pitcher slot")
+	check(shop.trade(catcher.occupant, sell), "Could not empty the catcher slot")
+	shop.funds = 0
+	shop.refreshes = 3
+	BaseballSession.lives = 2
+	BaseballSession.round_number = 4
+	shop._update_hud()
+	check(shop.get_node("HUD/Start").disabled, "A batteryless team could still start")
+	check(shop.get_node("HUD/Refresh").disabled, "An empty wallet could still refresh")
+	current_scene = shop
+	shop.new_run()
+	await settle()
+	var restarted := current_scene as Shop
+	check(restarted != null, "New run did not reload the buy screen")
+	check(BaseballSession.funds == 30, "New run did not restore the starting funds")
+	check(BaseballSession.lives == 5, "New run did not restore five lives")
+	check(BaseballSession.round_number == 1, "New run did not restore round one")
+	check(BaseballSession.opponent == null, "New run kept the old opponent")
+	if restarted != null:
+		check(restarted.refreshes == 0, "New run kept the refresh price")
+		check(restarted.roster == BaseballSession.roster, "New run did not carry a fresh roster")
+		check(not restarted.can_start_game(), "New run kept the previous team")
+		check(restarted.podiums()[0].listing != null, "New run did not restock the shop")
 
 
 ## A snack is bought like a player and eaten by one: the point goes on for good and
@@ -546,9 +664,7 @@ func check_merging() -> void:
 	await drag(listing(0), slot)
 	check(slot.player.level == 2, "One level below levelled a player on its own")
 	check(slot.player.steps == 1, "A half merge was not remembered")
-	check(
-		slot.occupant.level_label.text == "Lv 2½", "The badge did not show the half merge"
-	)
+	check(slot.occupant.level_label.text == "Lv 2½", "The badge did not show the half merge")
 	shop.refresh_stock()
 	await settle()
 	await drag(listing(0), slot)
@@ -601,7 +717,13 @@ func check_quiet_drag() -> void:
 	await process_frame
 	check(not carried.name_label.visible, "A carried player kept their card up")
 	check(not slot.name_label.visible, "A slot named itself under a carried player")
-	check(slot.highlight.visible, "A slot stopped lighting up under a carried player")
+	check(slot.ring.visible, "A slot stopped showing its ring under a carried player")
+	var expected := slot.accept_color if shop.can_trade(carried, slot) else slot.reject_color
+	var tint := slot.ring_material.albedo_color
+	check(
+		tint.is_equal_approx(Color(expected.r, expected.g, expected.b, tint.a)),
+		"A drop target did not recolor its existing ring"
+	)
 	cancel_drag()
 	await settle()
 
@@ -721,9 +843,7 @@ func check_food_passives() -> void:
 		_fed(dog, hot_dog, 3).x == hot_dog.strength_gain,
 		"A dog made something of hot dogs as well as peanuts"
 	)
-	check(
-		_fed(lifter, hot_dog, 1).y == 0, "A hot dog fed a bodybuilder dexterity as well"
-	)
+	check(_fed(lifter, hot_dog, 1).y == 0, "A hot dog fed a bodybuilder dexterity as well")
 
 
 ## What one of [param type], levelled to [param level], puts on after eating
@@ -752,9 +872,7 @@ func check_coaching() -> void:
 	var senior := _lineup([coach, plain], [3, 1])
 	before = _stats(senior)
 	senior.finish_shopping()
-	check(
-		_stats(senior)[1] - before[1] == Vector2i(3, 3), "A level three coach did not give +3/+3"
-	)
+	check(_stats(senior)[1] - before[1] == Vector2i(3, 3), "A level three coach did not give +3/+3")
 	var pair := _lineup([coach, coach, plain], [1, 2, 1])
 	before = _stats(pair)
 	pair.finish_shopping()

@@ -1,21 +1,18 @@
 # Baseball simulation
 
 Run `main.tscn` with F6 to play the sample teams, or start from the buy screen
-with F5 and hand it a team you signed. A match started from the shop takes both
+with F5 and hand it a team you signed. Matches start on scene entry and run
+automatically. A match started from the shop takes both
 teams from `BaseballSession`, pays $20 into the run when it finishes, takes a life
 for a loss, and offers the way back to the shop; opened on its own it uses the
 sample teams in `match.tscn` and banks nothing. The 1920x1080 viewport scales to
 fill the window, so a bigger window shows the same framing larger, not more field.
 
-| Key | Action |
-| --- | --- |
-| Space | Start the game. Pitches and side changes run automatically. |
-| P | Pause or resume, including between-play movement. |
-| B | Toggle the box score. It opens automatically at the final result. |
-| R | Start over with a fresh seed (or the configured fixed seed). Press Space to play. |
-| Shift+R | Replay the current seed. |
-| D | Show defensive movement targets. |
-| C | Show the infield reference guide. |
+The match has no permanent HUD or player-facing key controls. Development scripts
+can set `random_seed`, inspect `active_seed`, call `reset_game()` followed by
+`start_game()` for a fresh game, or call `reset_game(true)` followed by
+`start_game()` to replay the current seed. `paused`, `debug_visible` and the 3D
+world's `show_guides` remain available through code or the Remote Inspector.
 
 ## Game loop
 
@@ -28,9 +25,9 @@ release, followed by the 0.85-second pitch flight. These are compressed game tim
 not regulation pitch speeds. One pitch settles a plate appearance. A pitch the hitter
 cannot beat continues to the catcher before the strikeout call.
 
-`random_seed = 0` chooses a new seed on startup and R. The HUD shows `active_seed`;
-Shift+R replays it. Set `random_seed` to a nonzero value for repeatable development
-runs. The seed controls baseball decisions, not the field camera.
+`random_seed = 0` chooses a new seed on startup and `reset_game()`. A replay
+keeps `active_seed`; set `random_seed` to a nonzero value for repeatable
+development runs. The seed controls baseball decisions, not the field camera.
 
 Players brake when a play ends and wait through a 2.2-second result beat at normal
 speed. Then safe runners stay on base, out or scored players return to the dugout,
@@ -52,8 +49,8 @@ Set it to 1 for normal speed throughout. Live plays, windups and return throws
 always run at normal speed. The pitcher must receive the return before the next
 windup; repositioning can continue afterward.
 `between_play_delay` controls the result beat. Transitions use the same 3D view
-at the faster simulation speed. VCR tracking bands, scanlines and a FF indicator
-mark visible accelerated movement immediately, including equipment attendants.
+at the faster simulation speed. VCR tracking bands and scanlines mark visible
+accelerated movement immediately, including equipment attendants.
 Only offscreen movement accelerates silently. The effect uses completed fixed
 simulation steps and actor movement, rather than predicting remaining travel or
 waiting through an entry delay. This also covers a player's final step into
@@ -61,7 +58,7 @@ position, when they are no longer marked as moving. Rendering never chooses the
 simulation speed. Pause and reset clear the effect.
 Normal-speed steps have no tape effect, including the opening walkout, windup,
 live play, return throw and result beat. A step that finishes accelerated
-preparation retains its indicator for that movement even if it starts the next
+preparation retains the effect for that movement even if it starts the next
 phase. Setting transition speed to 1 disables acceleration and the effect. Tune
 strength or disable the effect on `TapeTransition` in `main.tscn`.
 
@@ -161,9 +158,9 @@ carries; a hitter who only just wins the matchup mostly tops it. Measured over
 400 swings each: a 99 hitter against a spent arm clears the fence 94% of the
 time, a 70 hitter 48%, and a 50 hitter 4%, while any hitter who wins by a single
 point never does. Each player keeps their own live strength across half-innings
-and games within a match; a reset restores every player's. The HUD shows the
-matchup the next pitch turns on, and the arm on the mound counts its own strength
-down at its feet.
+and games within a match; a reset restores every player's. The arm on the mound
+counts its own strength down at its feet, making the next matchup visible on the
+players themselves.
 
 ## Baseball rules
 
@@ -192,31 +189,30 @@ plate from the two strengths alone. Batted balls take a random fair direction,
 and their speed and lift scale with the strength margin. Nothing here is
 calibrated to MLB rates; the sample rosters put roughly a quarter of plate
 appearances in the strikeout column and score about 1.3 runs an inning.
-There are no balls/walks, steals, error accounting, player-to-player collisions,
-or a shop feeding its bought rosters into a match yet.
+There are no balls/walks, steals, error accounting, or player-to-player collisions.
 Decisions and close races resolve at physics-tick precision.
 
 ## Scorekeeping
 
 `BaseballMatch.box_score` holds the current game's record, separate from roster
-Resources. B opens the box score; it opens automatically at the final result.
-The final score remains visible until reset. Records are kept in memory; reset
-clears them and closes the panel. B can reopen it before starting a game.
+Resources. The full record stays in memory for development and future game
+features; reset clears it. The match does not show a detailed box-score panel.
+After a shop match, a small prompt reports the win or loss and offers the next
+shop or a new run.
 `box_score.to_dict()` returns a deep copy of plain data suitable for
 JSON serialization, including a pitch-by-pitch result log. Disk saving is not wired up.
 
 - Team line score: runs by inning, total runs (R), hits (H), and runners left on
-  base (LOB). A dash means that half-inning has not been played. LOB accumulates
+  base (LOB). Unplayed halves have no inning entry. LOB accumulates
   runners remaining at the end of each half, including the final walk-off.
 - Each batter present, in lineup order (open slots have no row): plate
   appearances (PA), at-bats (AB), runs (R), hits (H), doubles
   (2B), triples (3B), home runs (HR), runs batted in (RBI), and strikeouts (K).
 - Team pitching: completed pitches (P), batters faced (BF), outs, hits allowed,
-  runs allowed and strikeouts. IP displays outs as innings plus remaining outs:
-  `2.1` means seven outs, not 2.1 decimal innings. Each team currently has one pitcher.
+  runs allowed and strikeouts. Each team currently has one pitcher.
 - Each fielder: putouts (PO) and bobbles. Catchers get strikeout putouts. A bobble
   counts a failed collection attempt, not an official error. Assists and earned
-  runs are not adjudicated, so there is no E column or ERA.
+  runs are not adjudicated.
 
 Scoring uses play state, never result text or sound signals. One pitch settles a
 plate appearance, so every pitch is a completed at-bat under the rules currently
@@ -248,9 +244,10 @@ races that happen within the same physics step.
 ## Field and presentation
 
 The field comes from the Blender Geometry Nodes source. See
-[Blender setup and export](blender.md). Exporting writes the mesh and a
-`BaseballFieldLayout` Resource together into `assets/field/`. The match applies
-that layout through `Field` before its child nodes build collision walls and spawn players.
+[Blender setup and export](blender.md). Exporting writes the shared field mesh and a
+`BaseballFieldLayout` Resource together into `assets/field/`. The buy screen and
+match instantiate that same GLB and apply that layout. The match then builds its
+collision walls and spawns players.
 
 `main.tscn` is a 3D scene. Its hidden `Simulation` child runs the original 2D
 movement and ball-height rules. `BaseballWorld.world_position()` maps simulation
@@ -259,8 +256,9 @@ Rendering, camera movement and sound do not advance the rules or consume randomn
 
 `game/field/match_ballpark.tscn` inherits the shared `ballpark.tscn` and adds
 dugouts under `Field/Dugouts`. Its exported-layout option applies the Blender
-layout before the park initializes. The shop uses the bare park with its authored
-markers and a separate procedural preview renderer.
+layout before the park initializes. Both screens use it. The shop scales the
+same field mesh for its overview and adds separate Blender-authored fixtures;
+only the match gives the field mesh 3D terrain collision.
 
 `game/presentation/field_3d.gd` loads the exported GLB and builds StaticBody3D
 triangle collision on the Walkable field layer (3D layer 3). The matching layout Resource
@@ -269,7 +267,11 @@ The exported perimeter tapers to a point behind home. Its sidelines are parallel
 to the foul lines, with the neutral-grey dugouts built into those sides. Guards
 follow both room rims and stair sides, leaving gaps at the top of the stairs.
 The backstop uses a transparent grey crosshatch texture, with the same collision
-height. A 1,000-metre grass slab extends beyond the overview so its edges stay hidden.
+height. A tiled grass slab extends beyond the overview so its edges stay hidden.
+The dirt infield extends outside the four bases, with a dirt area, two chalk
+batter's boxes and a pentagonal plate at home. Grass, dirt and chalk use varied
+8-by-8 image tiles; their scale comes from editable controls in the Blender
+source and exports in the shared field GLB.
 The curved outfield is trimmed to the sideline joins and its evaluated outline
 also supplies collision and home-run boundaries. Collision segments and heights come
 from the evaluated Geometry Nodes panels, not separate hand-authored coordinates.
@@ -319,18 +321,20 @@ and remain placeholders.
 ### Field camera
 
 One elevated camera keeps the entire field and both dugouts in view throughout
-the game. Its position is authored on `Camera` in `main.tscn`. It fits the field's
+the game. Its position is authored on `Camera` in `main.tscn`. It aims above the
+mound to give the field a closer composition like the buy screen, then fits the
 bases, exported fence edges and dugout seats on startup, reset and window resize.
-`framing_margin` leaves room around the field and under the HUD. The near plane
+`framing_margin` leaves room around the field. The near plane
 stays at 0.05 so the foreground playing surface is not clipped.
 
 The camera eases in by up to 6% during windup and pitching, then widens for play.
 High or distant balls can widen the view by a further 8%. Exponential smoothing
 keeps these changes gradual; pause and the result beat hold the current zoom.
 `zoom_amount` and `zoom_speed` tune this on Camera. The close view still fits the
-field and dugouts. There are no shot cuts, alternate angles or manual orbit controls. C draws an infield reference
-rectangle; D draws defensive movement targets. The VCR effect still marks visible
-accelerated movement in this same overview.
+field and dugouts. There are no shot cuts, alternate angles or manual orbit controls.
+Development scripts can enable an infield reference rectangle and defensive
+movement targets. The VCR effect still marks visible accelerated movement in
+this same overview.
 
 ### Equipment continuity
 
@@ -363,11 +367,11 @@ player movement, or general 3D pathfinding. Dugout routes are explicit waypoints
 ## Code layout
 
 - `main.tscn`: 3D field, player views, ball, camera, light and sound.
-- `game/match.gd` / `game/match.tscn`: hidden planar simulation, rosters, innings and HUD.
+- `game/match.gd` / `game/match.tscn`: hidden planar simulation, rosters and innings.
 - `game/simulation/`: pitch/play rules, runners, defense, ball returns, equipment and box-score records.
 - `game/actors/`: player, ball and bat simulation nodes and movement scripts.
 - `game/field/`: simulation markers, dugout seats and outfield collision boundary.
-- `game/presentation/`: 3D field/player views, camera, box-score panel and sound scene.
+- `game/presentation/`: 3D field/player views, camera and sound scene.
 - `game/shop/`: buy-screen buyables, drop targets, drag handling and the rolls that
   stock it. See [buy_screen.md](buy_screen.md).
 - `game/session.gd`: the run — money, lives, the round, and the teams the buy screen
@@ -406,7 +410,7 @@ godot --headless --path . --fixed-fps 60 --script tests/simulation_test.gd
 ```
 
 The suite runs three complete games, including a same-seed replay. It checks
-roster validation, pre-game box-score toggling/reset, roster/inning continuity,
+automatic match entry, roster validation, roster/inning continuity,
 extra innings, box-score totals and base occupancy, then exercises force/tag decisions,
 consecutive outs, grand-slam RBIs, cancelled runs, fielder's choices, walk-offs, safe runners, pause/pacing, defensive handoffs and
 bobble recovery, wall collisions, a live grand slam, contact starts, caught-fly

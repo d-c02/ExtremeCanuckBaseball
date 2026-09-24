@@ -69,7 +69,7 @@ var pitch_count: int = 0
 var phase_elapsed: float = 0.0
 var paused: bool = false
 var debug_visible: bool = false
-var last_result: String = "Space: start game"
+var last_result: String = "Ready"
 var ball_return: BaseballBallReturn
 var equipment: BaseballEquipment
 var error_message: String = ""
@@ -80,7 +80,6 @@ var forfeit_side: int = -1
 @onready var field: BaseballBallpark = $Field
 @onready var home: Marker2D = field.home
 @onready var mound: Marker2D = field.mound
-@onready var status: Label = $HUD/Status
 @onready var outfield: BaseballOutfield = field.outfield
 @onready var dugouts: Array[Node2D] = field.dugouts
 
@@ -143,7 +142,7 @@ func reset_game(replay: bool = false) -> void:
 	phase_elapsed = 0.0
 	error_message = ""
 	forfeit_side = -1
-	last_result = "Ready: Space starts the whole game"
+	last_result = "Ready"
 	for squad in squads:
 		for player in squad:
 			player.position = dugouts[player.team_index].seat_position(player.roster_index)
@@ -154,7 +153,6 @@ func reset_game(replay: bool = false) -> void:
 	batter = null if squads[0].is_empty() else squads[0][0]
 	ball_return = null
 	equipment.reset()
-	_refresh_status()
 	game_reset.emit()
 
 
@@ -182,7 +180,6 @@ func step(delta: float) -> void:
 		_step_simulation(delta)
 		completed_steps += 1
 	simulation_stepped.emit(completed_steps)
-	_refresh_status()
 
 
 func is_fast_forwarding() -> bool:
@@ -413,62 +410,4 @@ func _everyone_arrived() -> bool:
 func simulation_error(message: String) -> void:
 	error_message = message
 	phase = Phase.FINISHED
-	status.text = message
 	push_error(message)
-
-
-func _unhandled_key_input(event: InputEvent) -> void:
-	if box_score == null:
-		return
-	if not event is InputEventKey or not event.pressed or event.echo:
-		return
-	match event.keycode:
-		KEY_SPACE:
-			start_game()
-		KEY_R:
-			reset_game(event.shift_pressed)
-		KEY_P:
-			paused = not paused
-			_refresh_status()
-		KEY_D:
-			debug_visible = not debug_visible
-
-
-## The matchup the next pitch is decided on: what the arm has left against the
-## hitter it has to beat.
-func pitcher_status() -> String:
-	var pitcher := fielder_for("P")
-	if pitcher == null or batter == null:
-		return "No pitcher"
-	return (
-		"%s %d STR vs %s %d STR"
-		% [
-			pitcher.data.player_name,
-			pitcher.pitch_strength,
-			batter.data.player_name,
-			batter.data.strength
-		]
-	)
-
-
-func _refresh_status() -> void:
-	status.text = (
-		(
-			"%s %d / %d %s | %s %d/%d | %d out(s) | %s\n%s%s\n"
-			+ "Space: play   P: pause   R: new   Shift+R: replay   B: score   "
-			+ "D/C: guides"
-		)
-		% [
-			teams[0].team_name,
-			scores[0],
-			scores[1],
-			teams[1].team_name,
-			"Top" if batting_side == 0 else "Bottom",
-			inning,
-			innings,
-			outs,
-			pitcher_status(),
-			last_result + " · seed %d" % active_seed,
-			" [PAUSED]" if paused else ""
-		]
-	)

@@ -3,8 +3,7 @@ extends Node2D
 
 ## A ballpark: home, the mound, the bases and the outfield wall, plus whatever
 ## dugouts the scene puts under a `Dugouts` child. `match_ballpark.tscn` inherits
-## this one and adds the two dugouts a game needs; the buy screen uses the bare
-## park, so both scenes share one definition of the field.
+## this one and applies the Blender layout for both the buy screen and the match.
 
 @export var use_exported_layout: bool = false
 

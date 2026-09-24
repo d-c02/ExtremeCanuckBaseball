@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://game/presentation/player_3d.gd" id="script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player.svg" id="sprite"]
+[ext_resource type="FontFile" path="res://assets/fonts/Drybrush.ttf" id="drybrush"]
 [sub_resource type="StandardMaterial3D" id="shadow_material"]
 albedo_color = Color(0.16, 0.22, 0.16, 1)
 shading_mode = 0
@@ -28,6 +29,7 @@ mesh = SubResource("shadow_mesh")
 cast_shadow = 0
 [node name="Strength" type="Label3D" parent="."]
 position = Vector3(-1.5, 0.36, 0)
+font = ExtResource("drybrush")
 pixel_size = 0.01
 font_size = 44
 outline_size = 10
@@ -36,6 +38,7 @@ modulate = Color(0.98, 0.7, 0.38, 1)
 text = "0"
 [node name="Dexterity" type="Label3D" parent="."]
 position = Vector3(1.5, 0.36, 0)
+font = ExtResource("drybrush")
 pixel_size = 0.01
 font_size = 44
 outline_size = 10

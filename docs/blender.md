@@ -5,13 +5,35 @@ Tested with Blender 5.2.1 LTS and
 The editable source is [baseball_field.blend](../art/blender/baseball_field.blend).
 Open the **Baseball Field** scene, select **Baseball Field**, then edit the
 **Field Controls** Geometry Nodes modifier. The Geometry Nodes workspace exposes
-`GN_BaseballField_v04`; labeled frames separate each part of the field.
+`GN_BaseballField_v06`; labeled frames separate each part of the field.
+The Layout and Geometry Nodes workspaces open in Material Preview so the field
+textures appear while editing.
+The same file has a **Buy Screen Preview** scene. Its field is a scaled instance
+of the **Field** collection, so field edits appear in both Blender views. Switch
+Blender scenes to inspect the match field or the buy-screen arrangement.
+
+In **Buy Screen Preview**, move the named `Podium 1` through `Podium 6`, `Sell
+Spot` and `Roster 1` through `Roster 9` empties to place the shop. The podium and
+sell meshes follow those empties through `GN_ShopFixtures_v01`. The red roster
+rings are preview geometry only; Godot draws and moves its interactive slots.
+In Godot, a slot's existing ring turns gold on hover or an allowed drop, with no
+separate highlight ring.
+`Roster 1` starts on the mound; `Roster 3` and `Roster 5` start centered on first
+and third base. The catcher stays behind home, while the other fielders retain
+their fielding positions. These buy-screen anchors do not change the match
+roster's fielding positions. If you later move a base control, move its roster
+empty in the preview too before exporting. Move `Shop Camera` and `Camera Target`
+to frame the shop. `Shop Field Preview` owns the field's shop scale and
+translation. `Lineup Ground` is hidden in this Blender scene but exported for
+the batting-order view. Player sprites, prices, highlights
+and drag targets remain Godot nodes because they change during play.
 
 ## Controls
 
 - Home, First, Second, Third and Mound: independent positions. Base markers,
-  the dirt diamond and base paths follow these positions.
-- Base Size: shared base marker size.
+  the dirt infield and base paths follow these positions. The dirt extends beyond
+  the bases by **Infield Dirt Margin** (2.2 metres by default).
+- Base Size: scales the three square bases and the pentagonal home plate.
 - Fence Depth: distance from home's Y position to the flat center fence.
 - Fence Flat Half Width, Fence Corner Radius and Fence Height: outfield shape.
   The fence has a flat center and curved corners trimmed where the sidelines meet
@@ -28,6 +50,16 @@ Open the **Baseball Field** scene, select **Baseball Field**, then edit the
 - Line Radius and Foul Line Length: line thickness and distance from home.
   Foul lines follow the directions from home through first and third. Their
   lengths are manual; after changing the fence, adjust them to meet it.
+- Grass Tile Size, Dirt Tile Size and Chalk Tile Size: metres per image repeat.
+  Defaults are 32, 20 and 10 metres for the full 8-by-8 varied images, keeping
+  their source detail around 4, 2.5 and 1.25 metres. Smaller values repeat more
+  often. These controls generate `UVMap` coordinates on the evaluated meshes,
+  so Blender and the exported GLB use the same scale.
+  Change UV projection in the `Texture UVs` Geometry Nodes frame; the source
+  mesh is empty, so it has no direct UV Editor unwrap until the modifier is applied.
+- Batter Dirt Radius: size of the circular dirt area around home plate.
+  Batter Box Width, Length and Offset place the two chalk outlines beside the
+  pentagonal plate. They follow the Home control.
 - Ground Size: dimensions of the grass slab, defaulting to 1,000 by 1,000 metres
   so the overview cannot see its edges.
 - Visitors Dugout / Home Team Dugout and rotations: placement of the excavations.
@@ -47,13 +79,30 @@ origins; the other bases and dugouts keep their own independent positions.
 The hidden **Field Sources (do not export)** collection provides infield topology
 and fence/dugout vertex coefficients. Keep it: Geometry Nodes reads these meshes.
 The visible field is evaluated by nodes; changing controls needs no Python rebuild.
-Materials remain simple placeholders. Both dugouts use neutral grey; team colors
-belong to the players. The backstop uses `assets/field/backstop_chainlink.png`,
+The unchanged PNG conversions of the original BMPs are
+`art/blender/textures/grass.png` and `dirt.png`. The active art sources are
+`grass_contrast.png` (stronger light/dark grass detail) and `dirt_clay.png`
+(fine reddish infield clay). `tools/blender/varied_textures.py` balances these
+for the game's lighting and builds reproducible 2048-pixel `*_varied.png` images
+from 8-by-8 rotated and shifted patches, blended across gently warped joins
+with subtle broad color variation. `chalk_dirt_varied.png` is a lightened
+version of the varied clay for base paths, foul lines and batter's boxes; the
+bases and home plate stay solid white. The varied images are packed into Blender
+and embedded in the shared field GLB. To change the active source art, replace
+its PNG, then run
+`blender --background art/blender/baseball_field.blend --python tools/blender/varied_textures.py`
+to rebuild the varied images. Run
+`blender --background art/blender/baseball_field.blend --python tools/blender/surface_textures.py`
+to refresh the packed copies before re-exporting. Both dugouts use neutral grey;
+team colors belong to the players. The backstop uses `assets/field/backstop_chainlink.png`,
 a repeating grey crosshatch with transparent gaps. `tools/blender/chainlink.py`
 creates it if absent and adds metre-scaled UVs to the barrier node group. The
 texture is packed into the Blender file and GLB; glTF alpha masking preserves the
-open gaps in Godot without changing collision height. Replace the PNG, reload it
-in Blender, and re-export to change the fence appearance.
+open gaps in Godot without changing collision height.
+
+Run `python3 tools/blender/convert_textures.py --from-bmps` to convert replacement
+BMPs from `~/Downloads` (requires ImageMagick). Replacing only these archived
+conversions does not change the active edited source art.
 
 ## MCP setup
 
@@ -129,14 +178,16 @@ blender --background art/blender/baseball_field.blend --python tools/blender/exp
 ```
 
 This writes `assets/field/baseball_field.glb`, `baseball_field.tres` and
-`baseball_field.layout.json`. Godot imports the mesh; the match loads the layout
-Resource through `match_ballpark.tscn` before constructing its simulation.
-The standalone shop retains its authored procedural field preview. Restart the game after exporting.
-The exporter evaluates the modifier into a temporary mesh, exports only that mesh
-from the active scene, and leaves the source modifier intact. The JSON records
+`baseball_field.layout.json`, plus `shop_fixtures.glb`,
+`shop_lineup_ground.glb` and `shop_stage.tres`. Both screens import the same
+field GLB and layout through `match_ballpark.tscn`. The shop adds its fixture GLB
+and places interactive nodes from the exported stage Resource. Restart the game
+after exporting. The exporter evaluates the field and shop modifiers into
+temporary meshes without applying them to the Blender source. The JSON records
 all field controls and the coordinate convention. The `.tres` converts positions,
 dimensions and rotations into simulation units. glTF converts the model to Y up
-for Godot. The default blockout has 504 evaluated vertices and 306 polygons, including
+for Godot; the shop stage exports Blender empties as Godot 3D positions. The
+default field has 602 evaluated vertices and 340 polygons, including
 18 barrier panels. `GN_FieldBarrier_v01` creates the guard panels and marks
 their faces with the boolean `field_barrier` attribute. Export reads their actual
 evaluated ground endpoints and heights into the layout Resource, so rotated or
@@ -149,6 +200,8 @@ so the old rectangular side walls do not survive as invisible obstacles.
 `art/.gdignore` keeps Blender source files outside Godot's import scan. Generated
 files in `assets/field/` are committed together. Do not edit only the mesh or only
 the `.tres`: they describe the same bases, fence, dugout openings and stair routes.
+Likewise, move shop fixtures and their anchors in Blender and re-export rather
+than adjusting copies of their positions in Godot.
 The old `art/exports/` staging location is no longer used.
 
 Keep marker Z coordinates and the field object's transform at zero/identity.
@@ -173,11 +226,16 @@ field's forward (-Y) direction; rotating the whole diamond is not supported.
 
 `tools/blender/fences.py` installs or updates the perimeter while preserving the
 rest of the field. It replaces the old rectangular closure and its depth control.
-The saved source uses v04; normal edits only need modifier changes and export.
+`tools/blender/surface_textures.py` adds tiled UVs, wider dirt and the home-plate
+area to a v04 source. It upgrades v05 materials to the varied image tiles and
+refreshes their packed images when run again. The saved source uses v06; normal
+edits only need modifier changes and export.
 
 `tools/blender/build_field.py` creates a fresh field scene, including the perimeter. It refuses to overwrite
 the source unless `-- --overwrite` is supplied. Rebuilding discards saved field
-edits; normally edit the modifier instead.
+and shop edits; normally edit the modifiers and anchors instead. If building a new
+source from scratch, finish the field passes first, then run
+`tools/blender/add_shop_stage.py` once to add the shop preview.
 
 ```sh
 blender --background --python tools/blender/build_field.py -- --overwrite

@@ -20,10 +20,7 @@ func _frame_field() -> void:
 	if game.batter == null:
 		return
 	var points := framing_points()
-	var bounds := AABB(points[0], Vector3.ZERO)
-	for point in points:
-		bounds = bounds.expand(point)
-	look_at(bounds.get_center())
+	look_at(BaseballWorld.world_position(game.mound.position) + Vector3.UP * 1.6)
 	near = 0.05
 	wide_fov = _fitted_fov(points, framing_margin)
 	close_fov = minf(wide_fov, maxf(wide_fov * (1.0 - zoom_amount), _fitted_fov(points, 0.94)))
@@ -36,9 +33,7 @@ func _process(delta: float) -> void:
 	var goal := wide_fov
 	if game.phase in [game.Phase.WINDUP, game.Phase.PITCH, game.Phase.RECEIVE]:
 		goal = close_fov
-	elif (
-		game.phase in [game.Phase.FIELDING, game.Phase.THROW, game.Phase.HOME_RUN]
-	):
+	elif game.phase in [game.Phase.FIELDING, game.Phase.THROW, game.Phase.HOME_RUN]:
 		var ball_point := BaseballWorld.world_position(game.ball.position, game.ball.height)
 		goal = clampf(
 			_fitted_fov(PackedVector3Array([ball_point]), 0.88), wide_fov, wide_fov * 1.08

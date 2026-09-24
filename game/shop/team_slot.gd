@@ -19,11 +19,31 @@ var player: BaseballPlayerData
 var occupant: SignedPlayer
 var name_label: Label3D
 var order_label: Label3D
+var ring: MeshInstance3D
+var halo: MeshInstance3D
+var ring_material: StandardMaterial3D
+var halo_material: StandardMaterial3D
+
+var _ring_red: Color
+var _halo_red: Color
+var _red_emission: Color
+var _hovered := false
+var _drop_highlighted := false
+var _drop_allowed := true
 
 
 func _ready() -> void:
 	name_label = $Name
 	order_label = $Order
+	ring = $Ring
+	halo = $Halo
+	ring_material = (ring.mesh.material as StandardMaterial3D).duplicate()
+	halo_material = (halo.mesh.material as StandardMaterial3D).duplicate()
+	_ring_red = ring_material.albedo_color
+	_halo_red = halo_material.albedo_color
+	_red_emission = ring_material.emission
+	ring.material_override = ring_material
+	halo.material_override = halo_material
 	super()
 
 
@@ -106,16 +126,43 @@ func show_order(on: bool) -> void:
 
 
 func set_hovered(on: bool) -> void:
+	_hovered = on
 	if name_label != null:
 		name_label.visible = on
+	_update_ring()
+
+
+func set_highlighted(on: bool, allowed: bool = true) -> void:
+	_drop_highlighted = on
+	_drop_allowed = allowed
+	_update_ring()
 
 
 func refresh() -> void:
 	if name_label == null:
 		return
+	_update_ring()
 	name_label.text = player.shop_card() if player != null else "open"
 	if occupant != null:
 		occupant.refresh()
+
+
+func _update_ring() -> void:
+	if ring_material == null:
+		return
+	var tint := _ring_red
+	var emission := _red_emission
+	if _drop_highlighted:
+		tint = accept_color if _drop_allowed else reject_color
+		emission = tint
+	elif _hovered:
+		tint = accept_color
+		emission = tint
+	ring_material.albedo_color = Color(tint.r, tint.g, tint.b, _ring_red.a)
+	ring_material.emission = emission
+	halo_material.albedo_color = Color(tint.r, tint.g, tint.b, _halo_red.a)
+	ring.visible = is_empty() or _hovered or _drop_highlighted
+	halo.visible = ring.visible
 
 
 ## Keep the roster Resource in step with the slot. Field positions still come

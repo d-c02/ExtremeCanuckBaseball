@@ -40,6 +40,10 @@
       1000.0,
       0.4000000059604645
     ],
+    "Grass Tile Size": 32.0,
+    "Dirt Tile Size": 20.0,
+    "Chalk Tile Size": 10.0,
+    "Infield Dirt Margin": 2.200000047683716,
     "Visitors Dugout": [
       -10.800000190734863,
       -7.199999809265137,
@@ -58,6 +62,10 @@
     "Dugout Stair Width": 2.0,
     "Dugout Stair Run": 2.4000000953674316,
     "Backstop Height": 3.200000047683716,
-    "Dugout Fence Height": 1.100000023841858
+    "Dugout Fence Height": 1.100000023841858,
+    "Batter Dirt Radius": 3.200000047683716,
+    "Batter Box Width": 1.100000023841858,
+    "Batter Box Length": 2.0,
+    "Batter Box Offset": 1.2000000476837158
   }
 }

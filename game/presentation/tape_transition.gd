@@ -58,4 +58,3 @@ func _process(_delta: float) -> void:
 			break
 	if visible:
 		$Tracking.material.set_shader_parameter("strength", strength)
-		$Indicator.text = ">> FF  %dx" % game.transition_speed

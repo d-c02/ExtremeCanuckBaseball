@@ -1,10 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 [ext_resource type="Script" path="res://game/match.gd" id="match"]
 [ext_resource type="Resource" path="res://data/teams/visitors.tres" id="batters"]
 [ext_resource type="Resource" path="res://data/teams/home.tres" id="fielders"]
 [ext_resource type="PackedScene" path="res://game/actors/ball.tscn" id="ball"]
 [ext_resource type="PackedScene" path="res://game/field/match_ballpark.tscn" id="ballpark"]
-[ext_resource type="PackedScene" path="res://game/presentation/box_score.tscn" id="box_score"]
 
 [node name="Simulation" type="Node2D"]
 
@@ -17,17 +16,3 @@ home_team = ExtResource("fielders")
 
 [node name="Players" type="Node2D" parent="."]
 [node name="Ball" parent="." instance=ExtResource("ball")]
-
-[node name="HUD" type="CanvasLayer" parent="."]
-layer = 3
-[node name="Status" type="Label" parent="HUD"]
-offset_left = 16.0
-offset_top = 16.0
-mouse_filter = 2
-
-theme_override_font_sizes/font_size = 17
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-
-[node name="BoxScore" parent="HUD" instance=ExtResource("box_score")]

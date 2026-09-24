@@ -1,27 +1,37 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://game/shop/team_slot.gd" id="script"]
+[ext_resource type="FontFile" path="res://assets/fonts/Drybrush.ttf" id="drybrush"]
 
 [sub_resource type="BoxShape3D" id="drop_shape"]
 size = Vector3(2.2, 2.4, 2.2)
 
-[sub_resource type="StandardMaterial3D" id="plate_material"]
-albedo_color = Color(0.16, 0.2, 0.24, 0.75)
-roughness = 1.0
+[sub_resource type="StandardMaterial3D" id="ring_material"]
+shading_mode = 0
+albedo_color = Color(1, 0.31, 0.37, 0.95)
+transparency = 1
+emission_enabled = true
+emission = Color(1, 0.14, 0.19, 1)
+emission_energy_multiplier = 1.4
+
+[sub_resource type="TorusMesh" id="ring_mesh"]
+material = SubResource("ring_material")
+inner_radius = 0.91
+outer_radius = 1.1
+rings = 36
+ring_segments = 12
+
+[sub_resource type="StandardMaterial3D" id="halo_material"]
+shading_mode = 0
+albedo_color = Color(1, 0.14, 0.2, 0.32)
 transparency = 1
 
-[sub_resource type="CylinderMesh" id="plate_mesh"]
-material = SubResource("plate_material")
-top_radius = 1.1
-bottom_radius = 1.1
-height = 0.06
-radial_segments = 24
-
-[sub_resource type="CylinderMesh" id="highlight_mesh"]
-top_radius = 1.35
-bottom_radius = 1.35
-height = 0.03
-radial_segments = 24
+[sub_resource type="TorusMesh" id="halo_mesh"]
+material = SubResource("halo_material")
+inner_radius = 0.86
+outer_radius = 1.24
+rings = 36
+ring_segments = 12
 
 [node name="TeamSlot" type="Area3D"]
 script = ExtResource("script")
@@ -30,19 +40,20 @@ script = ExtResource("script")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 shape = SubResource("drop_shape")
 
-[node name="Plate" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
+[node name="Ring" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.17, 0)
 cast_shadow = 0
-mesh = SubResource("plate_mesh")
+mesh = SubResource("ring_mesh")
 
-[node name="Highlight" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 0)
+[node name="Halo" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.13, 0)
 cast_shadow = 0
-mesh = SubResource("highlight_mesh")
+mesh = SubResource("halo_mesh")
 
 [node name="Name" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.3, 0.4)
 visible = false
+font = ExtResource("drybrush")
 pixel_size = 0.01
 font_size = 40
 outline_size = 10
@@ -53,6 +64,7 @@ text = "open"
 [node name="Order" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1, 0.45, 0.6)
 visible = false
+font = ExtResource("drybrush")
 pixel_size = 0.022
 font_size = 44
 outline_size = 12

@@ -19,6 +19,7 @@ const BATTING_ROW_STEP := 6.0
 const LAYOUT_TIME := 0.3
 const LISTING := preload("res://game/shop/player_slot.tscn")
 const SNACK := preload("res://game/shop/food.tscn")
+const SHOP_STAGE: BaseballShopStage = preload("res://assets/field/shop_stage.tres")
 const MATCH_SCENE := "res://main.tscn"
 ## Where a listing stands on its podium.
 const PODIUM_TOP := 1.2
@@ -32,11 +33,11 @@ const FIRST_REFRESH := 1
 @export var pool: BaseballPlayerPool
 ## Snacks the shop sells, for the podiums that deal in them.
 @export var foods: Array[BaseballFoodType] = []
-## How far the drawn park and the fielding spots pull in toward home plate. The
-## roster keeps its real match positions; only the buy screen is condensed.
-@export_range(0.3, 1.0) var park_scale: float = 0.6
 ## Seed for the players the shop rolls. Zero rolls a different shop every run.
 @export var random_seed: int = 0
+
+## The Blender shop preview scales the shared field around home by this amount.
+var park_scale: float = SHOP_STAGE.field_scale
 
 ## The run's money, kept on the session so it lives across the scene change.
 var funds: int:
@@ -69,6 +70,7 @@ func _ready() -> void:
 	else:
 		rng.seed = random_seed
 	park = get_node_or_null("Field") as BaseballBallpark
+	_apply_stage()
 	_build_park()
 	for target in _targets():
 		target.roster = roster
@@ -80,6 +82,8 @@ func _ready() -> void:
 	_connect_button("Start", start_game)
 	refresh_stock()
 	_update_hud()
+
+
 func _connect_button(name: String, handler: Callable) -> void:
 	var button := get_node_or_null("HUD/" + name) as Button
 	if button != null:
@@ -125,6 +129,10 @@ func can_trade(buyable: Buyable, target: BuyTarget) -> bool:
 	return buyable.price(target) <= funds
 
 
+func can_start_game() -> bool:
+	return roster != null and roster.has_role("P") and roster.has_role("C")
+
+
 ## Move a buyable onto a target and settle the money, for tests and scripted trades.
 func trade(buyable: Buyable, target: BuyTarget) -> bool:
 	if not can_trade(buyable, target):
@@ -141,6 +149,7 @@ func trade(buyable: Buyable, target: BuyTarget) -> bool:
 	traded.emit(buyable, target)
 	_update_hud()
 	return true
+
 
 func _grab(screen: Vector2) -> void:
 	var buyable := _pick(screen, Buyable.LAYER) as Buyable
@@ -248,35 +257,64 @@ func _targets() -> Array[BuyTarget]:
 func _update_hud() -> void:
 	var label := get_node_or_null("HUD/Funds") as Label
 	if label != null:
-		label.text = "Funds  $%d" % funds
+		label.text = "$%d" % funds
 	var run := get_node_or_null("HUD/Run") as Label
 	if run != null:
-		run.text = "Round %d    Lives %d" % [BaseballSession.round_number, BaseballSession.lives]
+		run.text = "Round %d" % BaseballSession.round_number
+	var lives := get_node_or_null("HUD/Lives") as Label
+	if lives != null:
+		lives.text = "♥ %d" % BaseballSession.lives
 	var refresh := get_node_or_null("HUD/Refresh") as Button
 	if refresh != null:
-		refresh.text = "Refresh  $%d" % refresh_cost()
+		refresh.text = "Reroll  $%d" % refresh_cost()
 		refresh.disabled = refresh_cost() > funds
+	var start := get_node_or_null("HUD/Start") as Button
+	if start != null:
+		var needs_pitcher := not roster.has_role("P")
+		var needs_catcher := not roster.has_role("C")
+		start.disabled = not can_start_game()
+		if needs_pitcher and needs_catcher:
+			start.text = "Sign pitcher + catcher"
+		elif needs_pitcher:
+			start.text = "Sign pitcher"
+		elif needs_catcher:
+			start.text = "Sign catcher"
+		else:
+			start.text = "Play ball"
 
 
-## Draw the ballpark the shop stands on, when the scene has one.
+## Place interactive Godot nodes at the anchors authored in Blender.
+func _apply_stage() -> void:
+	var stands := podiums()
+	if stands.size() != SHOP_STAGE.podium_positions.size():
+		push_error("Shop podium count differs from the Blender stage")
+		return
+	for index in stands.size():
+		stands[index].position = SHOP_STAGE.podium_positions[index]
+	var sell := get_node_or_null("SellSpot") as SellSpot
+	if sell != null:
+		sell.position = SHOP_STAGE.sell_position
+	var camera := get_node_or_null("Camera3D") as Camera3D
+	if camera != null:
+		camera.position = SHOP_STAGE.camera_position
+		camera.look_at(SHOP_STAGE.camera_target)
+		camera.fov = SHOP_STAGE.camera_fov
+
+
+## Draw the same exported field mesh and layout used by the match.
 func _build_park() -> void:
 	var view := get_node_or_null("FieldView") as BaseballShopFieldView
 	if park == null or view == null:
 		return
-	view.build(park)
-	# Shrink the drawn park around home so the whole thing reads at shop range.
+	view.build_shop()
+	# Use the same transform as the Blender shop preview.
 	view.scale = Vector3.ONE * park_scale
-	view.position = _home_point() * (1.0 - park_scale)
-
-
-func _home_point() -> Vector3:
-	return BaseballWorld.world_position(park.home.position) if park != null else Vector3.ZERO
+	view.position = SHOP_STAGE.field_position
 
 
 ## Stand every slot where the current view wants it, sliding them over when the
 ## view is toggled rather than snapping.
 func _layout_slots(animate: bool) -> void:
-	var home := _home_point()
 	_show_park_markings(not batting_view)
 	var tween: Tween = null
 	if animate:
@@ -286,23 +324,20 @@ func _layout_slots(animate: bool) -> void:
 		if slot == null:
 			continue
 		slot.show_order(batting_view)
-		var spot := _slot_spot(slot, home)
+		var spot := _slot_spot(slot)
 		if tween == null:
 			slot.position = spot
 		else:
 			tween.tween_property(slot, "position", spot, LAYOUT_TIME).set_trans(Tween.TRANS_CUBIC)
 
 
-## Where one slot stands: a rung of the batting order list, or the spot on the field
-## where that fielder plays, pulled in by [member park_scale]. A slot the roster has
-## no position for keeps the spot it was placed at in the scene.
-func _slot_spot(slot: TeamSlot, home: Vector3) -> Vector3:
+## Fielding spots come from the visible placement markers in Blender.
+func _slot_spot(slot: TeamSlot) -> Vector3:
 	if batting_view:
 		return _batting_spot(slot.slot_index)
-	if slot.slot_index >= roster.field_positions.size():
+	if slot.slot_index >= SHOP_STAGE.field_positions.size():
 		return slot.position
-	var spot := BaseballWorld.world_position(roster.field_positions[slot.slot_index])
-	return home + (spot - home) * park_scale
+	return SHOP_STAGE.field_positions[slot.slot_index]
 
 
 ## Grid spots are spaced on the ground rather than across the screen, so the gap
@@ -311,6 +346,8 @@ func _batting_spot(index: int) -> Vector3:
 	var column := index % BATTING_COLUMNS
 	var row := floori(float(index) / BATTING_COLUMNS)
 	return BATTING_CORNER + Vector3(column * BATTING_COLUMN_STEP, 0.0, row * BATTING_ROW_STEP)
+
+
 func _update_order_button() -> void:
 	var button := get_node_or_null("HUD/Order") as Button
 	if button != null:
@@ -323,6 +360,9 @@ func _show_park_markings(on: bool) -> void:
 	var view := get_node_or_null("FieldView") as BaseballShopFieldView
 	if view != null and view.markings != null:
 		view.markings.visible = on
+	var lineup := get_node_or_null("LineupGround") as Node3D
+	if lineup != null:
+		lineup.visible = not on
 
 
 ## What the next refresh costs. The first is a dollar and each one after is a dollar
@@ -399,9 +439,16 @@ func _shelf() -> BaseballShelf:
 
 ## Hand the signed team and a fresh opponent to the match, and go and play it.
 func start_game() -> void:
+	if not can_start_game():
+		return
 	roster.finish_shopping()
 	BaseballSession.carry(roster, build_opponent())
 	get_tree().change_scene_to_file(MATCH_SCENE)
+
+
+func new_run() -> void:
+	BaseballSession.begin()
+	get_tree().reload_current_scene()
 
 
 ## Every podium the shop sells from, left to right.
