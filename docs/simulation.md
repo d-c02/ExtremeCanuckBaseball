@@ -49,8 +49,8 @@ Set it to 1 for normal speed throughout. Live plays, windups and return throws
 always run at normal speed. The pitcher must receive the return before the next
 windup; repositioning can continue afterward.
 `between_play_delay` controls the result beat. Transitions use the same 3D view
-at the faster simulation speed. VCR tracking bands, scanlines and a FF indicator
-mark visible accelerated movement immediately, including equipment attendants.
+at the faster simulation speed. VCR tracking bands and scanlines mark visible
+accelerated movement immediately, including equipment attendants.
 Only offscreen movement accelerates silently. The effect uses completed fixed
 simulation steps and actor movement, rather than predicting remaining travel or
 waiting through an entry delay. This also covers a player's final step into
@@ -58,7 +58,7 @@ position, when they are no longer marked as moving. Rendering never chooses the
 simulation speed. Pause and reset clear the effect.
 Normal-speed steps have no tape effect, including the opening walkout, windup,
 live play, return throw and result beat. A step that finishes accelerated
-preparation retains its indicator for that movement even if it starts the next
+preparation retains the effect for that movement even if it starts the next
 phase. Setting transition speed to 1 disables acceleration and the effect. Tune
 strength or disable the effect on `TapeTransition` in `main.tscn`.
 
@@ -261,7 +261,11 @@ The exported perimeter tapers to a point behind home. Its sidelines are parallel
 to the foul lines, with the neutral-grey dugouts built into those sides. Guards
 follow both room rims and stair sides, leaving gaps at the top of the stairs.
 The backstop uses a transparent grey crosshatch texture, with the same collision
-height. A 1,000-metre grass slab extends beyond the overview so its edges stay hidden.
+height. A tiled grass slab extends beyond the overview so its edges stay hidden.
+The dirt infield extends outside the four bases, with a dirt area, two chalk
+batter's boxes and a pentagonal plate at home. Grass, dirt and chalk use varied
+8-by-8 image tiles; their scale comes from editable controls in the Blender
+source and exports in the shared field GLB.
 The curved outfield is trimmed to the sideline joins and its evaluated outline
 also supplies collision and home-run boundaries. Collision segments and heights come
 from the evaluated Geometry Nodes panels, not separate hand-authored coordinates.
@@ -311,7 +315,8 @@ and remain placeholders.
 ### Field camera
 
 One elevated camera keeps the entire field and both dugouts in view throughout
-the game. Its position is authored on `Camera` in `main.tscn`. It fits the field's
+the game. Its position is authored on `Camera` in `main.tscn`. It aims above the
+mound to give the field a closer composition like the buy screen, then fits the
 bases, exported fence edges and dugout seats on startup, reset and window resize.
 `framing_margin` leaves room around the field. The near plane
 stays at 0.05 so the foreground playing surface is not clipped.

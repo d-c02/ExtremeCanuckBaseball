@@ -14,6 +14,7 @@ FIELD_SPOTS = (
     (0, 0), (0, 265), (200, -25), (125, -190), (-205, -25),
     (-125, -190), (-440, -485), (0, -610), (440, -485),
 )
+LANDMARK_SLOTS = {0: "Mound", 2: "First", 4: "Third"}
 
 
 def material(name, color):
@@ -122,24 +123,29 @@ def add_slot_preview(collection):
     nodes, links = group.nodes, group.links
     join = nodes.new("GeometryNodeJoinGeometry")
     output = nodes.new("NodeGroupOutput")
+    circle = nodes.new("GeometryNodeCurvePrimitiveCircle")
+    circle.inputs["Resolution"].default_value = 48
+    circle.inputs["Radius"].default_value = 1.15
+    profile = nodes.new("GeometryNodeCurvePrimitiveCircle")
+    profile.inputs["Resolution"].default_value = 8
+    profile.inputs["Radius"].default_value = 0.09
+    ring = nodes.new("GeometryNodeCurveToMesh")
+    links.new(circle.outputs["Curve"], ring.inputs["Curve"])
+    links.new(profile.outputs["Curve"], ring.inputs["Profile Curve"])
     for index in range(1, 10):
         point = bpy.data.objects[f"Roster {index}"]
         marker = nodes.new("GeometryNodeObjectInfo")
         marker.inputs["Object"].default_value = point
-        disc = nodes.new("GeometryNodeMeshCylinder")
-        disc.inputs["Vertices"].default_value = 24
-        disc.inputs["Radius"].default_value = 1.1
-        disc.inputs["Depth"].default_value = 0.06
         offset = nodes.new("ShaderNodeVectorMath")
         offset.operation = "ADD"
         offset.inputs[1].default_value = (0, 0, 0.12)
         links.new(marker.outputs["Location"], offset.inputs[0])
         move = nodes.new("GeometryNodeTransform")
-        links.new(disc.outputs["Mesh"], move.inputs["Geometry"])
+        links.new(ring.outputs["Mesh"], move.inputs["Geometry"])
         links.new(offset.outputs[0], move.inputs["Translation"])
         links.new(move.outputs[0], join.inputs[0])
     shade = nodes.new("GeometryNodeSetMaterial")
-    shade.inputs["Material"].default_value = material("Shop Slot Preview", (0.13, 0.23, 0.28))
+    shade.inputs["Material"].default_value = material("Shop Slot Preview", (0.82, 0.14, 0.16))
     links.new(join.outputs[0], shade.inputs["Geometry"])
     links.new(shade.outputs[0], output.inputs["Geometry"])
     mesh = bpy.data.meshes.new("Shop Slot Preview Source")
@@ -153,8 +159,13 @@ def add():
         raise RuntimeError("The buy-screen preview is already installed")
     field_scene = bpy.data.scenes["Baseball Field"]
     field = bpy.data.objects["Baseball Field"]
-    home_socket = field.modifiers["Field Controls"].node_group.interface.items_tree["Home"]
-    home = Vector(getattr(field.modifiers["Field Controls"].properties.inputs, home_socket.identifier).value)
+    controls = field.modifiers["Field Controls"]
+
+    def field_point(name):
+        socket = controls.node_group.interface.items_tree[name]
+        return Vector(getattr(controls.properties.inputs, socket.identifier).value)
+
+    home = field_point("Home")
     scene = bpy.data.scenes.new("Buy Screen Preview")
     scene.unit_settings.system = "METRIC"
     bpy.context.window.scene = scene
@@ -170,9 +181,12 @@ def add():
     anchors = [anchor(dressing, f"Podium {i + 1}", (x, -14.8, 0)) for i, x in enumerate(PODIUM_X)]
     anchors.append(anchor(dressing, "Sell Spot", (-12, -7, 0)))
     for i, (x, y) in enumerate(FIELD_SPOTS):
-        world_x = x * 0.04 * SHOP_SCALE + home.x * (1 - SHOP_SCALE)
-        world_y = -y * 0.04 * SHOP_SCALE + home.y * (1 - SHOP_SCALE)
-        anchor(dressing, f"Roster {i + 1}", (world_x, world_y, 0))
+        point = Vector((x * 0.04, -y * 0.04, 0))
+        if i in LANDMARK_SLOTS:
+            point = field_point(LANDMARK_SLOTS[i])
+        elif i == 1:
+            point = home + Vector((0, -1.8, 0))
+        anchor(dressing, f"Roster {i + 1}", point * SHOP_SCALE + preview.location)
     add_fixture_group(dressing, anchors)
     add_slot_preview(dressing)
     add_lineup_ground(dressing)

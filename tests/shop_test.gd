@@ -140,7 +140,7 @@ func check_start_requirements() -> void:
 	check(button.disabled and button.text == "Sign pitcher", "A missing pitcher was not shown")
 	incomplete.players[0] = coach.recruit()
 	shop._update_hud()
-	check(not button.disabled and button.text == "Start game", "A ready roster could not start")
+	check(not button.disabled and button.text == "Play ball", "A ready roster could not start")
 	shop.roster = original
 	shop._update_hud()
 
@@ -266,7 +266,7 @@ func check_roster_ready() -> void:
 	)
 	shop._update_hud()
 	var start: Button = shop.get_node("HUD/Start")
-	check(not start.disabled and start.text == "Start game", "The filled roster could not play")
+	check(not start.disabled and start.text == "Play ball", "The filled roster could not play")
 
 
 ## Names are clutter on a full field, so they only show under the cursor.
@@ -287,7 +287,15 @@ func check_hover_names() -> void:
 	shop._unhandled_input(motion_at(screen_point(slot)))
 	check(not harrhy.name_label.visible, "A listing kept its name after the cursor left")
 	check(slot.name_label.visible, "Hovering a roster slot did not show its name")
-	check(not slot.highlight.visible, "A roster slot lit up with nothing being dragged")
+	check(slot.highlight == null, "A roster slot kept a second highlight ring")
+	check(slot.ring.visible, "Hovering a roster slot did not show its ring")
+	var tint := slot.ring_material.albedo_color
+	check(
+		tint.is_equal_approx(
+			Color(slot.accept_color.r, slot.accept_color.g, slot.accept_color.b, tint.a)
+		),
+		"Hovering a roster slot did not turn its ring gold"
+	)
 	# The two numbers a player is bought on stay readable without the cursor.
 	check(
 		(
@@ -485,7 +493,7 @@ func check_refresh_cost() -> void:
 	check(shop.funds == 7, "The second refresh did not cost two dollars")
 	await settle()
 	var button: Button = shop.get_node("HUD/Refresh")
-	check(button.text == "Refresh  $3", "The button did not price the next refresh")
+	check(button.text == "Reroll  $3", "The button did not price the next refresh")
 	shop.funds = 2
 	shop._update_hud()
 	check(button.disabled, "The button stayed live with the price out of reach")
@@ -528,11 +536,9 @@ func check_run_banking() -> void:
 	BaseballSession.begin()
 
 
-## Even an empty wallet and no battery can leave through New run. The new scene
+## A future menu can reset even an empty wallet and no battery. The new scene
 ## should rebuild the roster and shelf from the starting session.
 func check_new_run() -> void:
-	var button: Button = shop.get_node("HUD/NewRun")
-	check(not button.pressed.get_connections().is_empty(), "New run had no action")
 	var sell: SellSpot = shop.get_node("SellSpot")
 	var pitcher: TeamSlot = shop.get_node("Roster/Slot1")
 	var catcher: TeamSlot = shop.get_node("Roster/Slot2")
@@ -546,7 +552,7 @@ func check_new_run() -> void:
 	check(shop.get_node("HUD/Start").disabled, "A batteryless team could still start")
 	check(shop.get_node("HUD/Refresh").disabled, "An empty wallet could still refresh")
 	current_scene = shop
-	button.pressed.emit()
+	shop.new_run()
 	await settle()
 	var restarted := current_scene as Shop
 	check(restarted != null, "New run did not reload the buy screen")
@@ -708,7 +714,13 @@ func check_quiet_drag() -> void:
 	await process_frame
 	check(not carried.name_label.visible, "A carried player kept their card up")
 	check(not slot.name_label.visible, "A slot named itself under a carried player")
-	check(slot.highlight.visible, "A slot stopped lighting up under a carried player")
+	check(slot.ring.visible, "A slot stopped showing its ring under a carried player")
+	var expected := slot.accept_color if shop.can_trade(carried, slot) else slot.reject_color
+	var tint := slot.ring_material.albedo_color
+	check(
+		tint.is_equal_approx(Color(expected.r, expected.g, expected.b, tint.a)),
+		"A drop target did not recolor its existing ring"
+	)
 	cancel_drag()
 	await settle()
 

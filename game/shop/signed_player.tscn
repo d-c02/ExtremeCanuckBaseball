@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://game/shop/signed_player.gd" id="script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player.svg" id="sprite"]
+[ext_resource type="FontFile" path="res://assets/fonts/Drybrush.ttf" id="drybrush"]
 
 [sub_resource type="BoxShape3D" id="grab_shape"]
 size = Vector3(1.1, 2.3, 1.1)
@@ -28,6 +29,7 @@ shaded = false
 
 [node name="Strength" type="Label3D" parent="Hang"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -2.01, 0)
+font = ExtResource("drybrush")
 pixel_size = 0.01
 font_size = 44
 outline_size = 10
@@ -37,6 +39,7 @@ text = "STR 0"
 
 [node name="Dexterity" type="Label3D" parent="Hang"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, -2.01, 0)
+font = ExtResource("drybrush")
 pixel_size = 0.01
 font_size = 44
 outline_size = 10
@@ -46,6 +49,7 @@ text = "DEX 0"
 
 [node name="Level" type="Label3D" parent="Hang"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+font = ExtResource("drybrush")
 pixel_size = 0.012
 font_size = 44
 outline_size = 10

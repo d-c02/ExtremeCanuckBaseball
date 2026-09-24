@@ -108,85 +108,110 @@ slot_index = 8
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=726643821]
 
-[node name="Funds" type="Label" parent="HUD" unique_id=2004158747]
-offset_left = 24.0
-offset_top = 18.0
-offset_right = 260.0
-offset_bottom = 48.0
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 26
-text = "Funds  $12"
-
-[node name="Hint" type="Label" parent="HUD" unique_id=1661217605]
-offset_left = 24.0
-offset_top = 52.0
-offset_right = 780.0
-offset_bottom = 78.0
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-text = "Drag players to sign, merge, move or sell."
-
-[node name="Order" type="Button" parent="HUD"]
+[node name="RunPanel" type="Panel" parent="HUD"]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -210.0
-offset_top = 18.0
-offset_right = -24.0
-offset_bottom = 56.0
+offset_left = -474.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = 132.0
 grow_horizontal = 0
-theme_override_font_sizes/font_size = 20
-text = "Batting order"
+mouse_filter = 2
 
-[node name="Refresh" type="Button" parent="HUD"]
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -210.0
-offset_top = 64.0
-offset_right = -24.0
-offset_bottom = 102.0
-grow_horizontal = 0
-theme_override_font_sizes/font_size = 20
-text = "Refresh"
-
-[node name="Start" type="Button" parent="HUD"]
+[node name="ShopPanel" type="Panel" parent="HUD"]
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -350.0
-offset_top = -78.0
-offset_right = -24.0
-offset_bottom = -24.0
+offset_left = -602.0
+offset_top = -65.0
+offset_right = -16.0
+offset_bottom = -12.0
 grow_horizontal = 0
 grow_vertical = 0
-theme_override_font_sizes/font_size = 24
-text = "Start game"
+mouse_filter = 2
+
+[node name="Funds" type="Label" parent="HUD" unique_id=2004158747]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -582.0
+offset_top = -59.0
+offset_right = -500.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_type_variation = &"ScoreLabel"
+text = "$12"
 
 [node name="Run" type="Label" parent="HUD"]
-offset_left = 24.0
-offset_top = 82.0
-offset_right = 420.0
-offset_bottom = 110.0
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 22
-text = "Round 1    Lives 5"
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -452.0
+offset_top = 22.0
+offset_right = -258.0
+offset_bottom = 56.0
+grow_horizontal = 0
+theme_type_variation = &"RunLabel"
+text = "Round 1"
 
-[node name="NewRun" type="Button" parent="HUD"]
-anchors_preset = 2
+[node name="Lives" type="Label" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -246.0
+offset_top = 22.0
+offset_right = -40.0
+offset_bottom = 56.0
+grow_horizontal = 0
+theme_type_variation = &"LivesLabel"
+text = "♥ 5"
+horizontal_alignment = 2
+
+[node name="Order" type="Button" parent="HUD"]
+anchors_preset = 3
+anchor_left = 1.0
 anchor_top = 1.0
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = -64.0
-offset_right = 150.0
-offset_bottom = -24.0
+offset_left = -488.0
+offset_top = -58.0
+offset_right = -276.0
+offset_bottom = -20.0
+grow_horizontal = 0
 grow_vertical = 0
-theme_override_font_sizes/font_size = 18
-text = "New run"
+theme_override_font_sizes/font_size = 22
+text = "Batting order"
+
+[node name="Refresh" type="Button" parent="HUD"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -264.0
+offset_top = -58.0
+offset_right = -32.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 22
+text = "Reroll"
+
+[node name="Start" type="Button" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -452.0
+offset_top = 65.0
+offset_right = -40.0
+offset_bottom = 118.0
+grow_horizontal = 0
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 27
+text = "Play ball"

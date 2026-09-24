@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://game/shop/food.gd" id="script"]
+[ext_resource type="FontFile" path="res://assets/fonts/Drybrush.ttf" id="drybrush"]
 
 [sub_resource type="BoxShape3D" id="grab_shape"]
 size = Vector3(1.1, 1.1, 1.1)
@@ -27,6 +28,7 @@ mesh = SubResource("snack_mesh")
 
 [node name="Gain" type="Label3D" parent="Hang"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+font = ExtResource("drybrush")
 pixel_size = 0.012
 font_size = 44
 outline_size = 10
@@ -36,6 +38,7 @@ text = "+1"
 [node name="Name" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
 visible = false
+font = ExtResource("drybrush")
 pixel_size = 0.01
 font_size = 40
 outline_size = 10

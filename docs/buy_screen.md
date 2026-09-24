@@ -15,9 +15,24 @@ survive the scene change either way.
 | Left-drag | Pick a player up and drop them on a roster slot or the sell spot. |
 | Right-click while dragging | Cancel and send the player back where they started. |
 | Batting order / Fielding | Toggle between the fielding layout and the lineup. |
-| Refresh $N | Roll a new player onto every podium. Each one costs a dollar more. |
-| Start game | Available after signing a pitcher and catcher; play against a rolled opponent. |
-| New run | Start again with an empty roster, $30 and five lives. |
+| Reroll $N | Roll a new player onto every podium. Each one costs a dollar more. |
+| Play ball | Available after signing a pitcher and catcher; play against a rolled opponent. |
+
+## UI theme
+
+The project-wide Godot theme is
+[`assets/ui/extreme_canuck_theme.tres`](../assets/ui/extreme_canuck_theme.tres),
+assigned through `gui/theme/custom` in `project.godot`. It sets Drybrush as the
+primary font and styles labels, buttons, focus, disabled states and the scoreboard
+panels with field green, maple red, chalk cream and gold. The buy screen and the
+match's end-of-run prompt share it. Edit the Theme resource to change the palette
+or button treatment; the scene files place the controls on screen. In-world
+`Label3D` text references the same font directly because Godot themes only cover
+2D controls. The font is in `assets/fonts/Drybrush.ttf`, with its CC0 license beside
+it.
+The buy HUD groups the round, hearts and Play ball at the top right. Money, the
+fielding/order switch and Reroll share a compact bar at the bottom right. Buying,
+moving, merging, feeding and selling remain direct actions in the 3D scene.
 
 Everybody is a kind of player, and a kind sets the stats a level one is bought
 with and owns the passive that separates it from the rest. Every level up puts on
@@ -38,7 +53,7 @@ A hot dog is worth +2 strength to a level one Bodybuilder, +3 at level two and +
 at level three; peanuts do the same for a Dog. Neither makes anything of the other
 sort of snack.
 
-A Coach works on the team rather than on themselves. Start game closes the shop,
+A Coach works on the team rather than on themselves. Play ball closes the shop,
 and every Coach on the roster takes their teammates through a session first,
 handing each of the others their own level in both stats. A Coach never coaches
 themselves, two of them both put their work in, and a rolled opponent closes its
@@ -75,8 +90,9 @@ colour of the stat it feeds, the same orange and blue as the numbers at a player
 feet.
 
 Nine roster slots stand out on the field at the `Roster 1` through `Roster 9`
-markers in Blender's **Buy Screen Preview** scene. Those markers start at the
-match's condensed fielding positions and can be placed visually for the shop.
+markers in Blender's **Buy Screen Preview** scene. Those markers start near the
+match's condensed fielding positions, with first and third base centered on their
+bases, and can be placed visually for the shop.
 `shop_stage.tres` carries their exported positions, the podiums, sell spot and
 camera. The Blender shop preview also sets the field's scale and translation;
 the roster Resource keeps its real match positions. Every player, on a
@@ -99,12 +115,15 @@ level below counts half, so two level ones take a level two up to three. Levels
 stop at three. A slot holding another kind of player, a player already at the cap,
 or a price above the current funds lights up red and refuses the drop.
 
-The Start button names either missing role and stays disabled until both a pitcher
-and catcher are signed. A refused start leaves the roster and Coach bonuses alone.
-If the shop runs out of money before they are signed, New run resets the shop and
-the session so the player can try again. Start game then rolls the other team
-and goes to the match. The opponent is given what
-the run has paid you by this round — the $30 it opened with plus a purse for every
+The Play ball button names either missing role and stays disabled until both a
+pitcher and catcher are signed. A refused start leaves the roster and Coach
+bonuses alone.
+The buy screen has no visible New run control while a future pause menu is planned;
+`Shop.new_run()` retains the reset behavior, and the match's run-over prompt still
+offers New run. An empty wallet with nobody to sell can currently strand a run
+before its required roles are signed. Play ball then rolls the other team and
+goes to the match. The opponent is given what the run has paid you by this round
+— the $30 it opened with plus a purse for every
 round already played, so $50 in round two — and shops for itself. It works a shelf
 of its own, the same four player podiums and two snack podiums this scene puts
 out: it buys what it can use, signs or merges each player it takes, feeds the
@@ -241,10 +260,11 @@ godot --headless --path . --editor --quit
 godot --headless --path . --fixed-fps 60 --script tests/shop_test.gd
 ```
 
-The suite checks that Start names the missing pitcher or catcher, stays disabled
+The suite checks that Play ball names the missing pitcher or catcher, stays disabled
 until both are signed, and refuses a scripted start without applying Coach bonuses;
-it also reloads a spent shop through New run and checks the fresh purse, roster
-and stock. It then drags a player onto an open slot and checks the signing, the charge, the
+it also reloads a spent shop through the retained reset method and checks the
+fresh purse, roster and stock. It then drags a player onto an open slot and checks
+the signing, the charge, the
 roster entry and the emptied podium; checks that a taken slot and an unaffordable
 price refuse the drop; sells a signed player and checks the payout, the emptied slot
 and roster entry, and that the sell spot refuses an unsigned listing; checks that

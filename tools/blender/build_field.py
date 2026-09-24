@@ -331,6 +331,8 @@ def build():
                     (1, 0, 0), math.radians(30)
                 )
                 area.spaces.active.shading.color_type = "MATERIAL"
+                if screen.name in {"Layout", "Geometry Nodes"}:
+                    area.spaces.active.shading.type = "MATERIAL"
             elif area.type == "PROPERTIES":
                 area.spaces.active.context = "MODIFIER"
     scene["field_coordinate_mapping"] = (
@@ -343,6 +345,9 @@ def build():
     from fences import install as install_fences
 
     install_fences(field)
+    from surface_textures import install as install_surface_textures
+
+    install_surface_textures(field)
     path = ROOT / "art/blender/baseball_field.blend"
     path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(path))

@@ -80,7 +80,6 @@ func _ready() -> void:
 	_connect_button("Order", _toggle_view)
 	_connect_button("Refresh", buy_refresh)
 	_connect_button("Start", start_game)
-	_connect_button("NewRun", new_run)
 	refresh_stock()
 	_update_hud()
 
@@ -258,13 +257,16 @@ func _targets() -> Array[BuyTarget]:
 func _update_hud() -> void:
 	var label := get_node_or_null("HUD/Funds") as Label
 	if label != null:
-		label.text = "Funds  $%d" % funds
+		label.text = "$%d" % funds
 	var run := get_node_or_null("HUD/Run") as Label
 	if run != null:
-		run.text = "Round %d    Lives %d" % [BaseballSession.round_number, BaseballSession.lives]
+		run.text = "Round %d" % BaseballSession.round_number
+	var lives := get_node_or_null("HUD/Lives") as Label
+	if lives != null:
+		lives.text = "♥ %d" % BaseballSession.lives
 	var refresh := get_node_or_null("HUD/Refresh") as Button
 	if refresh != null:
-		refresh.text = "Refresh  $%d" % refresh_cost()
+		refresh.text = "Reroll  $%d" % refresh_cost()
 		refresh.disabled = refresh_cost() > funds
 	var start := get_node_or_null("HUD/Start") as Button
 	if start != null:
@@ -278,7 +280,7 @@ func _update_hud() -> void:
 		elif needs_catcher:
 			start.text = "Sign catcher"
 		else:
-			start.text = "Start game"
+			start.text = "Play ball"
 
 
 ## Place interactive Godot nodes at the anchors authored in Blender.

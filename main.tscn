@@ -76,14 +76,23 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-[node name="Indicator" type="Label" parent="TapeTransition"]
-offset_left = 28.0
-offset_top = 108.0
-text = ">> FF"
-
 [node name="RunEnd" type="CanvasLayer" parent="."]
 layer = 4
 script = ExtResource("run_end")
+
+[node name="ResultPanel" type="Panel" parent="RunEnd"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -332.0
+offset_top = -212.0
+offset_right = 332.0
+offset_bottom = -42.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="Result" type="Label" parent="RunEnd"]
 anchors_preset = 8
@@ -91,16 +100,13 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -300.0
-offset_top = -180.0
-offset_right = 300.0
+offset_left = -312.0
+offset_top = -189.0
+offset_right = 312.0
 offset_bottom = -130.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 40
+theme_type_variation = &"ResultLabel"
 text = "WIN  +$20"
 horizontal_alignment = 1
 
@@ -110,11 +116,12 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -120.0
-offset_top = -116.0
-offset_right = 120.0
+offset_left = -148.0
+offset_top = -121.0
+offset_right = 148.0
 offset_bottom = -60.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_font_sizes/font_size = 24
+theme_type_variation = &"PrimaryButton"
+theme_override_font_sizes/font_size = 27
 text = "Next shop"

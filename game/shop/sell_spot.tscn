@@ -1,6 +1,7 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://game/shop/sell_spot.gd" id="script"]
+[ext_resource type="FontFile" path="res://assets/fonts/Drybrush.ttf" id="drybrush"]
 
 [sub_resource type="BoxShape3D" id="drop_shape"]
 size = Vector3(3.6, 2.6, 3.6)
@@ -26,6 +27,7 @@ mesh = SubResource("highlight_mesh")
 
 [node name="Label" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 2.4)
+font = ExtResource("drybrush")
 pixel_size = 0.016
 font_size = 52
 outline_size = 12

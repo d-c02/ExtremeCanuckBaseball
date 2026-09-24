@@ -613,6 +613,8 @@ func check_grounding() -> void:
 
 func check_camera() -> void:
 	game.reset_game()
+	var window_size := root.size
+	root.size = Vector2i(1920, 1080)
 	var camera: Camera3D = world.get_node("Camera")
 	check(world.player_views.size() == 18, "3D presentation lost roster actors")
 	var first_view: BaseballPlayerView = world.player_views[0]
@@ -643,6 +645,16 @@ func check_camera() -> void:
 	camera._frame_field()
 	for point in camera.framing_points():
 		check(camera.is_position_in_frustum(point), "Overview lost a field edge or dugout")
+	var fence_left := INF
+	var fence_right := -INF
+	for point in game.outfield.boundary:
+		var screen_x := camera.unproject_position(BaseballWorld.world_position(point)).x
+		fence_left = minf(fence_left, screen_x)
+		fence_right = maxf(fence_right, screen_x)
+	check(
+		fence_right - fence_left > root.size.x * 0.75,
+		"Overview left too much space around the field"
+	)
 	var held_transform: Transform3D = camera.transform
 	var wide_lens: float = camera.fov
 	game.phase = game.Phase.WINDUP
@@ -670,7 +682,6 @@ func check_camera() -> void:
 		"Field camera failed to ease wider"
 	)
 	check(camera.transform == held_transform, "Overview switched camera angle")
-	var window_size := root.size
 	root.size = Vector2i(900, 1200)
 	camera._frame_field()
 	for point in camera.framing_points():
@@ -701,11 +712,8 @@ func _check_transition_effect() -> void:
 	tape._process(DELTA)
 	check(tape.visible, "Visible accelerated short movement had no tape effect")
 	check(
-		(
-			is_equal_approx(
-				tape.get_node("Tracking").material.get_shader_parameter("strength"), tape.strength
-			)
-			and tape.get_node("Indicator").modulate.a == 1.0
+		is_equal_approx(
+			tape.get_node("Tracking").material.get_shader_parameter("strength"), tape.strength
 		),
 		"Accelerated movement started before the tape effect was fully visible"
 	)

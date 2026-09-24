@@ -1,12 +1,14 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://game/shop/podium.gd" id="script"]
+[ext_resource type="FontFile" path="res://assets/fonts/Drybrush.ttf" id="drybrush"]
 
 [node name="Podium" type="Node3D"]
 script = ExtResource("script")
 
 [node name="Price" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.94, 0.342, 0, -0.342, 0.94, 0, 0.58, 1.06)
+font = ExtResource("drybrush")
 pixel_size = 0.013
 font_size = 44
 outline_size = 10
