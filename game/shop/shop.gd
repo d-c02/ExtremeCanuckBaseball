@@ -143,7 +143,10 @@ func trade(buyable: Buyable, target: BuyTarget) -> bool:
 	if not buyable.apply_to(target):
 		return false
 	funds -= price
-	target.refresh()
+	# A trade can reach past what it landed on: somebody leaving hands their work to
+	# the rest, so every target reads itself again.
+	for spot in _targets():
+		spot.refresh()
 	buyable.consume(target, spent)
 	funds_changed.emit(funds)
 	traded.emit(buyable, target)

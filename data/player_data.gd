@@ -145,6 +145,12 @@ func gain_level() -> bool:
 	return true
 
 
+## What this player hands each teammate as they leave the team, for a kind whose
+## passive is what it leaves behind.
+func severance_gain() -> int:
+	return level * type.severance if type != null else 0
+
+
 ## What this player hands each teammate when the shop closes, for a kind whose
 ## passive is coaching the rest of them.
 func coaching_gain() -> int:

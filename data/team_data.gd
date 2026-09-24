@@ -39,10 +39,25 @@ func finish_shopping() -> void:
 		if player != null and player.coaching_gain() > 0:
 			coaches.append(player)
 	for coach in coaches:
-		var gain := coach.coaching_gain()
-		for index in players.size():
-			var player := player_at(index)
-			if player == null or player == coach:
-				continue
-			player.strength = mini(player.strength + gain, BaseballPlayerData.MAX_STAT)
-			player.dexterity = mini(player.dexterity + gain, BaseballPlayerData.MAX_STAT)
+		hand_round(coach, coach.coaching_gain())
+
+
+## Somebody leaves the team. A kind that leaves its work behind hands every player
+## still here its own level in both stats, whether it was sold off or traded away.
+func wave_off(leaving: BaseballPlayerData) -> void:
+	if leaving == null:
+		return
+	hand_round(leaving, leaving.severance_gain())
+
+
+## Put [param gain] of both stats on everybody except [param giver], who never
+## works on themselves.
+func hand_round(giver: BaseballPlayerData, gain: int) -> void:
+	if gain <= 0:
+		return
+	for index in players.size():
+		var player := player_at(index)
+		if player == null or player == giver:
+			continue
+		player.strength = mini(player.strength + gain, BaseballPlayerData.MAX_STAT)
+		player.dexterity = mini(player.dexterity + gain, BaseballPlayerData.MAX_STAT)

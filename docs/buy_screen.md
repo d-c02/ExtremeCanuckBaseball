@@ -39,7 +39,7 @@ with and owns the passive that separates it from the rest. Every level up puts o
 +1/+1 whatever the kind; a passive either quickens that, makes more of a snack,
 works on the rest of the team, or reaches the other team once the ball is in play.
 A kind writes its passive once per level, in the few words a card has room for,
-and a player's card reads the line for the level they are at. Seven are written:
+and a player's card reads the line for the level they are at. Eight are written:
 
 | Kind | Starts | Level 1 | Level 2 | Level 3 |
 | --- | --- | --- | --- | --- |
@@ -50,6 +50,7 @@ and a player's card reads the line for the level they are at. Seven are written:
 | Snowman | 1/1 | Freezes fielders 0.25s | Freezes fielders 0.5s | Freezes fielders 0.75s |
 | Hockey Player | 1/1 | 1.5x speed when frozen | 2x speed when frozen | 2.5x speed when frozen |
 | Driver | 1/1 | 1.5x speed, fumbles | 2x speed, fumbles | 2.5x speed, fumbles |
+| Slacker | 1/1 | +1/+1 to team when sold | +2/+2 to team when sold | +3/+3 to team when sold |
 
 A hot dog is worth +2 strength to a level one Bodybuilder, +3 at level two and +4
 at level three; peanuts do the same for a Dog. Neither makes anything of the other
@@ -81,6 +82,12 @@ one to three, in every weather and on every play, which puts them on balls nobod
 else would reach. What the ride costs is their hands: they drop two in five of the
 catches they would otherwise make, whatever their dexterity, so the ball they get
 to is the ball they are liable to kick around.
+
+A Slacker is bought to be sold. Dropping one on the sell spot pays their price
+like anybody else and, on the way out, puts their own level on both stats of every
+player still on the team: +1/+1 from a level one, +3/+3 from a level three. They
+never work on themselves, the team reads its new numbers straight away, and what
+they leave behind stays behind.
 
 Six podiums stand behind home plate, each showing what the thing on it costs. Four
 sell players and two sell snacks, and a podium only ever stocks its own kind,
@@ -250,7 +257,7 @@ in the scene.
 
 ## Limits
 
-Seven kinds are written and all seven turn up from round one, so the pool has
+Eight kinds are written and all eight turn up from round one, so the pool has
 nothing held back to open up yet. A Coach's session lands on the roster for good,
 so keeping one signed compounds it round after round rather than buffing the team
 for one match. Nothing on a podium says which kind a player is
@@ -285,7 +292,9 @@ the cards away while the slot under them
 still lights up; merges two listings into a level two and checks the passive was
 paid and the badge followed, that one level
 below only counts half and the second finishes it, and that a player at the cap
-refuses another; checks every kind writes a line for each of the three levels,
+sells a level two Slacker and checks the team was paid their price, that everybody
+left took +2/+2 into both the slot and the roster, and that the numbers at their
+feet followed; checks every kind writes a line for each of the three levels,
 short enough to read and no two of them alike, and that a level up moves the card
 on to the next; merges two signed players and checks the slot left behind is
 empty and free; refreshes the shelf from the button and checks every podium came

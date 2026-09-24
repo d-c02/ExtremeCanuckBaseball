@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BaseballPlayerType" format=3]
+
+[ext_resource type="Script" path="res://data/player_type.gd" id="type"]
+
+[resource]
+script = ExtResource("type")
+type_name = "Slacker"
+from_round = 1
+base_strength = 1
+base_dexterity = 1
+passives = PackedStringArray("+1/+1 to team when sold", "+2/+2 to team when sold", "+3/+3 to team when sold")
+strength_growth = 0
+dexterity_growth = 0
+strength_per_food_level = 0
+dexterity_per_food_level = 0
+coaching = 0
+severance = 1
+freeze_per_level = 0.0
+frozen_speed_per_level = 0.0
+speed_per_level = 0.0
+fumble_chance = 0.0

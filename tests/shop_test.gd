@@ -101,6 +101,7 @@ func run() -> void:
 	await check_food_passives()
 	await check_coaching()
 	check_level_cards()
+	await check_severance()
 	await check_roster_ready()
 	await check_refresh_cost()
 	await check_pool()
@@ -936,3 +937,44 @@ func check_level_cards() -> void:
 		player.shop_card().ends_with(shop.pool.types[0].passive_for(2)),
 		"A level two read the card for some other level"
 	)
+
+
+## A Slacker leaves their work behind: selling one puts their own level on both
+## stats of everybody still on the team, and the shop shows it straight away.
+func check_severance() -> void:
+	var slacker: BaseballPlayerType = load("res://data/types/slacker.tres")
+	var sell: SellSpot = shop.get_node("SellSpot")
+	var seats: Array[TeamSlot] = []
+	for target in shop._targets():
+		var slot := target as TeamSlot
+		if slot != null and slot.is_empty():
+			seats.append(slot)
+	check(seats.size() >= 2, "No pair of open slots to try a Slacker in")
+	var quitter: BaseballPlayerData = slacker.recruit()
+	quitter.gain_level()
+	seats[0].fill(quitter)
+	var mate: BaseballPlayerData = shop.pool.types[0].recruit()
+	seats[1].fill(mate)
+	await settle()
+	var before := Vector2i(mate.strength, mate.dexterity)
+	var funds := shop.funds
+	var owed := quitter.sell_price()
+	await drag(seats[0].occupant, sell)
+	check(seats[0].is_empty(), "Selling a Slacker left them standing in the slot")
+	check(shop.funds == funds + owed, "A Slacker sold for something other than their price")
+	check(
+		Vector2i(mate.strength, mate.dexterity) - before == Vector2i(2, 2),
+		"A level two Slacker did not leave +2/+2 behind"
+	)
+	check(
+		shop.roster.player_at(seats[1].slot_index).strength == mate.strength,
+		"The roster missed what a Slacker left behind"
+	)
+	check(
+		seats[1].occupant.stat_labels[0].text == BaseballPlayerData.stat_text(mate.strength),
+		"A teammate's numbers did not follow a Slacker out the door"
+	)
+	# Put the bench back the way it was found.
+	seats[1].occupant.queue_free()
+	seats[1].clear()
+	await settle()

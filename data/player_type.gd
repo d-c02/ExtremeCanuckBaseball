@@ -27,6 +27,9 @@ extends Resource
 @export_range(0, 3) var dexterity_per_food_level: int = 0
 ## What this kind hands every teammate when the shop closes: its level, times this.
 @export_range(0, 3) var coaching: int = 0
+## What this kind hands every teammate on its way out of the team: its level, times
+## this. A kind bought to be sold is bought on this.
+@export_range(0, 3) var severance: int = 0
 ## How long the fielders stand and stare when one of these puts the ball in play:
 ## its level, times this many seconds.
 @export_range(0.0, 1.0, 0.05) var freeze_per_level: float = 0.0

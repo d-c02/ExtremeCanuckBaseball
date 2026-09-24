@@ -46,6 +46,10 @@ func apply_to(target: BuyTarget) -> bool:
 	if not fits(target):
 		return false
 	if target is SellSpot:
+		# The team is waved off before the slot empties, so a kind that leaves its work
+		# behind is still one of them when it hands it out.
+		if slot.roster != null:
+			slot.roster.wave_off(player)
 		slot.clear()
 		return true
 	var other := target as TeamSlot
