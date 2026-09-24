@@ -280,7 +280,7 @@ func _step_fielding(delta: float) -> void:
 			or not within_reach(player)
 		):
 			continue
-		if game.rng.randf() > player.data.catching:
+		if game.rng.randf() > player.data.catch_chance():
 			catch_retries[player] = 0.65
 			game.box_score.teams[player.team_index].players[player.lineup_index].bobbles += 1
 			game.last_result = "%s bobbled it" % player.data.player_name

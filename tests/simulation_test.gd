@@ -128,6 +128,7 @@ func run() -> void:
 	await check_scoring()
 	check_pitching()
 	check_freezing()
+	check_driving()
 	await check_grounding()
 	await check_camera()
 	await _check_transition_effect()
@@ -956,3 +957,55 @@ func check_freezing() -> void:
 	batter.data.type = original
 	batter.data.level = original_level
 	game.reset_game()
+
+
+## A Driver gets to the ball under their own power and drops a share of what they
+## reach: the speed is on whatever the weather, and the same rolls that a plain
+## pair of hands holds onto turn into bobbles.
+func check_driving() -> void:
+	var driver: BaseballPlayerType = load("res://data/types/driver.tres")
+	contact()
+	var fielder := game.fielders[6]
+	var stats := fielder.data
+	var original := stats.type
+	var original_level := stats.level
+	check(
+		is_equal_approx(fielder.current_speed(), stats.speed),
+		"A fielder with no kind covered ground at something other than their speed"
+	)
+	check(
+		is_equal_approx(stats.catch_chance(), stats.catching),
+		"A fielder with no kind fumbled by their kind"
+	)
+	var plain_catches := catches_over(6, 6)
+	stats.type = driver
+	stats.level = 2
+	check(
+		is_equal_approx(fielder.current_speed(), stats.speed * 2.0),
+		"A level two Driver did not cover ground at double speed"
+	)
+	check(
+		is_equal_approx(stats.catch_chance(), stats.catching * 0.6),
+		"A Driver held onto everything their hands would have"
+	)
+	check(catches_over(6, 6) < plain_catches, "A Driver fumbled no more than anybody else")
+	stats.type = original
+	stats.level = original_level
+	game.reset_game()
+
+
+## How many of [param attempts] balls dropped at the feet of the fielder in
+## [param index] are collected on the frame they land, one seed per attempt.
+func catches_over(index: int, attempts: int) -> int:
+	var caught := 0
+	for seed_value in attempts:
+		contact()
+		var fielder := game.fielders[index]
+		game.ball.launch(fielder.position, Vector2.ZERO, 12, 0)
+		for player in game.fielders:
+			player.reaction_remaining = 0.0
+		game.rng.seed = seed_value + 1
+		game.play._step_fielding(DELTA)
+		if game.play.holder == fielder:
+			caught += 1
+	return caught

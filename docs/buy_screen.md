@@ -22,16 +22,18 @@ Everybody is a kind of player, and a kind sets the stats a level one is bought
 with and owns the passive that separates it from the rest. Every level up puts on
 +1/+1 whatever the kind; a passive either quickens that, makes more of a snack,
 works on the rest of the team, or reaches the other team once the ball is in play.
-Six are written:
+A kind writes its passive once per level, in the few words a card has room for,
+and a player's card reads the line for the level they are at. Seven are written:
 
-| Kind | Starts | Passive |
-| --- | --- | --- |
-| Baseball Player | 1/1 | +2/+2 to level 2, +3/+3 to level 3 |
-| Bodybuilder | 3/1 | strength snacks feed a point more per level |
-| Dog | 1/3 | dexterity snacks feed a point more per level |
-| Coach | 1/1 | +1/+1 to every teammate per level, end of shop |
-| Snowman | 1/1 | Freezes fielders 0.25s per level on a hit |
-| Hockey Player | 1/1 | Skates a freeze off: +0.5x speed per level |
+| Kind | Starts | Level 1 | Level 2 | Level 3 |
+| --- | --- | --- | --- | --- |
+| Baseball Player | 1/1 | +2/+2 next level | +3/+3 next level | Fully grown |
+| Bodybuilder | 3/1 | Hot dogs feed +2 STR | Hot dogs feed +3 STR | Hot dogs feed +4 STR |
+| Dog | 1/3 | Peanuts feed +2 DEX | Peanuts feed +3 DEX | Peanuts feed +4 DEX |
+| Coach | 1/1 | +1/+1 to the team | +2/+2 to the team | +3/+3 to the team |
+| Snowman | 1/1 | Freezes fielders 0.25s | Freezes fielders 0.5s | Freezes fielders 0.75s |
+| Hockey Player | 1/1 | 1.5x speed when frozen | 2x speed when frozen | 2.5x speed when frozen |
+| Driver | 1/1 | 1.5x speed, fumbles | 2x speed, fumbles | 2.5x speed, fumbles |
 
 A hot dog is worth +2 strength to a level one Bodybuilder, +3 at level two and +4
 at level three; peanuts do the same for a Dog. Neither makes anything of the other
@@ -57,6 +59,12 @@ multiplied by 1.5 at level one, 2 at level two and 2.5 at level three, and the
 defence ranks its chase on the speed they are actually covering ground at. The two
 only meet on opposite teams, so a Snowman on your roster is what arms the other
 side's Hockey Player.
+
+A Driver brings the car. Their top speed is multiplied by 1.5, 2 or 2.5 for levels
+one to three, in every weather and on every play, which puts them on balls nobody
+else would reach. What the ride costs is their hands: they drop two in five of the
+catches they would otherwise make, whatever their dexterity, so the ball they get
+to is the ball they are liable to kick around.
 
 Six podiums stand behind home plate, each showing what the thing on it costs. Four
 sell players and two sell snacks, and a podium only ever stocks its own kind,
@@ -85,7 +93,8 @@ which. The match stands the same two numbers at a player's feet, worded by
 `BaseballPlayerData.stat_texts()` on both screens so they cannot drift apart.
 Nothing labels the positions, and no name shows until the cursor is on something:
 hover a listing or a slot to read the card: what kind of player they are and what
-their passive does, in as few words as it takes. Carrying a player puts every
+their passive does at the level they are at, in the few words a card has room
+for. Carrying a player puts every
 card away, because the cursor is busy saying where they will land. A gold badge
 stands over every player either way, reading
 `Lv 2` for their level and `Lv 2½` when one more of their kind is all that stands
@@ -148,9 +157,10 @@ Listings on podiums cannot be sold; only signed players can.
   buyable up at all, so a move can slide it to its new home instead.
 - `BaseballPlayerType` (`data/player_type.gd`): a kind of player. It holds the
   stats a level one starts with, what levelling adds, what a snack is worth to
-  this kind, and the words its passives are described in. Types are shared, never
-  copied, which is how two players are told to be the same kind. `data/types/`
-  holds them.
+  this kind, and one short line per level saying what its passive does there, which
+  `passive_for()` reads by level and a card past the last line keeps reading.
+  Types are shared, never copied, which is how two players are told to be the
+  same kind. `data/types/` holds them.
 - `BaseballRecruit` (`game/shop/recruit.gd`): rolls players and whole teams. A
   rolled player is a level one of a random kind; a rolled team is a budget shopped
   through a `BaseballShelf`, `SPEND_ATTEMPTS` buys at most.
@@ -215,7 +225,7 @@ were given in the scene.
 
 ## Limits
 
-Six kinds are written and all six turn up from round one, so the pool has
+Seven kinds are written and all seven turn up from round one, so the pool has
 nothing held back to open up yet. A Coach's session lands on the roster for good,
 so keeping one signed compounds it round after round rather than buffing the team
 for one match. Nothing on a podium says which kind a player is
@@ -240,12 +250,15 @@ roster entry and the emptied podium; checks that a taken slot and an unaffordabl
 price refuse the drop; sells a signed player and checks the payout, the emptied slot
 and roster entry, and that the sell spot refuses an unsigned listing; checks that
 names stay hidden until the cursor is on a listing or a slot while the two numbers
-and the level badge stay readable without it, that the card names the kind and its
-passive, and that carrying a player puts the cards away while the slot under them
+and the level badge stay readable without it, that the card names the kind and
+the line its passive is written in at that level, and that carrying a player puts
+the cards away while the slot under them
 still lights up; merges two listings into a level two and checks the passive was
 paid and the badge followed, that one level
 below only counts half and the second finishes it, and that a player at the cap
-refuses another; merges two signed players and checks the slot left behind is
+refuses another; checks every kind writes a line for each of the three levels,
+short enough to read and no two of them alike, and that a level up moves the card
+on to the next; merges two signed players and checks the slot left behind is
 empty and free; refreshes the shelf from the button and checks every podium came
 back with something of its own kind and a rolled player priced on their stats;
 refreshes again and again and checks no podium ever stocks the other kind; feeds a

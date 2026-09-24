@@ -132,6 +132,12 @@ would have lasted, `BaseballPlayer.speed_multiplier` scales their top speed by 1
 see the skater coming. Acceleration is untouched, and the boost thaws on its own
 whether or not they are moving.
 
+A Driver carries the same sort of multiplier with them all game, 1.5 to 2.5 by
+level, and pays for it at the moment of the catch: `catch_chance()` is what their
+hands are worth less the share their kind throws away, and the fielding step rolls
+against that rather than `catching`. Acceleration is untouched here too, so the
+multiplier tells over a long chase and barely shows over a short one.
+
 | Stat | Ability | Derived value |
 | --- | --- | --- |
 | STR | Batting | `batting_power`, 150 to 460 units per second before contact quality |
@@ -408,7 +414,8 @@ retreats, the strength matchup that decides a pitch and the drain and refresh of
 the pitcher's strength, the extra carry a strength mismatch buys, a Snowman freezing the whole defence for
 a quarter second per level at contact while a hitter with no passive leaves them their
 usual reaction and the hold thaws as it runs, a Hockey Player taking that freeze as
-double speed at level two and losing it when the field thaws, the STR and DEX
+double speed at level two and losing it when the field thaws, a Driver covering
+ground at double speed at level two and dropping balls a plain pair of hands holds, the STR and DEX
 labels at a player's feet, the arm on the mound counting its strength down in
 view and showing its bought strength again at bat, seed replay, catcher reception, bat availability at windup, 3D ball/actor mapping, dugout floor/stair heights, entrance routing and whole-field camera framing and window resizing. Transition
 checks advance actual simulation steps and verify visible acceleration is marked,

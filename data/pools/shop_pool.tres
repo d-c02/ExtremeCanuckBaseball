@@ -8,7 +8,8 @@
 [ext_resource type="Resource" path="res://data/types/coach.tres" id="coach"]
 [ext_resource type="Resource" path="res://data/types/snowman.tres" id="snowman"]
 [ext_resource type="Resource" path="res://data/types/hockey_player.tres" id="hockey_player"]
+[ext_resource type="Resource" path="res://data/types/driver.tres" id="driver"]
 
 [resource]
 script = ExtResource("pool")
-types = Array[ExtResource("type_script")]([ExtResource("baseball_player"), ExtResource("bodybuilder"), ExtResource("dog"), ExtResource("coach"), ExtResource("snowman"), ExtResource("hockey_player")])
+types = Array[ExtResource("type_script")]([ExtResource("baseball_player"), ExtResource("bodybuilder"), ExtResource("dog"), ExtResource("coach"), ExtResource("snowman"), ExtResource("hockey_player"), ExtResource("driver")])

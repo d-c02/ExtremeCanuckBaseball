@@ -12,8 +12,10 @@ extends Resource
 ## Stats a level one of this type starts with.
 @export_range(0, 99) var base_strength: int = 1
 @export_range(0, 99) var base_dexterity: int = 1
-## The passive in words, for the shop to show under the name.
-@export var passive: String = ""
+## The passive in words, one line per level, for the shop to show under the name.
+## Short: a card is read at a glance. A kind with fewer lines than levels reads its
+## last one from then on.
+@export var passives: PackedStringArray = []
 ## What this kind puts on over and above the level everybody gets, growing by this
 ## much for every level it has taken: one of these makes a level two worth +2/+2 and
 ## a level three +3/+3.
@@ -31,10 +33,23 @@ extends Resource
 ## What a frozen field is worth to a kind at home on one. A fielder of one skates
 ## instead of standing still, at their top speed times one plus this per level.
 @export_range(0.0, 1.0, 0.05) var frozen_speed_per_level: float = 0.0
+## What this kind covers ground at whatever the weather: their top speed times one
+## plus this per level. A kind that drives to the ball is bought on this.
+@export_range(0.0, 1.0, 0.05) var speed_per_level: float = 0.0
+## The share of catches this kind drops on top of the ones their hands lose. It is
+## what a kind that arrives too fast to stop pays for the ride.
+@export_range(0.0, 1.0, 0.05) var fumble_chance: float = 0.0
 
 
 ## A fresh level one of this type. The type itself is shared, never copied: two
 ## players count as the same kind by pointing at the same one.
+## What this kind does at [param level], in the few words a card has room for.
+func passive_for(level: int) -> String:
+	if passives.is_empty():
+		return ""
+	return passives[clampi(level - 1, 0, passives.size() - 1)]
+
+
 func recruit() -> BaseballPlayerData:
 	var player := BaseballPlayerData.new()
 	player.type = self

@@ -32,9 +32,9 @@ func configure(player_data: BaseballPlayerData) -> void:
 
 
 ## What this player is covering ground at right now: what they were bought with,
-## unless a frozen field is under a pair of skates.
+## what a kind that drives adds to it, and a frozen field under a pair of skates.
 func current_speed() -> float:
-	return data.speed * speed_multiplier
+	return data.speed * speed_multiplier * (1.0 + data.driving_gain())
 
 
 ## Restore the pitching strength bought in the buy phase.

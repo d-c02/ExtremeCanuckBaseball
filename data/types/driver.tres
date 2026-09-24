@@ -4,13 +4,17 @@
 
 [resource]
 script = ExtResource("type")
-type_name = "Coach"
+type_name = "Driver"
 from_round = 1
 base_strength = 1
 base_dexterity = 1
-passives = PackedStringArray("+1/+1 to the team", "+2/+2 to the team", "+3/+3 to the team")
+passives = PackedStringArray("1.5x speed, fumbles", "2x speed, fumbles", "2.5x speed, fumbles")
 strength_growth = 0
 dexterity_growth = 0
 strength_per_food_level = 0
 dexterity_per_food_level = 0
-coaching = 1
+coaching = 0
+freeze_per_level = 0.0
+frozen_speed_per_level = 0.0
+speed_per_level = 0.5
+fumble_chance = 0.4

@@ -96,6 +96,7 @@ func run() -> void:
 	await check_level_growth()
 	await check_food_passives()
 	await check_coaching()
+	check_level_cards()
 	await check_roster_ready()
 	await check_refresh_cost()
 	await check_pool()
@@ -203,7 +204,9 @@ func check_hover_names() -> void:
 	check(
 		(
 			harrhy.name_label.text.begins_with(harrhy.player.type.type_name)
-			and harrhy.name_label.text.ends_with(harrhy.player.type.passive)
+			and harrhy.name_label.text.ends_with(
+				harrhy.player.type.passive_for(harrhy.player.level)
+			)
 		),
 		"The card did not name the kind of player and what its passive does"
 	)
@@ -786,3 +789,32 @@ func _stats(team: BaseballTeamData) -> Array[Vector2i]:
 		if player != null:
 			stats.append(Vector2i(player.strength, player.dexterity))
 	return stats
+
+
+## A card reads the line for the level in front of it, and every kind writes one
+## for each of the three. A kind that runs out of lines keeps reading its last.
+func check_level_cards() -> void:
+	for type in shop.pool.types:
+		check(
+			type.passives.size() == BaseballPlayerData.MAX_LEVEL,
+			"%s does not describe itself at every level" % type.type_name
+		)
+		var seen := PackedStringArray()
+		for level in BaseballPlayerData.MAX_LEVEL:
+			var line := type.passive_for(level + 1)
+			check(not line.is_empty(), "%s left a level undescribed" % type.type_name)
+			check(line.length() <= 24, "%s wrote a card too long to read" % type.type_name)
+			check(not seen.has(line), "%s reads the same at two levels" % type.type_name)
+			seen.append(line)
+		check(
+			type.passive_for(BaseballPlayerData.MAX_LEVEL + 1) == seen[seen.size() - 1],
+			"%s ran past the last line it wrote" % type.type_name
+		)
+	var player: BaseballPlayerData = shop.pool.types[0].recruit()
+	var first := player.shop_card()
+	player.gain_level()
+	check(player.shop_card() != first, "A level up left the card saying the same thing")
+	check(
+		player.shop_card().ends_with(shop.pool.types[0].passive_for(2)),
+		"A level two read the card for some other level"
+	)

@@ -157,6 +157,18 @@ func freeze_gain() -> float:
 	return level * type.freeze_per_level if type != null else 0.0
 
 
+## The share of their top speed this player carries around with them, for a kind
+## that gets to the ball under its own power.
+func driving_gain() -> float:
+	return level * type.speed_per_level if type != null else 0.0
+
+
+## The odds this player holds onto a ball they reach: what their hands are worth,
+## less the share a kind that arrives too fast to stop throws away.
+func catch_chance() -> float:
+	return catching * (1.0 - type.fumble_chance) if type != null else catching
+
+
 ## What a frozen field does for this player instead of holding them: the share of
 ## their top speed it adds, nothing at all for a kind with no skates.
 func skating_gain() -> float:
@@ -174,7 +186,7 @@ func level_text() -> String:
 func shop_card() -> String:
 	if type == null:
 		return player_name
-	return "%s\n%s" % [type.type_name, type.passive]
+	return "%s\n%s" % [type.type_name, type.passive_for(level)]
 
 
 ## One stat as its label reads it. They read bare: the labels beside a player are
